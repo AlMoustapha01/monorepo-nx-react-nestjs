@@ -5,10 +5,11 @@ import {
   type OnApplicationBootstrap,
 } from '@nestjs/common';
 import { type Job, type Queue, UnrecoverableError, Worker } from 'bullmq';
-import { lt } from 'drizzle-orm';
+import { and, eq, lt } from 'drizzle-orm';
 import { AppConfig } from '../config/app-config';
 import { RequestContext } from '../context/request-context';
 import { DatabaseSession } from '../database/database-session';
+import type { IntegrationEvent } from './integration-event';
 import { IntegrationEventRegistry } from './integration-event.registry';
 import {
   INTEGRATION_EVENTS_QUEUE_NAME,
@@ -83,25 +84,60 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
       throw new UnrecoverableError(`Invalid payload for ${event.type}: ${parsed.error.message}`);
     }
 
+    const run = () => handler.instance.handle({ ...event, payload: parsed.data });
     await this.context.runAs({ tenantId: event.tenantId, userId: event.actorId }, () =>
-      this.session.transaction(async () => {
-        const [claimed] = await this.session.db
-          .insert(processedEvents)
-          .values({
-            handler: name,
-            eventId: event.id,
-            tenantId: event.tenantId,
-            processedAt: new Date(),
-          })
-          .onConflictDoNothing()
-          .returning({ eventId: processedEvents.eventId });
-        if (!claimed) {
-          return;
-        }
-        // En cas d'échec, la transaction annule aussi la marque : le retry retraitera l'événement.
-        await handler.instance.handle({ ...event, payload: parsed.data });
-      }),
+      handler.transactional === false
+        ? this.runOutsideTransaction(name, event, run)
+        : this.runInTransaction(name, event, run),
     );
+  }
+
+  /** Marque et traitement validés ensemble : effet en base exactement une fois. */
+  private runInTransaction(
+    name: string,
+    event: IntegrationEvent,
+    run: () => Promise<void>,
+  ): Promise<void> {
+    return this.session.transaction(async () => {
+      if (!(await this.markProcessed(name, event))) {
+        return;
+      }
+      // En cas d'échec, la transaction annule aussi la marque : le retry retraitera l'événement.
+      await run();
+    });
+  }
+
+  /** Aucune connexion gardée pendant l'appel externe ; la marque n'est posée qu'après succès. */
+  private async runOutsideTransaction(
+    name: string,
+    event: IntegrationEvent,
+    run: () => Promise<void>,
+  ): Promise<void> {
+    const [processed] = await this.session.db
+      .select({ eventId: processedEvents.eventId })
+      .from(processedEvents)
+      .where(and(eq(processedEvents.handler, name), eq(processedEvents.eventId, event.id)))
+      .limit(1);
+    if (processed) {
+      return;
+    }
+    await run();
+    await this.markProcessed(name, event);
+  }
+
+  /** Renvoie false si l'événement était déjà marqué pour ce handler. */
+  private async markProcessed(name: string, event: IntegrationEvent): Promise<boolean> {
+    const [claimed] = await this.session.db
+      .insert(processedEvents)
+      .values({
+        handler: name,
+        eventId: event.id,
+        tenantId: event.tenantId,
+        processedAt: new Date(),
+      })
+      .onConflictDoNothing()
+      .returning({ eventId: processedEvents.eventId });
+    return claimed !== undefined;
   }
 
   private async cleanup(): Promise<void> {

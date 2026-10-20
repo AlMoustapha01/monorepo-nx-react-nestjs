@@ -27,6 +27,14 @@ export interface IntegrationEventHandlerOptions {
    * Le changer fait retraiter les événements encore en file.
    */
   name: string;
+  /**
+   * `true` (défaut) : le handler s'exécute dans une transaction avec sa marque d'idempotence,
+   * donc ses écritures en base n'ont lieu qu'une fois.
+   * `false` : pour un handler qui appelle surtout un service externe (email, API). Il s'exécute
+   * hors transaction pour ne pas garder une connexion ouverte pendant l'appel ; la marque est
+   * posée après. Un crash entre les deux fait rejouer l'appel : prévoir une clé d'idempotence.
+   */
+  transactional?: boolean;
 }
 
 export const INTEGRATION_EVENT_HANDLER = Symbol('INTEGRATION_EVENT_HANDLER');

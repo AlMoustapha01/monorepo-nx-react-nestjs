@@ -10,7 +10,11 @@ import { Mailer } from './mailer.port';
 
 /** Réagit à OrderPlaced sans dépendre du domaine commandes : seul le contrat de l'événement compte. */
 @Injectable()
-@OnIntegrationEvent(OrderPlaced, { name: 'notifications.order-confirmation-email' })
+// Hors transaction : pas de connexion Postgres gardée pendant l'appel SMTP.
+@OnIntegrationEvent(OrderPlaced, {
+  name: 'notifications.order-confirmation-email',
+  transactional: false,
+})
 export class SendOrderConfirmation implements IntegrationEventHandler<typeof OrderPlaced> {
   private readonly logger = new Logger(SendOrderConfirmation.name);
 

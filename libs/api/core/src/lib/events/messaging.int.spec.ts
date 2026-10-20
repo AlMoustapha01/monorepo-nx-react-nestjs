@@ -13,7 +13,7 @@ import {
 } from '../../testing';
 import { RequestContext } from '../context/request-context';
 import { CoreModule } from '../core.module';
-import { TransactionManager } from '../database/database-session';
+import { DatabaseSession, TransactionManager } from '../database/database-session';
 import {
   type IntegrationEvent,
   type IntegrationEventHandler,
@@ -55,7 +55,29 @@ class CountPing implements IntegrationEventHandler<typeof Pinged> {
   }
 }
 
-@Module({ providers: [RecordPing, CountPing] })
+/** Simule un appel externe : doit s'exécuter hors transaction. */
+@Injectable()
+@OnIntegrationEvent(Pinged, { name: 'test.notify-ping', transactional: false })
+class NotifyPing implements IntegrationEventHandler<typeof Pinged> {
+  readonly calls: { n: number; inTransaction: boolean }[] = [];
+  failuresBeforeSuccess = 0;
+
+  constructor(private readonly session: DatabaseSession) {}
+
+  async handle(event: IntegrationEvent<typeof Pinged>): Promise<void> {
+    this.calls.push({ n: event.payload.n, inTransaction: this.session.inTransaction });
+    if (this.failuresBeforeSuccess > 0) {
+      this.failuresBeforeSuccess--;
+      throw new Error('external service unavailable');
+    }
+  }
+
+  succeeded(n: number): number {
+    return this.calls.filter((call) => call.n === n).length;
+  }
+}
+
+@Module({ providers: [RecordPing, CountPing, NotifyPing] })
 class TestHandlersModule {}
 
 describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)', () => {
@@ -166,5 +188,51 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     await worker.process(job);
 
     expect(recorder.numbers().filter((n) => n === 7)).toHaveLength(1);
+  });
+
+  describe('handler non transactionnel', () => {
+    const jobFor = (n: number, eventId: string) => ({
+      name: 'test.notify-ping',
+      data: {
+        handler: 'test.notify-ping',
+        event: {
+          id: eventId,
+          type: 'test.pinged.v1',
+          tenantId: principal.tenantId,
+          actorId: principal.userId,
+          occurredAt: new Date().toISOString(),
+          payload: { n },
+        },
+      },
+    });
+
+    it('s’exécute hors transaction, au nom du tenant', async () => {
+      await publish(8);
+      const notifier = app.get(NotifyPing);
+      await eventually(() => expect(notifier.succeeded(8)).toBe(1));
+      expect(notifier.calls.find((call) => call.n === 8)?.inTransaction).toBe(false);
+    });
+
+    it('ignore un événement déjà traité', async () => {
+      const worker = app.get(IntegrationEventWorker);
+      const job = jobFor(9, 'EVT-01jb4x7k2m9qwfzp3hd9');
+      await worker.process(job);
+      await worker.process(job);
+      expect(app.get(NotifyPing).succeeded(9)).toBe(1);
+    });
+
+    it('ne marque pas l’événement en cas d’échec : le retry le retraite', async () => {
+      const worker = app.get(IntegrationEventWorker);
+      const notifier = app.get(NotifyPing);
+      const job = jobFor(10, 'EVT-01jb4x7k2m9qwfzp3hda');
+      notifier.failuresBeforeSuccess = 1;
+
+      await expect(worker.process(job)).rejects.toThrow('external service unavailable');
+      await worker.process(job);
+      await worker.process(job);
+
+      // Deux appels (l'échec puis le succès), et plus rien une fois marqué.
+      expect(notifier.succeeded(10)).toBe(2);
+    });
   });
 });
