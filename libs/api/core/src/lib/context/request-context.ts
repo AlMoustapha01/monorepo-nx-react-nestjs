@@ -28,11 +28,11 @@ export class RequestContext {
   }
 
   get tenantId(): string {
-    const principal = this.principal;
-    if (!principal) {
-      throw new CoreError('TENANT_CONTEXT_MISSING', 'No tenant in the current request context');
-    }
-    return principal.tenantId;
+    return this.requirePrincipal().tenantId;
+  }
+
+  get userId(): string {
+    return this.requirePrincipal().userId;
   }
 
   setPrincipal(principal: Principal): void {
@@ -45,5 +45,13 @@ export class RequestContext {
       this.setPrincipal(principal);
       return fn();
     });
+  }
+
+  private requirePrincipal(): Principal {
+    const principal = this.principal;
+    if (!principal) {
+      throw new CoreError('TENANT_CONTEXT_MISSING', 'No tenant in the current request context');
+    }
+    return principal;
   }
 }

@@ -31,12 +31,13 @@ libs/api/<domaine>/         un domaine métier = une lib Nx
 libs/shared/contracts/      schémas zod partagés entre front et API
 ```
 
-Domaine d'exemple à copier : `libs/api/catalog`.
+Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple) et `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade).
 
 ## Règles de frontières
 
 - Tags Nx : `scope:api|web|shared` × `type:app|domain|core|contract`. `core` ne dépend jamais d'un domaine (lint).
 - Un domaine n'importe d'un autre domaine que sa façade (`@nx-react-nestjs/api-<domaine>`). Les imports profonds ne compilent pas (alias TypeScript limités à `index.ts`).
+- Consommer un autre domaine : un port dans `application/` (ce dont on a besoin, rien de plus) et un adapter dans `infra/` qui délègue à sa façade. Exemple : `orders` → `ProductCatalog` → `CatalogFacade`.
 - `index.ts` d'un domaine : exports nommés uniquement, jamais `export *`. N'y exposer que le module Nest, la façade et des types de contrat (snapshots), jamais une entité ni un repository (vérifié en revue).
 - `domain/` n'importe ni NestJS, ni Drizzle, ni `pg` (lint, `no-restricted-imports` du `.oxlintrc.json` de chaque domaine).
 - Chaque domaine possède son schéma Postgres (`pgSchema('<domaine>')`). Pas de jointure ni de clé étrangère vers les tables d'un autre domaine : passer par sa façade ou ne garder qu'un ID.
