@@ -53,6 +53,7 @@ Domaine d'exemple à copier : `libs/api/catalog`.
 ## Conventions
 
 - Validation : schéma zod dans `libs/shared/contracts`, DTO via `createZodDto` dans `http/`, réponse via `@ZodSerializerDto`.
+- Persistance : un mapper par agrégat dans `infra/` (`<Agrégat>Mapper extends PersistenceMapper<Agrégat, Row>`), qui reconstruit via `restore`. Le repository ne fait aucune conversion lui-même.
 - Argent : entier en unités mineures (`amountMinor`) + devise ISO. Jamais de flottant.
 - Pagination : par curseur (`limit`, `cursor` → `items`, `nextCursor`), triée par `(created_at, id)` décroissants.
 - API versionnée par URI : `/api/v1/...`. `/health` et `/ready` restent hors préfixe.

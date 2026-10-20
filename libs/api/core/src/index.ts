@@ -7,5 +7,6 @@ export { RequestContext, type Principal } from './lib/context/request-context';
 export { Public } from './lib/auth/public.decorator';
 export { type Database, InjectDatabase } from './lib/database/database.module';
 export { isUniqueViolation } from './lib/database/pg-errors';
+export { PersistenceMapper } from './lib/database/persistence-mapper';
 export { type KeysetCursor, decodeCursor, encodeCursor } from './lib/http/cursor';
 export { configureApp } from './lib/http/configure-app';

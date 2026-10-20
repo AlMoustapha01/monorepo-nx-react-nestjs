@@ -6,16 +6,17 @@ import {
   type KeysetCursor,
   RequestContext,
 } from '@nx-react-nestjs/api-core';
-import { currencySchema } from '@nx-react-nestjs/contracts';
 import { and, desc, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import { ProductRepository, type ProductListPage } from '../application/product.repository';
 import { skuAlreadyExists } from '../application/use-cases/create-product';
-import { Money } from '../domain/money';
-import { Product } from '../domain/product';
-import { PRODUCTS_TENANT_SKU_KEY, type ProductRow, products } from './catalog.schema';
+import type { Product } from '../domain/product';
+import { PRODUCTS_TENANT_SKU_KEY, products } from './catalog.schema';
+import { ProductMapper } from './product.mapper';
 
 @Injectable()
 export class DrizzleProductRepository extends ProductRepository {
+  private readonly mapper = new ProductMapper();
+
   constructor(
     @InjectDatabase() private readonly db: Database,
     private readonly context: RequestContext,
@@ -39,7 +40,7 @@ export class DrizzleProductRepository extends ProductRepository {
       .select()
       .from(products)
       .where(and(this.tenantScope(), inArray(products.id, [...ids])));
-    return rows.map(toDomain);
+    return this.mapper.toDomainList(rows);
   }
 
   async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<ProductListPage> {
@@ -55,12 +56,14 @@ export class DrizzleProductRepository extends ProductRepository {
       )
       .orderBy(desc(products.createdAt), desc(products.id))
       .limit(limit + 1);
-    return { items: rows.slice(0, limit).map(toDomain), hasMore: rows.length > limit };
+    return { items: this.mapper.toDomainList(rows.slice(0, limit)), hasMore: rows.length > limit };
   }
 
   async insert(product: Product): Promise<void> {
     try {
-      await this.db.insert(products).values({ ...toRow(product), tenantId: this.context.tenantId });
+      await this.db
+        .insert(products)
+        .values({ ...this.mapper.toRow(product), tenantId: this.context.tenantId });
     } catch (error) {
       // Filet de sécurité si deux requêtes créent le même SKU en même temps.
       if (isUniqueViolation(error, PRODUCTS_TENANT_SKU_KEY)) {
@@ -71,7 +74,12 @@ export class DrizzleProductRepository extends ProductRepository {
   }
 
   async update(product: Product): Promise<void> {
-    const { id, tenantId: _tenantId, createdAt: _createdAt, ...changes } = toRow(product);
+    const {
+      id,
+      tenantId: _tenantId,
+      createdAt: _createdAt,
+      ...changes
+    } = this.mapper.toRow(product);
     await this.db
       .update(products)
       .set(changes)
@@ -84,40 +92,11 @@ export class DrizzleProductRepository extends ProductRepository {
       .from(products)
       .where(and(this.tenantScope(), condition))
       .limit(1);
-    return row ? toDomain(row) : null;
+    return row ? this.mapper.toDomain(row) : null;
   }
 
   /** Toute requête passe par ici : pas de lecture ni d'écriture hors du tenant courant. */
   private tenantScope(): SQL {
     return eq(products.tenantId, this.context.tenantId);
   }
-}
-
-function toDomain(row: ProductRow): Product {
-  return Product.restore({
-    id: row.id,
-    tenantId: row.tenantId,
-    sku: row.sku,
-    name: row.name,
-    description: row.description,
-    price: Money.of(row.priceAmountMinor, currencySchema.parse(row.priceCurrency)),
-    status: row.status,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  });
-}
-
-function toRow(product: Product): ProductRow {
-  return {
-    id: product.id,
-    tenantId: product.tenantId,
-    sku: product.sku,
-    name: product.name,
-    description: product.description,
-    priceAmountMinor: product.price.amountMinor,
-    priceCurrency: product.price.currency,
-    status: product.status,
-    createdAt: product.createdAt,
-    updatedAt: product.updatedAt,
-  };
 }
