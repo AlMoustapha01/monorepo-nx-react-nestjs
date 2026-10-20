@@ -14,6 +14,9 @@ export default defineConfig(() => ({
     environment: 'node',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     passWithNoTests: true,
+    // Les tests e2e démarrent un Postgres via Testcontainers.
+    hookTimeout: 120_000,
+    testTimeout: 30_000,
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/apps/api',

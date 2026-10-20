@@ -8,14 +8,17 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2015",
+    "target": "es2022",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": ["es2022", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "strict": false,
+    "strict": true,
     "paths": {
-      "@nx-react-nestjs/contracts": ["./libs/shared/contracts/src/index.ts"]
+      "@nx-react-nestjs/contracts": ["./libs/shared/contracts/src/index.ts"],
+      "@nx-react-nestjs/api-core": ["./libs/api/core/src/index.ts"],
+      "@nx-react-nestjs/api-core/testing": ["./libs/api/core/src/testing.ts"],
+      "@nx-react-nestjs/api-catalog": ["./libs/api/catalog/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -10,7 +10,11 @@
           "depConstraints": [
             { "sourceTag": "scope:web",    "onlyDependOnLibsWithTags": ["scope:web", "scope:shared"] },
             { "sourceTag": "scope:api",    "onlyDependOnLibsWithTags": ["scope:api", "scope:shared"] },
-            { "sourceTag": "scope:shared", "onlyDependOnLibsWithTags": ["scope:shared"] }
+            { "sourceTag": "scope:shared", "onlyDependOnLibsWithTags": ["scope:shared"] },
+            { "sourceTag": "type:app",      "onlyDependOnLibsWithTags": ["type:domain", "type:core", "type:contract"] },
+            { "sourceTag": "type:domain",   "onlyDependOnLibsWithTags": ["type:domain", "type:core", "type:contract"] },
+            { "sourceTag": "type:core",     "onlyDependOnLibsWithTags": ["type:core", "type:contract"] },
+            { "sourceTag": "type:contract", "onlyDependOnLibsWithTags": ["type:contract"] }
           ]
     }]
   },

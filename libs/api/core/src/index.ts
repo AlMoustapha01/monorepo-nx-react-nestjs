@@ -1,0 +1,11 @@
+export { CoreModule } from './lib/core.module';
+export { AppConfig } from './lib/config/app-config';
+export type { Env } from './lib/config/env';
+export { AppError, CoreError, type CoreErrorCode, type ErrorKind } from './lib/errors/app-error';
+export type { ProblemDetails } from './lib/errors/problem-details.filter';
+export { RequestContext, type Principal } from './lib/context/request-context';
+export { Public } from './lib/auth/public.decorator';
+export { type Database, InjectDatabase } from './lib/database/database.module';
+export { isUniqueViolation } from './lib/database/pg-errors';
+export { type KeysetCursor, decodeCursor, encodeCursor } from './lib/http/cursor';
+export { configureApp } from './lib/http/configure-app';

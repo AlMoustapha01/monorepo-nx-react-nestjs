@@ -1,0 +1,70 @@
+import { Global, Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { TerminusModule } from '@nestjs/terminus';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import type { Request } from 'express';
+import { ClsModule } from 'nestjs-cls';
+import { LoggerModule } from 'nestjs-pino';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { AuthGuard } from './auth/auth.guard';
+import { JwtVerifier } from './auth/jwt-verifier';
+import { AppConfig, AppConfigModule } from './config/app-config';
+import { RequestContext } from './context/request-context';
+import { DatabaseModule } from './database/database.module';
+import { ProblemDetailsFilter } from './errors/problem-details.filter';
+import { DatabaseHealthIndicator, HealthController } from './health/health.controller';
+import { getRequestId } from './http/request-id';
+
+const UNLOGGED_PATHS = new Set(['/health', '/ready']);
+
+@Global()
+@Module({
+  imports: [
+    AppConfigModule,
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        generateId: true,
+        idGenerator: (req: Request) => getRequestId(req),
+      },
+    }),
+    LoggerModule.forRootAsync({
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) => ({
+        assignResponse: true,
+        pinoHttp: {
+          level: config.get('LOG_LEVEL'),
+          genReqId: (req) => getRequestId(req),
+          redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+          autoLogging: { ignore: (req) => UNLOGGED_PATHS.has(req.url ?? '') },
+          ...(config.get('NODE_ENV') === 'development' && {
+            transport: { target: 'pino-pretty', options: { singleLine: true } },
+          }),
+        },
+      }),
+    }),
+    ThrottlerModule.forRootAsync({
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) => ({
+        throttlers: [{ ttl: config.get('RATE_LIMIT_TTL_MS'), limit: config.get('RATE_LIMIT_MAX') }],
+      }),
+    }),
+    TerminusModule,
+    DatabaseModule,
+  ],
+  controllers: [HealthController],
+  providers: [
+    RequestContext,
+    JwtVerifier,
+    DatabaseHealthIndicator,
+    // L'ordre compte : le rate limiting s'applique avant l'authentification.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_FILTER, useClass: ProblemDetailsFilter },
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
+  ],
+  exports: [RequestContext],
+})
+export class CoreModule {}

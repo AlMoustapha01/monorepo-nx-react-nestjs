@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { CatalogModule } from '@nx-react-nestjs/api-catalog';
+import { CoreModule } from '@nx-react-nestjs/api-core';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [CoreModule, CatalogModule],
 })
 export class AppModule {}

@@ -1,11 +1,10 @@
 import { defineConfig } from 'vitest/config';
 
-
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/libs/shared/contracts',
   resolve: {
-    tsconfigPaths: true
+    tsconfigPaths: true,
   },
   test: {
     name: 'contracts',

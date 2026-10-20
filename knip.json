@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "apps/api/src/main.ts",
+    "apps/api/drizzle.config.ts",
+    "libs/*/*/src/index.ts",
+    "libs/api/core/src/testing.ts",
+    "libs/api/*/src/lib/infra/*.schema.ts"
+  ],
+  "project": [
+    "apps/api/**/*.ts",
+    "libs/**/*.ts"
+  ],
+  "ignoreDependencies": [
+    "pino-pretty",
+    "@nestjs/schematics",
+    "@nx/.*",
+    "@swc/helpers",
+    "ts-node"
+  ]
+}
