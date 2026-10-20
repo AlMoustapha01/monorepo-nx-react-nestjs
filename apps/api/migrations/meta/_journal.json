@@ -15,6 +15,13 @@
       "when": 1792516824355,
       "tag": "0001_messaging_outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792517217828,
+      "tag": "0002_catalog_sold_count",
+      "breakpoints": true
     }
   ]
 }

@@ -44,6 +44,8 @@ export const productSchema = z.object({
   description: z.string().nullable(),
   price: moneySchema,
   status: productStatusSchema,
+  /** Unités vendues (commandes passées moins commandes annulées), mis à jour en asynchrone. */
+  soldCount: z.number().int().nonnegative(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });

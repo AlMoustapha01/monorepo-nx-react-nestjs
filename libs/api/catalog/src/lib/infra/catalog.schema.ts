@@ -4,6 +4,7 @@ import {
   char,
   customType,
   index,
+  integer,
   pgSchema,
   text,
   timestamp,
@@ -33,6 +34,7 @@ export const products = catalog.table(
     priceAmountMinor: bigint('price_amount_minor', { mode: 'number' }).notNull(),
     priceCurrency: char('price_currency', { length: 3 }).notNull(),
     status: productStatus('status').notNull(),
+    soldCount: integer('sold_count').notNull().default(0),
     // Précision milliseconde = celle de Date en JS, pour des curseurs exacts.
     createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 }).notNull(),

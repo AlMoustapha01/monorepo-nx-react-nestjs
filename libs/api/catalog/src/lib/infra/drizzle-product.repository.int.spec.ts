@@ -77,6 +77,34 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     expect(await context.runAs(tenantA, () => repository.findById(forged.id))).not.toBeNull();
   });
 
+  it('ajuste les ventes de façon atomique, sans que update les écrase', () =>
+    context.runAs(tenantA, async () => {
+      const product = newProduct(tenantA.tenantId, 'SOLD');
+      await repository.insert(product);
+
+      await Promise.all([
+        repository.adjustSoldCounts([{ productId: product.id, delta: 2 }]),
+        repository.adjustSoldCounts([{ productId: product.id, delta: 3 }]),
+      ]);
+      // L'entité en mémoire a encore soldCount = 0 : update ne doit pas l'écrire.
+      product.publish(new Date());
+      await repository.update(product);
+      await repository.adjustSoldCounts([{ productId: product.id, delta: -10 }]);
+      await repository.adjustSoldCounts([{ productId: product.id, delta: 4 }]);
+
+      expect((await repository.findById(product.id))?.soldCount).toBe(4);
+    }));
+
+  it('n’ajuste pas les ventes d’un produit d’un autre tenant', async () => {
+    const foreign = newProduct(tenantB.tenantId, 'SOLD-FOREIGN');
+    await context.runAs(tenantB, () => repository.insert(foreign));
+    await context.runAs(tenantA, () =>
+      repository.adjustSoldCounts([{ productId: foreign.id, delta: 5 }]),
+    );
+    const untouched = await context.runAs(tenantB, () => repository.findById(foreign.id));
+    expect(untouched?.soldCount).toBe(0);
+  });
+
   it('traduit la contrainte d’unicité SKU en erreur métier', () =>
     context.runAs(tenantA, async () => {
       await repository.insert(newProduct(tenantA.tenantId, 'DUP'));

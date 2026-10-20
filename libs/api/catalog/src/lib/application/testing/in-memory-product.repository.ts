@@ -1,6 +1,10 @@
 import type { KeysetCursor, RequestContext } from '@nx-react-nestjs/api-core';
 import { Product } from '../../domain/product';
-import { ProductRepository, type ProductListPage } from '../product.repository';
+import {
+  type ProductListPage,
+  ProductRepository,
+  type SoldCountChange,
+} from '../product.repository';
 
 /** Fake fidèle au contrat du port (tenant implicite, tri keyset), pour tester l'application sans base. */
 export class InMemoryProductRepository extends ProductRepository {
@@ -34,8 +38,22 @@ export class InMemoryProductRepository extends ProductRepository {
   }
 
   async update(product: Product): Promise<void> {
-    if (this.rows.get(product.id)?.tenantId === this.context.tenantId) {
-      this.rows.set(product.id, clone(product, this.context.tenantId));
+    const stored = this.rows.get(product.id);
+    if (stored?.tenantId === this.context.tenantId) {
+      // Comme en base : `update` ne touche pas au compteur de ventes.
+      this.rows.set(product.id, clone(product, stored.tenantId, stored.soldCount));
+    }
+  }
+
+  async adjustSoldCounts(changes: readonly SoldCountChange[]): Promise<void> {
+    for (const { productId, delta } of changes) {
+      const product = this.rows.get(productId);
+      if (product?.tenantId === this.context.tenantId) {
+        this.rows.set(
+          productId,
+          clone(product, product.tenantId, Math.max(product.soldCount + delta, 0)),
+        );
+      }
     }
   }
 
@@ -53,7 +71,7 @@ function compareKeyset(a: KeysetCursor, b: KeysetCursor): number {
 }
 
 /** Copie pour que les tests ne voient pas de mutation non persistée. */
-function clone(product: Product, tenantId: string): Product {
+function clone(product: Product, tenantId: string, soldCount = product.soldCount): Product {
   return Product.restore({
     id: product.id,
     tenantId,
@@ -62,6 +80,7 @@ function clone(product: Product, tenantId: string): Product {
     description: product.description,
     price: product.price,
     status: product.status,
+    soldCount,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   });

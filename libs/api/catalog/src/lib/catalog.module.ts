@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CatalogFacade } from './application/catalog.facade';
 import { ProductRepository } from './application/product.repository';
+import { RecordSales, RevertSales } from './application/sales.handlers';
 import { CreateProduct } from './application/use-cases/create-product';
 import { GetProduct } from './application/use-cases/get-product';
 import { ListProducts } from './application/use-cases/list-products';
@@ -23,6 +24,8 @@ import { DrizzleProductRepository } from './infra/drizzle-product.repository';
     PublishProduct,
     ArchiveProduct,
     CatalogFacade,
+    RecordSales,
+    RevertSales,
   ],
   exports: [CatalogFacade],
 })

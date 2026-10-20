@@ -14,6 +14,7 @@ export class ProductMapper extends PersistenceMapper<Product, ProductRow> {
       description: row.description,
       price: Money.of(row.priceAmountMinor, currencySchema.parse(row.priceCurrency)),
       status: row.status,
+      soldCount: row.soldCount,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -29,6 +30,7 @@ export class ProductMapper extends PersistenceMapper<Product, ProductRow> {
       priceAmountMinor: product.price.amountMinor,
       priceCurrency: product.price.currency,
       status: product.status,
+      soldCount: product.soldCount,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };

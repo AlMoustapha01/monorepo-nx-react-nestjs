@@ -1,6 +1,12 @@
 import type { KeysetCursor } from '@nx-react-nestjs/api-core';
 import type { Product } from '../domain/product';
 
+/** Variation des ventes d'un produit (négative pour une annulation). */
+export interface SoldCountChange {
+  productId: string;
+  delta: number;
+}
+
 export interface ProductListPage {
   items: Product[];
   hasMore: boolean;
@@ -17,5 +23,8 @@ export abstract class ProductRepository {
   /** Trié par (createdAt DESC, id DESC). */
   abstract list(page: { limit: number; after?: KeysetCursor }): Promise<ProductListPage>;
   abstract insert(product: Product): Promise<void>;
+  /** Ne touche pas à `soldCount`, mis à jour uniquement par `adjustSoldCounts`. */
   abstract update(product: Product): Promise<void>;
+  /** Incrément atomique en base : pas de perte de mise à jour entre ventes concurrentes. */
+  abstract adjustSoldCounts(changes: readonly SoldCountChange[]): Promise<void>;
 }

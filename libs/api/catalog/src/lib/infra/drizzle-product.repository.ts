@@ -6,7 +6,11 @@ import {
   RequestContext,
 } from '@nx-react-nestjs/api-core';
 import { and, desc, eq, inArray, type SQL, sql } from 'drizzle-orm';
-import { ProductRepository, type ProductListPage } from '../application/product.repository';
+import {
+  type ProductListPage,
+  ProductRepository,
+  type SoldCountChange,
+} from '../application/product.repository';
 import { skuAlreadyExists } from '../application/use-cases/create-product';
 import type { Product } from '../domain/product';
 import { PRODUCTS_TENANT_SKU_KEY, products } from './catalog.schema';
@@ -77,12 +81,23 @@ export class DrizzleProductRepository extends ProductRepository {
       id,
       tenantId: _tenantId,
       createdAt: _createdAt,
+      soldCount: _soldCount,
       ...changes
     } = this.mapper.toRow(product);
     await this.session.db
       .update(products)
       .set(changes)
       .where(and(this.tenantScope(), eq(products.id, id)));
+  }
+
+  async adjustSoldCounts(changes: readonly SoldCountChange[]): Promise<void> {
+    for (const { productId, delta } of changes) {
+      await this.session.db
+        .update(products)
+        // Jamais négatif, même si une annulation arrive avant la vente qu'elle compense.
+        .set({ soldCount: sql`greatest(${products.soldCount} + ${delta}, 0)` })
+        .where(and(this.tenantScope(), eq(products.id, productId)));
+    }
   }
 
   private async findOne(condition: SQL): Promise<Product | null> {

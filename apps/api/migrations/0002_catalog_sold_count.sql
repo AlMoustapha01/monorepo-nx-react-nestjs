@@ -1,0 +1,1 @@
+ALTER TABLE "catalog"."products" ADD COLUMN "sold_count" integer DEFAULT 0 NOT NULL;

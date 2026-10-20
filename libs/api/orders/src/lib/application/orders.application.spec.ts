@@ -6,7 +6,7 @@ import {
   InlineTransactionManager,
   RecordingOutbox,
 } from '@nx-react-nestjs/api-core/testing';
-import { OrderPlaced } from '@nx-react-nestjs/contracts';
+import { OrderCancelled, OrderPlaced } from '@nx-react-nestjs/contracts';
 import { FakeProductCatalog } from './testing/fake-product-catalog';
 import { InMemoryOrderRepository } from './testing/in-memory-order.repository';
 import { CancelOrder } from './use-cases/cancel-order';
@@ -24,13 +24,14 @@ function setup() {
   const catalog = new FakeProductCatalog();
   const getOrder = new GetOrder(orders);
   const outbox = new RecordingOutbox();
+  const transactions = new InlineTransactionManager();
   return {
     catalog,
     outbox,
-    placeOrder: new PlaceOrder(orders, catalog, context, new InlineTransactionManager(), outbox),
+    placeOrder: new PlaceOrder(orders, catalog, context, transactions, outbox),
     getOrder,
     listOrders: new ListOrders(orders),
-    cancelOrder: new CancelOrder(getOrder, orders),
+    cancelOrder: new CancelOrder(getOrder, orders, transactions, outbox),
   };
 }
 
@@ -96,6 +97,20 @@ describe('commandes (couche application)', () => {
         placeOrder.execute({ lines: [{ productId: newProductId(), quantity: 1 }] }),
       ).rejects.toMatchObject({ code: 'PRODUCT_UNAVAILABLE' });
       expect(outbox.published).toEqual([]);
+    }));
+
+  it('publie OrderCancelled une seule fois, même si l’annulation est répétée', () =>
+    context.runAs(tenantA, async () => {
+      const { catalog, placeOrder, cancelOrder, outbox } = setup();
+      const tee = catalog.add(product());
+      const { id } = await placeOrder.execute({ lines: [{ productId: tee.id, quantity: 3 }] });
+
+      await cancelOrder.execute(id);
+      await cancelOrder.execute(id);
+
+      expect(outbox.ofType(OrderCancelled)).toEqual([
+        expect.objectContaining({ orderId: id, lines: [{ productId: tee.id, quantity: 3 }] }),
+      ]);
     }));
 
   it('fige le prix : un changement au catalogue ne modifie pas la commande', () =>

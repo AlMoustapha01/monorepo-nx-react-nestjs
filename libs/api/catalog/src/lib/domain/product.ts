@@ -10,6 +10,8 @@ export interface ProductProps {
   description: string | null;
   price: Money;
   status: ProductStatus;
+  /** Projection alimentée par les événements de commande, jamais modifiée par l'entité. */
+  soldCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,7 +34,7 @@ export class Product {
   private constructor(private props: ProductProps) {}
 
   static create({ now, ...input }: NewProduct): Product {
-    return new Product({ ...input, status: 'draft', createdAt: now, updatedAt: now });
+    return new Product({ ...input, status: 'draft', soldCount: 0, createdAt: now, updatedAt: now });
   }
 
   /** Reconstruit un produit depuis la persistance, sans rejouer les règles de création. */
@@ -66,6 +68,10 @@ export class Product {
 
   get status(): ProductStatus {
     return this.props.status;
+  }
+
+  get soldCount(): number {
+    return this.props.soldCount;
   }
 
   get createdAt(): Date {

@@ -94,6 +94,7 @@ function toResponse(product: Product): ProductResponse {
     description: product.description,
     price: { amountMinor: product.price.amountMinor, currency: product.price.currency },
     status: product.status,
+    soldCount: product.soldCount,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

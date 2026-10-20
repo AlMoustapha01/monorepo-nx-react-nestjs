@@ -3,6 +3,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { configureApp } from '@nx-react-nestjs/api-core';
 import {
+  eventually,
   signTestToken,
   startTestDatabase,
   startTestRedis,
@@ -82,6 +83,30 @@ describe('API commandes (e2e)', () => {
       .auth(token, { type: 'bearer' })
       .expect(200)
       .expect(({ body }) => expect(body.status).toBe('cancelled'));
+  });
+
+  it('met à jour les ventes du catalogue de façon asynchrone, annulation comprise', async () => {
+    const tee = await catalogProduct('ORD-SOLD', 1000);
+    const soldCount = async () =>
+      (
+        await api()
+          .get(`/api/v1/catalog/products/${tee}`)
+          .auth(token, { type: 'bearer' })
+          .expect(200)
+      ).body.soldCount;
+
+    const { body } = await placeOrder([{ productId: tee, quantity: 2 }]).expect(201);
+    await placeOrder([{ productId: tee, quantity: 3 }]).expect(201);
+    await eventually(async () => expect(await soldCount()).toBe(5));
+
+    // Annuler deux fois ne retire les ventes qu'une fois : 5 - 2, et non 5 - 4.
+    const cancel = () =>
+      api().post(`/api/v1/orders/${body.id}/cancel`).auth(token, { type: 'bearer' }).expect(200);
+    await cancel();
+    await cancel();
+    await eventually(async () => expect(await soldCount()).toBe(3));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(await soldCount()).toBe(3);
   });
 
   it('fige le prix payé malgré un changement au catalogue', async () => {

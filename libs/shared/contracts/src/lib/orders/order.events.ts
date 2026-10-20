@@ -28,3 +28,13 @@ export const OrderPlaced = defineIntegrationEvent(
     placedAt: z.iso.datetime(),
   }),
 );
+
+/** Publié une seule fois, quand une commande passe de « placed » à « cancelled ». */
+export const OrderCancelled = defineIntegrationEvent(
+  'orders.order-cancelled.v1',
+  z.object({
+    orderId: orderIdSchema,
+    lines: z.array(z.object({ productId: productIdSchema, quantity: z.number().int().positive() })),
+    cancelledAt: z.iso.datetime(),
+  }),
+);
