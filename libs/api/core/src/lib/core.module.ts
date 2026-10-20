@@ -38,6 +38,9 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
           genReqId: (req) => getRequestId(req),
           redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
           autoLogging: { ignore: (req) => UNLOGGED_PATHS.has(req.url ?? '') },
+          // Le filtre ne journalise que les 5xx : les 4xx restent visibles ici, en warn.
+          customLogLevel: (_req, res, error) =>
+            error || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
           ...(config.get('NODE_ENV') === 'development' && {
             transport: { target: 'pino-pretty', options: { singleLine: true } },
           }),

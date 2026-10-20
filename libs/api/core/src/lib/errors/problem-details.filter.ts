@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { STATUS_CODES } from 'node:http';
 import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { z } from 'zod';
@@ -33,6 +34,11 @@ const STATUS_BY_KIND: Record<ErrorKind, HttpStatus> = {
   INTERNAL: HttpStatus.INTERNAL_SERVER_ERROR,
 };
 
+/** Aligne les codes des HttpException de Nest sur ceux d'`AppError`, pour un seul code par situation. */
+const CODE_BY_STATUS: Partial<Record<number, string>> = {
+  [HttpStatus.UNAUTHORIZED]: 'UNAUTHENTICATED',
+};
+
 const INTERNAL_DETAIL = 'An unexpected error occurred.';
 
 /** Seul endroit où une erreur devient une réponse HTTP. */
@@ -53,7 +59,8 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     response
       .status(problem.status)
       .type('application/problem+json')
-      .json({ ...problem, instance: request.originalUrl });
+      // Chemin seul : la query string peut porter un secret (token de lien magique…).
+      .json({ ...problem, instance: request.originalUrl.split('?', 1)[0] });
   }
 }
 
@@ -86,7 +93,7 @@ export function toProblem(exception: unknown): ProblemDetails {
   if (exception instanceof HttpException) {
     const status = exception.getStatus();
     return {
-      ...base(status, HttpStatus[status] ?? 'HTTP_ERROR'),
+      ...base(status, CODE_BY_STATUS[status] ?? HttpStatus[status] ?? 'HTTP_ERROR'),
       detail: status >= 500 ? INTERNAL_DETAIL : exception.message,
     };
   }
@@ -97,7 +104,7 @@ export function toProblem(exception: unknown): ProblemDetails {
 function base(status: number, code: string) {
   return {
     type: `urn:problem-type:${code.toLowerCase().replaceAll('_', '-')}`,
-    title: HttpStatus[status]?.replaceAll('_', ' ').toLowerCase() ?? 'error',
+    title: STATUS_CODES[status] ?? 'Error',
     status,
     code,
   };

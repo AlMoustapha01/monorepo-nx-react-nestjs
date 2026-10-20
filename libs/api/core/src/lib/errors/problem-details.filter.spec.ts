@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ZodValidationException } from 'nestjs-zod';
 import { z } from 'zod';
 import { AppError, CoreError } from './app-error';
@@ -14,7 +14,7 @@ describe('toProblem', () => {
   it('convertit une erreur de domaine selon sa catégorie', () => {
     expect(toProblem(new StockError())).toEqual({
       type: 'urn:problem-type:out-of-stock',
-      title: 'unprocessable entity',
+      title: 'Unprocessable Entity',
       status: 422,
       code: 'OUT_OF_STOCK',
       detail: 'Not enough stock',
@@ -37,6 +37,12 @@ describe('toProblem', () => {
 
   it('garde le statut des HttpException de Nest', () => {
     expect(toProblem(new NotFoundException())).toMatchObject({ status: 404, code: 'NOT_FOUND' });
+  });
+
+  it('donne le même code à un 401 de Nest qu’à un CoreError UNAUTHENTICATED', () => {
+    expect(toProblem(new UnauthorizedException()).code).toBe(
+      toProblem(new CoreError('UNAUTHENTICATED', 'Missing token')).code,
+    );
   });
 
   it('transforme toute erreur inconnue en 500 générique', () => {

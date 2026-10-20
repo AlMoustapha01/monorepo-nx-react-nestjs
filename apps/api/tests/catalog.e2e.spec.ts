@@ -53,10 +53,11 @@ describe('API catalogue (e2e)', () => {
   });
 
   it('refuse par défaut une requête sans token, au format RFC 9457', async () => {
-    const response = await api().get('/api/v1/catalog/products').expect(401);
+    const response = await api().get('/api/v1/catalog/products?cursor=secret').expect(401);
     expect(response.headers['content-type']).toContain('application/problem+json');
     expect(response.body).toMatchObject({
       status: 401,
+      title: 'Unauthorized',
       code: 'UNAUTHENTICATED',
       instance: '/api/v1/catalog/products',
     });
