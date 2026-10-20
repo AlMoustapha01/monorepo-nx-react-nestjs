@@ -6,17 +6,9 @@
     "libs/*/*/src/index.ts",
     "libs/api/core/src/testing.ts",
     "libs/api/*/src/lib/infra/*.schema.ts",
-    "libs/api/core/src/lib/**/*.schema.ts"
+    "libs/api/core/src/lib/**/*.schema.ts",
+    "tools/dev/{token,seed}.mts"
   ],
-  "project": [
-    "apps/api/**/*.ts",
-    "libs/**/*.ts"
-  ],
-  "ignoreDependencies": [
-    "pino-pretty",
-    "@nestjs/schematics",
-    "@nx/.*",
-    "@swc/helpers",
-    "ts-node"
-  ]
+  "project": ["apps/api/**/*.ts", "libs/**/*.ts", "tools/**/*.mts"],
+  "ignoreDependencies": ["pino-pretty", "@nestjs/schematics", "@nx/.*", "@swc/helpers", "ts-node"]
 }

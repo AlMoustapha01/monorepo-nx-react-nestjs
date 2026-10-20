@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Un nouveau push sur une PR annule la vérification précédente, devenue inutile.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  # nx-set-shas lit les runs précédents pour trouver le dernier commit vert de main.
+  actions: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      # Actions épinglées par SHA : un tag peut être déplacé, un commit non.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # nx affected compare avec la base : il faut l'historique.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Version de pnpm lue dans package.json (packageManager).
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
+
+      - name: Format
+        run: pnpm format:check
+
+      # Les tests d'intégration et e2e démarrent Postgres, Redis et Mailpit via Testcontainers
+      # (Docker est disponible sur les runners Ubuntu).
+      - name: Lint, types, tests, build (projets affectés)
+        run: pnpm nx affected -t lint typecheck test build --parallel=3
+
+      - name: Scripts de dev
+        run: pnpm typecheck:tools
+
+      - name: Code mort et dépendances inutilisées
+        run: pnpm knip

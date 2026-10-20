@@ -4,19 +4,22 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 ## Commandes
 
-| Besoin | Commande |
-| --- | --- |
-| Infra locale (Postgres, Redis, Mailpit) | `docker compose up -d` |
-| Variables d'env | `cp .env.example .env` |
-| Appliquer les migrations | `pnpm nx run api:db-migrate` |
-| Générer une migration après un changement de schéma | `pnpm nx run api:db-generate --name=<sujet>` |
-| Lancer l'API | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs` |
-| Tout vérifier (lint, types, tests, code mort) | `pnpm check` |
-| Seulement ce qui a changé | `pnpm nx affected -t lint typecheck test` |
-| Formater | `pnpm format` |
-| Voir les emails envoyés en local | http://localhost:8025 (Mailpit) |
+| Besoin                                                               | Commande                                                                    |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Première installation : `.env`, Postgres, Redis, Mailpit, migrations | `pnpm install && pnpm dev:setup`                                            |
+| Lancer l'API                                                         | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs` |
+| Données de démo (API démarrée)                                       | `pnpm dev:seed`                                                             |
+| Token pour appeler l'API (Swagger, curl)                             | `pnpm -s dev:token` (`--new-tenant`, `--no-email`, `--expires 1h`)          |
+| Voir les emails envoyés en local                                     | http://localhost:8025 (Mailpit)                                             |
+| Appliquer les migrations                                             | `pnpm nx run api:db-migrate`                                                |
+| Générer une migration après un changement de schéma                  | `pnpm nx run api:db-generate --name=<sujet>`                                |
+| Tout vérifier, comme la CI (format, lint, types, tests, code mort)   | `pnpm check`                                                                |
+| Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                   |
+| Formater                                                             | `pnpm format`                                                               |
 
 Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
+
+La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage des scripts de `tools/dev`, puis knip. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.
 
 ## Structure
 
