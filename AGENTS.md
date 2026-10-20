@@ -6,7 +6,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 | Besoin | Commande |
 | --- | --- |
-| Infra locale (Postgres, Redis) | `docker compose up -d` |
+| Infra locale (Postgres, Redis, Mailpit) | `docker compose up -d` |
 | Variables d'env | `cp .env.example .env` |
 | Appliquer les migrations | `pnpm nx run api:db-migrate` |
 | Générer une migration après un changement de schéma | `pnpm nx run api:db-generate --name=<sujet>` |
@@ -14,14 +14,15 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Tout vérifier (lint, types, tests, code mort) | `pnpm check` |
 | Seulement ce qui a changé | `pnpm nx affected -t lint typecheck test` |
 | Formater | `pnpm format` |
+| Voir les emails envoyés en local | http://localhost:8025 (Mailpit) |
 
-Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent un Postgres via Testcontainers : Docker doit tourner.
+Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
 
 ## Structure
 
 ```
 apps/api/                   bootstrap uniquement : main.ts, AppModule, migrations/
-libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, logs, health
+libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + BullMQ, logs, health
 libs/api/<domaine>/         un domaine métier = une lib Nx
   src/index.ts              FAÇADE : seul point d'entrée public
   src/lib/domain/           entités et règles, TypeScript pur
@@ -31,7 +32,7 @@ libs/api/<domaine>/         un domaine métier = une lib Nx
 libs/shared/contracts/      schémas zod partagés entre front et API
 ```
 
-Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple) et `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade).
+Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de ventes alimenté par événements), `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade, publication d'événements) et `libs/api/notifications` (domaine purement réactif : aucun controller, seulement des handlers).
 
 ## Règles de frontières
 
@@ -41,6 +42,18 @@ Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple) et `libs/api
 - `index.ts` d'un domaine : exports nommés uniquement, jamais `export *`. N'y exposer que le module Nest, la façade et des types de contrat (snapshots), jamais une entité ni un repository (vérifié en revue).
 - `domain/` n'importe ni NestJS, ni Drizzle, ni `pg` (lint, `no-restricted-imports` du `.oxlintrc.json` de chaque domaine).
 - Chaque domaine possède son schéma Postgres (`pgSchema('<domaine>')`). Pas de jointure ni de clé étrangère vers les tables d'un autre domaine : passer par sa façade ou ne garder qu'un ID.
+
+## Événements d'intégration (outbox + BullMQ)
+
+Les façades servent aux lectures et commandes synchrones entre domaines ; les événements servent aux réactions asynchrones. Un domaine qui réagit ne dépend que du contrat de l'événement, jamais du domaine émetteur (le catalogue écoute les commandes alors que les commandes dépendent du catalogue).
+
+- **Déclarer** : `defineIntegrationEvent('<domaine>.<fait-au-passé>.v1', schemaZod)` dans `libs/shared/contracts/src/lib/<domaine>/*.events.ts`. Une version publiée ne change plus : on crée `v2`. Le payload porte tout ce dont les consommateurs ont besoin.
+- **Publier** : dans le cas d'usage, `transactions.transaction(async () => { await repo.insert(x); await outbox.publish(Event, payload); })`. L'outbox refuse de publier hors transaction : l'événement et l'écriture métier sont atomiques.
+- **Consommer** : un provider `@OnIntegrationEvent(Event, { name: '<domaine>.<action>' })` qui implémente `IntegrationEventHandler`, déclaré dans le module du domaine. Le `name` est stable (clé d'idempotence et ID de job).
+- **Garanties** : livraison au moins une fois. Le worker exécute le handler dans une transaction avec sa marque d'idempotence : un effet en base n'a lieu qu'une fois. Un effet externe (email, API) peut être rejoué : utiliser `event.id` comme clé d'idempotence chez le fournisseur.
+- **Contexte** : le handler s'exécute au nom du tenant et de l'auteur de l'événement (`RequestContext`) ; les repositories restent filtrés par tenant sans rien changer.
+- **Exploitation** : 10 tentatives avec backoff exponentiel ; un payload invalide échoue sans retry. Rétention : outbox 7 jours, marques d'idempotence 30 jours, jobs Redis 24 h (succès) et 7 jours (échecs). `JOBS_ENABLED=false` donne un process API sans relais ni worker.
+- **Tests** : `RecordingOutbox` et `InlineTransactionManager` (`api-core/testing`) pour les cas d'usage ; `eventually()` pour attendre un traitement asynchrone en e2e.
 
 ## Principes non négociables
 
@@ -66,4 +79,6 @@ Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple) et `libs/api
 - `@nestjs/swagger` reste en v11 tant que NestJS est en v11 (la v12 exige NestJS 12).
 - Node 24 LTS est requis (`.nvmrc`, `engines`) : `nvm use` à l'entrée du repo. pnpm est épinglé via `packageManager` (corepack).
 - `jose` v6 est en ESM uniquement, chargé par `require` (natif et sans avertissement depuis Node 24).
+- BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
+- nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).
 - Une classe de base abstraite injectée par héritage doit porter `@Injectable()`, sinon Nest ne voit pas les dépendances de son constructeur.
