@@ -1,3 +1,7 @@
 {
-  "recommendations": ["nrwl.angular-console", "oxc.oxc-vscode"]
+  "recommendations": [
+    "nrwl.angular-console",
+    "oxc.oxc-vscode",
+    "vitest.explorer"
+  ]
 }

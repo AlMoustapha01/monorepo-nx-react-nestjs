@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "jsPlugins": ["@nx/eslint-plugin"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "@nx/enforce-module-boundaries": ["error", {
+          "depConstraints": [
+            { "sourceTag": "scope:web",    "onlyDependOnLibsWithTags": ["scope:web", "scope:shared"] },
+            { "sourceTag": "scope:api",    "onlyDependOnLibsWithTags": ["scope:api", "scope:shared"] },
+            { "sourceTag": "scope:shared", "onlyDependOnLibsWithTags": ["scope:shared"] }
+          ]
+    }]
+  },
+  "env": {
+    "builtin": true
+  }
+}
