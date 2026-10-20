@@ -8,5 +8,6 @@ export { Public } from './lib/auth/public.decorator';
 export { type Database, InjectDatabase } from './lib/database/database.module';
 export { isUniqueViolation } from './lib/database/pg-errors';
 export { PersistenceMapper } from './lib/database/persistence-mapper';
+export { domainIdGenerator } from './lib/ids/domain-id';
 export { type KeysetCursor, decodeCursor, encodeCursor } from './lib/http/cursor';
 export { configureApp } from './lib/http/configure-app';

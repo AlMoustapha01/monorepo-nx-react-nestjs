@@ -4,6 +4,7 @@ import {
   type CursorPage,
   cursorPageQuerySchema,
   type OrderResponse,
+  orderIdSchema,
   orderPageSchema,
   orderSchema,
   placeOrderSchema,
@@ -18,7 +19,7 @@ import { PlaceOrder } from '../application/use-cases/place-order';
 
 class PlaceOrderDto extends createZodDto(placeOrderSchema) {}
 class ListOrdersQueryDto extends createZodDto(cursorPageQuerySchema) {}
-class OrderIdParamsDto extends createZodDto(z.object({ id: z.uuid() })) {}
+class OrderIdParamsDto extends createZodDto(z.object({ id: orderIdSchema })) {}
 class OrderDto extends createZodDto(orderSchema) {}
 class OrderPageDto extends createZodDto(orderPageSchema) {}
 

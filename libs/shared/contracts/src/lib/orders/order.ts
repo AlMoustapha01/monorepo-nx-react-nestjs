@@ -1,6 +1,10 @@
 import { z } from 'zod';
-import { moneySchema } from '../catalog/product';
+import { moneySchema, productIdSchema } from '../catalog/product';
+import { domainIdSchema } from '../domain-id';
 import { cursorPageSchema } from '../pagination';
+
+export const ORDER_ID_PREFIX = 'ORD';
+export const orderIdSchema = domainIdSchema(ORDER_ID_PREFIX);
 
 export const MAX_ORDER_LINES = 50;
 export const MAX_LINE_QUANTITY = 99;
@@ -12,7 +16,7 @@ export const placeOrderSchema = z.object({
   lines: z
     .array(
       z.object({
-        productId: z.uuid(),
+        productId: productIdSchema,
         quantity: z.number().int().min(1).max(MAX_LINE_QUANTITY),
       }),
     )
@@ -22,7 +26,7 @@ export const placeOrderSchema = z.object({
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
 
 export const orderLineSchema = z.object({
-  productId: z.uuid(),
+  productId: productIdSchema,
   sku: z.string(),
   name: z.string(),
   unitPrice: moneySchema,
@@ -31,7 +35,8 @@ export const orderLineSchema = z.object({
 });
 
 export const orderSchema = z.object({
-  id: z.uuid(),
+  id: orderIdSchema,
+  // Identifiant du fournisseur d'identité (claim `sub`), pas un ID métier.
   customerId: z.uuid(),
   status: orderStatusSchema,
   lines: z.array(orderLineSchema),

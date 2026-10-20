@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { ProductSnapshot } from '@nx-react-nestjs/api-catalog';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import { createTestRequestContext } from '@nx-react-nestjs/api-core/testing';
 import { FakeProductCatalog } from './testing/fake-product-catalog';
 import { InMemoryOrderRepository } from './testing/in-memory-order.repository';
@@ -8,6 +9,7 @@ import { GetOrder } from './use-cases/get-order';
 import { ListOrders } from './use-cases/list-orders';
 import { PlaceOrder } from './use-cases/place-order';
 
+const newProductId = domainIdGenerator('PRD');
 const context = createTestRequestContext();
 const tenantA = { userId: randomUUID(), tenantId: randomUUID() };
 const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
@@ -26,7 +28,7 @@ function setup() {
 }
 
 const product = (overrides: Partial<ProductSnapshot> = {}): ProductSnapshot => ({
-  id: randomUUID(),
+  id: newProductId(),
   sku: 'TEE-01',
   name: 'Tee-shirt',
   price: { amountMinor: 1990, currency: 'EUR' },
@@ -76,7 +78,7 @@ describe('commandes (couche application)', () => {
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder } = setup();
       const draft = catalog.add(product({ purchasable: false }));
-      const unknownId = randomUUID();
+      const unknownId = newProductId();
 
       await expect(
         placeOrder.execute({

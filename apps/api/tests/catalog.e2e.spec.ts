@@ -71,6 +71,7 @@ describe('API catalogue (e2e)', () => {
   it('crée, publie et relit un produit', async () => {
     const created = await createProduct(tokenA, ' tee-blanc-m ').expect(201);
     expect(created.body).toMatchObject({ sku: 'TEE-BLANC-M', status: 'draft' });
+    expect(created.body.id).toMatch(/^PRD-[0-9a-z]{20}$/);
 
     const id: string = created.body.id;
     await api()
@@ -114,6 +115,16 @@ describe('API catalogue (e2e)', () => {
       .auth(tokenA, { type: 'bearer' })
       .expect(422)
       .expect(({ body }) => expect(body.code).toBe('PRODUCT_NOT_PUBLISHABLE'));
+  });
+
+  it('refuse un ID qui n’est pas un PRD-…, avant tout accès en base', async () => {
+    for (const id of [randomUUID(), 'ORD-01jb4x7k2m9qwfzp3hd8']) {
+      await api()
+        .get(`/api/v1/catalog/products/${id}`)
+        .auth(tokenA, { type: 'bearer' })
+        .expect(400)
+        .expect(({ body }) => expect(body.code).toBe('VALIDATION_FAILED'));
+    }
   });
 
   it('isole les tenants : 404 sur le produit d’un autre tenant', async () => {

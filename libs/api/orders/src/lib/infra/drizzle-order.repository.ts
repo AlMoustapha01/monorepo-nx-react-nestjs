@@ -39,7 +39,7 @@ export class DrizzleOrderRepository extends OrderRepository {
         and(
           this.tenantScope(),
           after &&
-            sql`(${orders.createdAt}, ${orders.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id}::uuid)`,
+            sql`(${orders.createdAt}, ${orders.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id})`,
         ),
       )
       .orderBy(desc(orders.createdAt), desc(orders.id))

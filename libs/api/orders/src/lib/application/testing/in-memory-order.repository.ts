@@ -40,7 +40,8 @@ export class InMemoryOrderRepository extends OrderRepository {
 }
 
 function compareKeyset(a: KeysetCursor, b: KeysetCursor): number {
-  return a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id);
+  // Comparaison par octets, comme les colonnes d'ID en COLLATE "C".
+  return a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /** Copie pour que les tests ne voient pas de mutation non persistée. */

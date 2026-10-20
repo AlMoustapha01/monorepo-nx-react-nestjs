@@ -2,6 +2,7 @@
 import {
   bigint,
   char,
+  customType,
   foreignKey,
   index,
   integer,
@@ -12,6 +13,9 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
+/** ID métier `PRD-…` / `ORD-…`, comparé octet par octet pour un tri stable quelle que soit la locale. */
+const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C"' });
+
 /** Le domaine commandes possède son schéma Postgres ; aucun autre domaine n'y fait de jointure. */
 export const ordersSchema = pgSchema('orders');
 
@@ -20,7 +24,7 @@ export const orderStatus = ordersSchema.enum('order_status', ['placed', 'cancell
 export const orders = ordersSchema.table(
   'orders',
   {
-    id: uuid('id').primaryKey(),
+    id: domainId('id').primaryKey(),
     tenantId: uuid('tenant_id').notNull(),
     customerId: uuid('customer_id').notNull(),
     currency: char('currency', { length: 3 }).notNull(),
@@ -37,11 +41,11 @@ export const orders = ordersSchema.table(
 export const orderLines = ordersSchema.table(
   'order_lines',
   {
-    orderId: uuid('order_id').notNull(),
+    orderId: domainId('order_id').notNull(),
     tenantId: uuid('tenant_id').notNull(),
     position: integer('position').notNull(),
     // Simple ID : pas de clé étrangère vers catalog.products, l'autre domaine reste maître chez lui.
-    productId: uuid('product_id').notNull(),
+    productId: domainId('product_id').notNull(),
     sku: varchar('sku', { length: 64 }).notNull(),
     name: varchar('name', { length: 200 }).notNull(),
     unitPriceAmountMinor: bigint('unit_price_amount_minor', { mode: 'number' }).notNull(),

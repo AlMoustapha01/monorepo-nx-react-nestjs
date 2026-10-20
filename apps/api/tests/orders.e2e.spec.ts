@@ -63,6 +63,7 @@ describe('API commandes (e2e)', () => {
       { productId: tee, quantity: 2 },
       { productId: mug, quantity: 1 },
     ]).expect(201);
+    expect(placed.body.id).toMatch(/^ORD-[0-9a-z]{20}$/);
     expect(placed.body).toMatchObject({
       customerId: customer.userId,
       status: 'placed',

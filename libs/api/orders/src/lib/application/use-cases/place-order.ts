@@ -1,11 +1,12 @@
-import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { RequestContext } from '@nx-react-nestjs/api-core';
-import type { PlaceOrderInput } from '@nx-react-nestjs/contracts';
+import { domainIdGenerator, RequestContext } from '@nx-react-nestjs/api-core';
+import { ORDER_ID_PREFIX, type PlaceOrderInput } from '@nx-react-nestjs/contracts';
 import { Order, type OrderLine } from '../../domain/order';
 import { OrdersError } from '../../domain/orders.errors';
 import { OrderRepository } from '../order.repository';
 import { ProductCatalog } from '../product-catalog.port';
+
+const newOrderId = domainIdGenerator(ORDER_ID_PREFIX);
 
 @Injectable()
 export class PlaceOrder {
@@ -53,7 +54,7 @@ export class PlaceOrder {
     }
 
     const order = Order.place({
-      id: randomUUID(),
+      id: newOrderId(),
       tenantId: this.context.tenantId,
       customerId: this.context.userId,
       currency,

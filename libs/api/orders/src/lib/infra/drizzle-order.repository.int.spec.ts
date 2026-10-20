@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import {
   createTestRequestContext,
   startTestDatabase,
@@ -6,6 +7,9 @@ import {
 } from '@nx-react-nestjs/api-core/testing';
 import { Order } from '../domain/order';
 import { DrizzleOrderRepository } from './drizzle-order.repository';
+
+const newProductId = domainIdGenerator('PRD');
+const newOrderId = domainIdGenerator('ORD');
 
 describe('DrizzleOrderRepository (Postgres réel)', () => {
   const context = createTestRequestContext();
@@ -23,13 +27,19 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
 
   const newOrder = (tenantId: string, createdAt = new Date()) =>
     Order.place({
-      id: randomUUID(),
+      id: newOrderId(),
       tenantId,
       customerId: randomUUID(),
       currency: 'EUR',
       lines: [
-        { productId: randomUUID(), sku: 'TEE-01', name: 'Tee', unitPriceMinor: 1990, quantity: 2 },
-        { productId: randomUUID(), sku: 'MUG-01', name: 'Mug', unitPriceMinor: 900, quantity: 1 },
+        {
+          productId: newProductId(),
+          sku: 'TEE-01',
+          name: 'Tee',
+          unitPriceMinor: 1990,
+          quantity: 2,
+        },
+        { productId: newProductId(), sku: 'MUG-01', name: 'Mug', unitPriceMinor: 900, quantity: 1 },
       ],
       now: createdAt,
     });

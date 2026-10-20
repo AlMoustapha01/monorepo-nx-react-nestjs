@@ -7,7 +7,7 @@ export interface KeysetCursor {
   id: string;
 }
 
-const cursorSchema = z.tuple([z.iso.datetime(), z.uuid()]);
+const cursorSchema = z.tuple([z.iso.datetime(), z.string().min(1).max(64)]);
 
 export function encodeCursor({ createdAt, id }: KeysetCursor): string {
   return Buffer.from(JSON.stringify([createdAt.toISOString(), id])).toString('base64url');

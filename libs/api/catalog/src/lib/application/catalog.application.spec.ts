@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import { createTestRequestContext } from '@nx-react-nestjs/api-core/testing';
 import type { CreateProductInput } from '@nx-react-nestjs/contracts';
 import { CatalogFacade } from './catalog.facade';
@@ -101,7 +102,7 @@ describe('catalogue (couche application)', () => {
       const { id } = await createProduct.execute(input('TEE-01'));
       await publish.execute(id);
 
-      const snapshots = await facade.getProducts([id, id, randomUUID()]);
+      const snapshots = await facade.getProducts([id, id, domainIdGenerator('PRD')()]);
       expect(snapshots).toEqual([
         {
           id,

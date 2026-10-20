@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import { ZodError } from 'zod';
 import type { ProductRow } from './catalog.schema';
 import { ProductMapper } from './product.mapper';
@@ -6,7 +7,7 @@ import { ProductMapper } from './product.mapper';
 describe('ProductMapper', () => {
   const mapper = new ProductMapper();
   const row: ProductRow = {
-    id: randomUUID(),
+    id: domainIdGenerator('PRD')(),
     tenantId: randomUUID(),
     sku: 'TEE-BLANC-M',
     name: 'Tee-shirt',

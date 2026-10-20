@@ -2,6 +2,7 @@
 import {
   bigint,
   char,
+  customType,
   index,
   pgSchema,
   text,
@@ -10,6 +11,9 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+
+/** ID métier `PRD-…`, comparé octet par octet pour un tri stable quelle que soit la locale. */
+const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C"' });
 
 /** Le domaine catalogue possède son schéma Postgres ; aucun autre domaine n'y fait de jointure. */
 export const catalog = pgSchema('catalog');
@@ -21,7 +25,7 @@ export const PRODUCTS_TENANT_SKU_KEY = 'products_tenant_sku_key';
 export const products = catalog.table(
   'products',
   {
-    id: uuid('id').primaryKey(),
+    id: domainId('id').primaryKey(),
     tenantId: uuid('tenant_id').notNull(),
     sku: varchar('sku', { length: 64 }).notNull(),
     name: varchar('name', { length: 200 }).notNull(),

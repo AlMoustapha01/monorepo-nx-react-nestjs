@@ -5,6 +5,7 @@ import {
   createProductSchema,
   cursorPageQuerySchema,
   type CursorPage,
+  productIdSchema,
   productPageSchema,
   type ProductResponse,
   productSchema,
@@ -24,7 +25,7 @@ import {
 class CreateProductDto extends createZodDto(createProductSchema) {}
 class ChangeProductPriceDto extends createZodDto(changeProductPriceSchema) {}
 class ListProductsQueryDto extends createZodDto(cursorPageQuerySchema) {}
-class ProductIdParamsDto extends createZodDto(z.object({ id: z.uuid() })) {}
+class ProductIdParamsDto extends createZodDto(z.object({ id: productIdSchema })) {}
 class ProductDto extends createZodDto(productSchema) {}
 class ProductPageDto extends createZodDto(productPageSchema) {}
 

@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import { type NewOrder, Order, type OrderLine } from './order';
 
+const newProductId = domainIdGenerator('PRD');
+const newOrderId = domainIdGenerator('ORD');
+
 const line = (overrides: Partial<OrderLine> = {}): OrderLine => ({
-  productId: randomUUID(),
+  productId: newProductId(),
   sku: 'TEE-01',
   name: 'Tee-shirt',
   unitPriceMinor: 1990,
@@ -11,7 +15,7 @@ const line = (overrides: Partial<OrderLine> = {}): OrderLine => ({
 });
 
 const newOrder = (lines: OrderLine[]): NewOrder => ({
-  id: randomUUID(),
+  id: newOrderId(),
   tenantId: randomUUID(),
   customerId: randomUUID(),
   currency: 'EUR',
@@ -33,7 +37,7 @@ describe('Order', () => {
   });
 
   it('refuse deux lignes pour le même produit', () => {
-    const productId = randomUUID();
+    const productId = newProductId();
     expect(() => Order.place(newOrder([line({ productId }), line({ productId })]))).toThrow(
       expect.objectContaining({ code: 'DUPLICATE_ORDER_LINE' }),
     );

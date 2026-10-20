@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { MAX_ORDER_LINES, placeOrderSchema } from './order';
 
 describe('placeOrderSchema', () => {
-  const line = { productId: randomUUID(), quantity: 2 };
+  const line = { productId: 'PRD-01jb4x7k2m9qwfzp3hd8', quantity: 2 };
 
   it('accepte une commande valide', () => {
     expect(placeOrderSchema.safeParse({ lines: [line] }).success).toBe(true);

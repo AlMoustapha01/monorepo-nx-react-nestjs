@@ -51,7 +51,7 @@ export class DrizzleProductRepository extends ProductRepository {
         and(
           this.tenantScope(),
           after &&
-            sql`(${products.createdAt}, ${products.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id}::uuid)`,
+            sql`(${products.createdAt}, ${products.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id})`,
         ),
       )
       .orderBy(desc(products.createdAt), desc(products.id))

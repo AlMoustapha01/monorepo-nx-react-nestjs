@@ -1,16 +1,17 @@
 import { randomUUID } from 'node:crypto';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import { ZodError } from 'zod';
 import { OrderMapper, type OrderRecord } from './order.mapper';
 
 describe('OrderMapper', () => {
   const mapper = new OrderMapper();
-  const orderId = randomUUID();
+  const orderId = domainIdGenerator('ORD')();
   const tenantId = randomUUID();
   const line = (position: number, sku: string) => ({
     orderId,
     tenantId,
     position,
-    productId: randomUUID(),
+    productId: domainIdGenerator('PRD')(),
     sku,
     name: `Product ${sku}`,
     unitPriceAmountMinor: 1990,

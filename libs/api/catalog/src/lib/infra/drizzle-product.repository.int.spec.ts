@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import {
   createTestRequestContext,
   startTestDatabase,
@@ -7,6 +8,8 @@ import {
 import { Money } from '../domain/money';
 import { Product } from '../domain/product';
 import { DrizzleProductRepository } from './drizzle-product.repository';
+
+const newProductId = domainIdGenerator('PRD');
 
 describe('DrizzleProductRepository (Postgres réel)', () => {
   const context = createTestRequestContext();
@@ -24,7 +27,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
 
   const newProduct = (tenantId: string, sku: string, createdAt = new Date()) =>
     Product.create({
-      id: randomUUID(),
+      id: newProductId(),
       tenantId,
       sku,
       name: `Product ${sku}`,

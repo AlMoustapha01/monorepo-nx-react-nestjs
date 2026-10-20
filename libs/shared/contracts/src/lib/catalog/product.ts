@@ -1,5 +1,9 @@
 import { z } from 'zod';
+import { domainIdSchema } from '../domain-id';
 import { cursorPageSchema } from '../pagination';
+
+export const PRODUCT_ID_PREFIX = 'PRD';
+export const productIdSchema = domainIdSchema(PRODUCT_ID_PREFIX);
 
 export const currencySchema = z.enum(['EUR', 'USD', 'XOF']);
 export type Currency = z.infer<typeof currencySchema>;
@@ -34,7 +38,7 @@ export const changeProductPriceSchema = z.object({
 export type ChangeProductPriceInput = z.infer<typeof changeProductPriceSchema>;
 
 export const productSchema = z.object({
-  id: z.uuid(),
+  id: productIdSchema,
   sku: z.string(),
   name: z.string(),
   description: z.string().nullable(),

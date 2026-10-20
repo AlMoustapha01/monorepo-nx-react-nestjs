@@ -1,11 +1,12 @@
-import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { RequestContext } from '@nx-react-nestjs/api-core';
-import type { CreateProductInput } from '@nx-react-nestjs/contracts';
+import { domainIdGenerator, RequestContext } from '@nx-react-nestjs/api-core';
+import { type CreateProductInput, PRODUCT_ID_PREFIX } from '@nx-react-nestjs/contracts';
 import { CatalogError } from '../../domain/catalog.errors';
 import { Money } from '../../domain/money';
 import { Product } from '../../domain/product';
 import { ProductRepository } from '../product.repository';
+
+const newProductId = domainIdGenerator(PRODUCT_ID_PREFIX);
 
 @Injectable()
 export class CreateProduct {
@@ -20,7 +21,7 @@ export class CreateProduct {
     }
 
     const product = Product.create({
-      id: randomUUID(),
+      id: newProductId(),
       tenantId: this.context.tenantId,
       sku: input.sku,
       name: input.name,
