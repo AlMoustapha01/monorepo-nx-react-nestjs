@@ -8,6 +8,7 @@ import { CoreError } from '../errors/app-error';
 const claimsSchema = z.object({
   sub: z.uuid(),
   tenant_id: z.uuid(),
+  email: z.email().optional(),
 });
 
 @Injectable()
@@ -30,7 +31,11 @@ export class JwtVerifier {
         algorithms: ['HS256'],
       });
       const claims = claimsSchema.parse(payload);
-      return { userId: claims.sub, tenantId: claims.tenant_id };
+      return {
+        userId: claims.sub,
+        tenantId: claims.tenant_id,
+        ...(claims.email && { email: claims.email }),
+      };
     } catch {
       throw new CoreError('UNAUTHENTICATED', 'Invalid or expired access token');
     }

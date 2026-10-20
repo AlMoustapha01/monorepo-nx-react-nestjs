@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { ProductSnapshot } from '@nx-react-nestjs/api-catalog';
 import { domainIdGenerator } from '@nx-react-nestjs/api-core';
-import { createTestRequestContext } from '@nx-react-nestjs/api-core/testing';
+import {
+  createTestRequestContext,
+  InlineTransactionManager,
+  RecordingOutbox,
+} from '@nx-react-nestjs/api-core/testing';
+import { OrderPlaced } from '@nx-react-nestjs/contracts';
 import { FakeProductCatalog } from './testing/fake-product-catalog';
 import { InMemoryOrderRepository } from './testing/in-memory-order.repository';
 import { CancelOrder } from './use-cases/cancel-order';
@@ -11,16 +16,18 @@ import { PlaceOrder } from './use-cases/place-order';
 
 const newProductId = domainIdGenerator('PRD');
 const context = createTestRequestContext();
-const tenantA = { userId: randomUUID(), tenantId: randomUUID() };
+const tenantA = { userId: randomUUID(), tenantId: randomUUID(), email: 'ada@example.com' };
 const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
 
 function setup() {
   const orders = new InMemoryOrderRepository(context);
   const catalog = new FakeProductCatalog();
   const getOrder = new GetOrder(orders);
+  const outbox = new RecordingOutbox();
   return {
     catalog,
-    placeOrder: new PlaceOrder(orders, catalog, context),
+    outbox,
+    placeOrder: new PlaceOrder(orders, catalog, context, new InlineTransactionManager(), outbox),
     getOrder,
     listOrders: new ListOrders(orders),
     cancelOrder: new CancelOrder(getOrder, orders),
@@ -61,6 +68,34 @@ describe('commandes (couche application)', () => {
         totalMinor: 1990 * 2 + 900,
       });
       expect(order.lines.map((line) => line.sku)).toEqual(['TEE-01', 'MUG-01']);
+    }));
+
+  it('publie OrderPlaced avec l’email du client, pour les autres domaines', () =>
+    context.runAs(tenantA, async () => {
+      const { catalog, placeOrder, outbox } = setup();
+      const tee = catalog.add(product());
+      const order = await placeOrder.execute({ lines: [{ productId: tee.id, quantity: 2 }] });
+
+      expect(outbox.ofType(OrderPlaced)).toEqual([
+        expect.objectContaining({
+          orderId: order.id,
+          customerId: tenantA.userId,
+          customerEmail: 'ada@example.com',
+          totalMinor: 3980,
+          lines: [
+            expect.objectContaining({ productId: tee.id, quantity: 2, unitPriceMinor: 1990 }),
+          ],
+        }),
+      ]);
+    }));
+
+  it('ne publie rien si la commande est refusée', () =>
+    context.runAs(tenantA, async () => {
+      const { placeOrder, outbox } = setup();
+      await expect(
+        placeOrder.execute({ lines: [{ productId: newProductId(), quantity: 1 }] }),
+      ).rejects.toMatchObject({ code: 'PRODUCT_UNAVAILABLE' });
+      expect(outbox.published).toEqual([]);
     }));
 
   it('fige le prix : un changement au catalogue ne modifie pas la commande', () =>

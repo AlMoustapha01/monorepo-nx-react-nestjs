@@ -5,6 +5,8 @@ import { CoreError } from '../errors/app-error';
 export interface Principal {
   userId: string;
   tenantId: string;
+  /** Claim `email` du token, si le fournisseur d'identité le transmet. */
+  email?: string;
 }
 
 interface RequestContextStore extends ClsStore {

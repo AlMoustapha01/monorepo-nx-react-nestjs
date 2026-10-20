@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { domainIdGenerator, RequestContext } from '@nx-react-nestjs/api-core';
-import { ORDER_ID_PREFIX, type PlaceOrderInput } from '@nx-react-nestjs/contracts';
+import {
+  domainIdGenerator,
+  Outbox,
+  RequestContext,
+  TransactionManager,
+} from '@nx-react-nestjs/api-core';
+import { ORDER_ID_PREFIX, OrderPlaced, type PlaceOrderInput } from '@nx-react-nestjs/contracts';
 import { Order, type OrderLine } from '../../domain/order';
 import { OrdersError } from '../../domain/orders.errors';
 import { OrderRepository } from '../order.repository';
@@ -14,6 +19,8 @@ export class PlaceOrder {
     private readonly orders: OrderRepository,
     private readonly catalog: ProductCatalog,
     private readonly context: RequestContext,
+    private readonly transactions: TransactionManager,
+    private readonly outbox: Outbox,
   ) {}
 
   async execute(input: PlaceOrderInput): Promise<Order> {
@@ -61,7 +68,19 @@ export class PlaceOrder {
       lines,
       now: new Date(),
     });
-    await this.orders.insert(order);
+    // La commande et son événement sont écrits ensemble, ou pas du tout.
+    await this.transactions.transaction(async () => {
+      await this.orders.insert(order);
+      await this.outbox.publish(OrderPlaced, {
+        orderId: order.id,
+        customerId: order.customerId,
+        customerEmail: this.context.principal?.email ?? null,
+        currency: order.currency,
+        totalMinor: order.totalMinor,
+        lines: order.lines.map((line) => ({ ...line })),
+        placedAt: order.createdAt.toISOString(),
+      });
+    });
     return order;
   }
 }

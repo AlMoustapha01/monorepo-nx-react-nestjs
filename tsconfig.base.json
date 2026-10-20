@@ -19,7 +19,8 @@
       "@nx-react-nestjs/api-core": ["./libs/api/core/src/index.ts"],
       "@nx-react-nestjs/api-core/testing": ["./libs/api/core/src/testing.ts"],
       "@nx-react-nestjs/api-catalog": ["./libs/api/catalog/src/index.ts"],
-      "@nx-react-nestjs/api-orders": ["./libs/api/orders/src/index.ts"]
+      "@nx-react-nestjs/api-orders": ["./libs/api/orders/src/index.ts"],
+      "@nx-react-nestjs/api-notifications": ["./libs/api/notifications/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

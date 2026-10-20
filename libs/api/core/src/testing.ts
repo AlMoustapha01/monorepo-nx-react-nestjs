@@ -43,7 +43,7 @@ export function testEnv(urls: { databaseUrl: string; redisUrl: string }): Record
 }
 
 export function signTestToken(principal: Principal, expiresIn = '5m'): Promise<string> {
-  return new SignJWT({ tenant_id: principal.tenantId })
+  return new SignJWT({ tenant_id: principal.tenantId, email: principal.email })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(principal.userId)
     .setIssuer(TEST_AUTH.issuer)

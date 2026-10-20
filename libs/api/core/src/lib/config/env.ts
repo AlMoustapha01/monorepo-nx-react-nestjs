@@ -24,6 +24,10 @@ const envSchema = z.object({
   OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(1000),
   JOBS_CONCURRENCY: z.coerce.number().int().positive().default(5),
 
+  /** Absent hors production : les emails sont seulement journalisés. */
+  SMTP_URL: z.url().optional(),
+  MAIL_FROM: z.string().min(3).default('Shop <no-reply@shop.local>'),
+
   AUTH_JWT_SECRET: z.string().min(32),
   AUTH_JWT_ISSUER: z.string().min(1),
   AUTH_JWT_AUDIENCE: z.string().min(1),
@@ -35,9 +39,14 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+const checkedEnvSchema = envSchema.refine(
+  (env) => env.NODE_ENV !== 'production' || env.SMTP_URL !== undefined,
+  { message: 'SMTP_URL is required in production', path: ['SMTP_URL'] },
+);
+
 /** Appelé par ConfigModule : l'application refuse de démarrer si une variable est absente ou invalide. */
 export function validateEnv(raw: Record<string, unknown>): Env {
-  const result = envSchema.safeParse(raw);
+  const result = checkedEnvSchema.safeParse(raw);
   if (!result.success) {
     throw new Error(`Invalid environment configuration:\n${z.prettifyError(result.error)}`);
   }
