@@ -1,4 +1,5 @@
-# Infra locale : `docker compose up -d`, puis `pnpm nx run api:db-migrate`.
+# Infra locale : `pnpm dev:setup`. Ports publiés configurables dans .env (POSTGRES_PORT, etc.) :
+# docker compose lit .env automatiquement.
 services:
   postgres:
     image: postgres:17-alpine
@@ -7,7 +8,7 @@ services:
       POSTGRES_PASSWORD: app
       POSTGRES_DB: app
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -19,14 +20,14 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '${REDIS_PORT:-6379}:6379'
 
-  # Faux serveur SMTP : les emails envoyés s'affichent sur http://localhost:8025.
+  # Faux serveur SMTP : les emails envoyés s'affichent sur http://localhost:8025 (MAILPIT_UI_PORT).
   mailpit:
     image: axllent/mailpit:v1.31.3
     ports:
-      - '1025:1025'
-      - '8025:8025'
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
 
 volumes:
   postgres-data:

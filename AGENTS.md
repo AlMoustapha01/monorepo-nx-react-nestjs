@@ -17,6 +17,8 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                   |
 | Formater                                                             | `pnpm format`                                                               |
 
+Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
+
 Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
 
 La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage des scripts de `tools/dev`, puis knip. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.

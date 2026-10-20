@@ -9,7 +9,7 @@
     "format:check": "oxfmt --check .",
     "knip": "knip",
     "typecheck:tools": "tsc -p tools/dev/tsconfig.json",
-    "dev:setup": "[ -f .env ] || cp .env.example .env; docker compose up -d --wait && nx run api:db-migrate",
+    "dev:setup": "node tools/dev/setup.mts",
     "dev:token": "node tools/dev/token.mts",
     "dev:seed": "node tools/dev/seed.mts"
   },
