@@ -5,14 +5,21 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import type {
+  IntegrationEventDefinition,
+  IntegrationEventPayload,
+} from '@nx-react-nestjs/contracts';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { RedisContainer } from '@testcontainers/redis';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { SignJWT } from 'jose';
 import { ClsService } from 'nestjs-cls';
 import { Pool } from 'pg';
 import { type Principal, RequestContext } from './lib/context/request-context';
-import type { Database } from './lib/database/database.module';
+import { TransactionManager } from './lib/database/database-session';
+import type { Database } from './lib/database/database.tokens';
+import { Outbox } from './lib/events/outbox';
 
 export const TEST_AUTH = {
   secret: 'test-secret-that-is-at-least-32-characters',
@@ -21,11 +28,14 @@ export const TEST_AUTH = {
 } as const;
 
 /** Variables d'environnement valides pour démarrer l'app en test. */
-export function testEnv(databaseUrl: string): Record<string, string> {
+export function testEnv(urls: { databaseUrl: string; redisUrl: string }): Record<string, string> {
   return {
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
-    DATABASE_URL: databaseUrl,
+    DATABASE_URL: urls.databaseUrl,
+    REDIS_URL: urls.redisUrl,
+    // Relais rapide pour que les tests n'attendent pas la seconde par défaut.
+    OUTBOX_POLL_INTERVAL_MS: '50',
     AUTH_JWT_SECRET: TEST_AUTH.secret,
     AUTH_JWT_ISSUER: TEST_AUTH.issuer,
     AUTH_JWT_AUDIENCE: TEST_AUTH.audience,
@@ -72,6 +82,68 @@ export async function startTestDatabase(): Promise<TestDatabase> {
       await container.stop();
     },
   };
+}
+
+export interface TestRedis {
+  url: string;
+  stop(): Promise<void>;
+}
+
+/** Démarre un Redis jetable (BullMQ). */
+export async function startTestRedis(): Promise<TestRedis> {
+  const container = await new RedisContainer('redis:7-alpine').start();
+  return {
+    url: container.getConnectionUrl(),
+    stop: async () => {
+      await container.stop();
+    },
+  };
+}
+
+/** Exécute directement : pour tester un cas d'usage avec des repositories en mémoire. */
+export class InlineTransactionManager extends TransactionManager {
+  transaction<T>(fn: () => Promise<T>): Promise<T> {
+    return fn();
+  }
+}
+
+/** Garde les événements publiés en mémoire, pour les vérifier dans un test. */
+export class RecordingOutbox extends Outbox {
+  readonly published: { type: string; payload: unknown }[] = [];
+
+  async publish<TDefinition extends IntegrationEventDefinition>(
+    definition: TDefinition,
+    payload: IntegrationEventPayload<TDefinition>,
+  ): Promise<void> {
+    this.published.push({ type: definition.type, payload: definition.schema.parse(payload) });
+  }
+
+  ofType<TDefinition extends IntegrationEventDefinition>(
+    definition: TDefinition,
+  ): IntegrationEventPayload<TDefinition>[] {
+    return this.published
+      .filter((event) => event.type === definition.type)
+      .map((event) => event.payload as IntegrationEventPayload<TDefinition>);
+  }
+}
+
+/** Attend qu'une condition asynchrone devienne vraie (traitement par un worker, par exemple). */
+export async function eventually(
+  assertion: () => Promise<void> | void,
+  timeoutMs = 10_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      await assertion();
+      return;
+    } catch (error) {
+      if (Date.now() > deadline) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
 }
 
 function findWorkspaceRoot(from = process.cwd()): string {

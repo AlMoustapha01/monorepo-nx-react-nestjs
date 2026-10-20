@@ -18,6 +18,12 @@ const envSchema = z.object({
   DATABASE_URL: z.url(),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 
+  REDIS_URL: z.url(),
+  /** false pour un process API sans relais ni worker (ex. workers déployés à part). */
+  JOBS_ENABLED: z.stringbool().default(true),
+  OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(1000),
+  JOBS_CONCURRENCY: z.coerce.number().int().positive().default(5),
+
   AUTH_JWT_SECRET: z.string().min(32),
   AUTH_JWT_ISSUER: z.string().min(1),
   AUTH_JWT_AUDIENCE: z.string().min(1),

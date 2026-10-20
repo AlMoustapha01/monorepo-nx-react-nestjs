@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
-  type Database,
-  InjectDatabase,
+  DatabaseSession,
   isUniqueViolation,
   type KeysetCursor,
   RequestContext,
@@ -18,7 +17,7 @@ export class DrizzleProductRepository extends ProductRepository {
   private readonly mapper = new ProductMapper();
 
   constructor(
-    @InjectDatabase() private readonly db: Database,
+    private readonly session: DatabaseSession,
     private readonly context: RequestContext,
   ) {
     super();
@@ -36,7 +35,7 @@ export class DrizzleProductRepository extends ProductRepository {
     if (ids.length === 0) {
       return [];
     }
-    const rows = await this.db
+    const rows = await this.session.db
       .select()
       .from(products)
       .where(and(this.tenantScope(), inArray(products.id, [...ids])));
@@ -44,7 +43,7 @@ export class DrizzleProductRepository extends ProductRepository {
   }
 
   async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<ProductListPage> {
-    const rows = await this.db
+    const rows = await this.session.db
       .select()
       .from(products)
       .where(
@@ -61,7 +60,7 @@ export class DrizzleProductRepository extends ProductRepository {
 
   async insert(product: Product): Promise<void> {
     try {
-      await this.db
+      await this.session.db
         .insert(products)
         .values({ ...this.mapper.toRow(product), tenantId: this.context.tenantId });
     } catch (error) {
@@ -80,14 +79,14 @@ export class DrizzleProductRepository extends ProductRepository {
       createdAt: _createdAt,
       ...changes
     } = this.mapper.toRow(product);
-    await this.db
+    await this.session.db
       .update(products)
       .set(changes)
       .where(and(this.tenantScope(), eq(products.id, id)));
   }
 
   private async findOne(condition: SQL): Promise<Product | null> {
-    const [row] = await this.db
+    const [row] = await this.session.db
       .select()
       .from(products)
       .where(and(this.tenantScope(), condition))

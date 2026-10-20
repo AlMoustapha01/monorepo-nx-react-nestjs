@@ -31,6 +31,7 @@ const CORE_ERROR_KINDS = {
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   INVALID_CURSOR: 'VALIDATION',
   TENANT_CONTEXT_MISSING: 'INTERNAL',
+  OUTBOX_REQUIRES_TRANSACTION: 'INTERNAL',
 } as const satisfies Record<string, ErrorKind>;
 
 export type CoreErrorCode = keyof typeof CORE_ERROR_KINDS;

@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  type Database,
-  InjectDatabase,
-  type KeysetCursor,
-  RequestContext,
-} from '@nx-react-nestjs/api-core';
+import { DatabaseSession, type KeysetCursor, RequestContext } from '@nx-react-nestjs/api-core';
 import { and, desc, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import { OrderRepository, type OrderListPage } from '../application/order.repository';
 import type { Order } from '../domain/order';
@@ -16,14 +11,14 @@ export class DrizzleOrderRepository extends OrderRepository {
   private readonly mapper = new OrderMapper();
 
   constructor(
-    @InjectDatabase() private readonly db: Database,
+    private readonly session: DatabaseSession,
     private readonly context: RequestContext,
   ) {
     super();
   }
 
   async findById(id: string): Promise<Order | null> {
-    const [order] = await this.db
+    const [order] = await this.session.db
       .select()
       .from(orders)
       .where(and(this.tenantScope(), eq(orders.id, id)))
@@ -32,7 +27,7 @@ export class DrizzleOrderRepository extends OrderRepository {
   }
 
   async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<OrderListPage> {
-    const rows = await this.db
+    const rows = await this.session.db
       .select()
       .from(orders)
       .where(
@@ -50,15 +45,18 @@ export class DrizzleOrderRepository extends OrderRepository {
   async insert(order: Order): Promise<void> {
     const tenantId = this.context.tenantId;
     const record = this.mapper.toRow(order);
-    await this.db.transaction(async (tx) => {
-      await tx.insert(orders).values({ ...record.order, tenantId });
-      await tx.insert(orderLines).values(record.lines.map((line) => ({ ...line, tenantId })));
+    // Rejoint la transaction du cas d'usage s'il en a ouvert une (ex. avec l'outbox).
+    await this.session.transaction(async () => {
+      await this.session.db.insert(orders).values({ ...record.order, tenantId });
+      await this.session.db
+        .insert(orderLines)
+        .values(record.lines.map((line) => ({ ...line, tenantId })));
     });
   }
 
   async update(order: Order): Promise<void> {
     const { status, updatedAt } = this.mapper.toRow(order).order;
-    await this.db
+    await this.session.db
       .update(orders)
       .set({ status, updatedAt })
       .where(and(this.tenantScope(), eq(orders.id, order.id)));
@@ -69,7 +67,7 @@ export class DrizzleOrderRepository extends OrderRepository {
     if (rows.length === 0) {
       return [];
     }
-    const lines = await this.db
+    const lines = await this.session.db
       .select()
       .from(orderLines)
       .where(

@@ -7,7 +7,12 @@ import { CoreError } from '../errors/app-error';
 import { JwtVerifier } from './jwt-verifier';
 
 describe('JwtVerifier', () => {
-  const env = validateEnv(testEnv('postgres://user:pass@localhost:5432/db'));
+  const env = validateEnv(
+    testEnv({
+      databaseUrl: 'postgres://user:pass@localhost:5432/db',
+      redisUrl: 'redis://localhost:6379',
+    }),
+  );
   const verifier = new JwtVerifier(new AppConfig(env));
   const principal = { userId: randomUUID(), tenantId: randomUUID() };
 

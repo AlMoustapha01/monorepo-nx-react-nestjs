@@ -187,12 +187,8 @@
           "tableFrom": "order_lines",
           "tableTo": "orders",
           "schemaTo": "orders",
-          "columnsFrom": [
-            "order_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -200,10 +196,7 @@
       "compositePrimaryKeys": {
         "order_lines_order_id_position_pk": {
           "name": "order_lines_order_id_position_pk",
-          "columns": [
-            "order_id",
-            "position"
-          ]
+          "columns": ["order_id", "position"]
         }
       },
       "uniqueConstraints": {},
@@ -300,19 +293,12 @@
     "catalog.product_status": {
       "name": "product_status",
       "schema": "catalog",
-      "values": [
-        "draft",
-        "active",
-        "archived"
-      ]
+      "values": ["draft", "active", "archived"]
     },
     "orders.order_status": {
       "name": "order_status",
       "schema": "orders",
-      "values": [
-        "placed",
-        "cancelled"
-      ]
+      "values": ["placed", "cancelled"]
     }
   },
   "schemas": {

@@ -1,14 +1,11 @@
 import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { AppConfig } from '../config/app-config';
+import { DatabaseSession, TransactionManager } from './database-session';
+import { DATABASE, type Database } from './database.tokens';
 
 const PG_POOL = Symbol('PG_POOL');
-const DATABASE = Symbol('DATABASE');
-
-export type Database = NodePgDatabase;
-
-export const InjectDatabase = () => Inject(DATABASE);
 
 @Global()
 @Module({
@@ -27,8 +24,10 @@ export const InjectDatabase = () => Inject(DATABASE);
       inject: [PG_POOL],
       useFactory: (pool: Pool): Database => drizzle({ client: pool }),
     },
+    DatabaseSession,
+    { provide: TransactionManager, useExisting: DatabaseSession },
   ],
-  exports: [DATABASE],
+  exports: [DATABASE, DatabaseSession, TransactionManager],
 })
 export class DatabaseModule implements OnApplicationShutdown {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}

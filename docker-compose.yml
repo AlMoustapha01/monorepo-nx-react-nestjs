@@ -15,7 +15,7 @@ services:
       interval: 5s
       retries: 10
 
-  # Utilisé à l'étape suivante (BullMQ).
+  # Files BullMQ (événements d'intégration).
   redis:
     image: redis:7-alpine
     ports:

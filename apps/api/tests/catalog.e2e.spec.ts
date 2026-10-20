@@ -5,21 +5,24 @@ import { configureApp } from '@nx-react-nestjs/api-core';
 import {
   signTestToken,
   startTestDatabase,
+  startTestRedis,
   type TestDatabase,
   testEnv,
+  type TestRedis,
 } from '@nx-react-nestjs/api-core/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 
 describe('API catalogue (e2e)', () => {
   let database: TestDatabase;
+  let redis: TestRedis;
   let app: INestApplication;
   let tokenA: string;
   let tokenB: string;
 
   beforeAll(async () => {
-    database = await startTestDatabase();
-    Object.assign(process.env, testEnv(database.url));
+    [database, redis] = await Promise.all([startTestDatabase(), startTestRedis()]);
+    Object.assign(process.env, testEnv({ databaseUrl: database.url, redisUrl: redis.url }));
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication({ bufferLogs: true });
@@ -32,7 +35,7 @@ describe('API catalogue (e2e)', () => {
 
   afterAll(async () => {
     await app?.close();
-    await database?.stop();
+    await Promise.all([database?.stop(), redis?.stop()]);
   });
 
   const api = () => request(app.getHttpServer());
@@ -49,6 +52,7 @@ describe('API catalogue (e2e)', () => {
       .expect(200)
       .expect(({ body }) => {
         expect(body.info.database.status).toBe('up');
+        expect(body.info.redis.status).toBe('up');
       });
   });
 

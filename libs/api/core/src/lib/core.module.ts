@@ -11,8 +11,13 @@ import { JwtVerifier } from './auth/jwt-verifier';
 import { AppConfig, AppConfigModule } from './config/app-config';
 import { RequestContext } from './context/request-context';
 import { DatabaseModule } from './database/database.module';
+import { MessagingModule } from './events/messaging.module';
 import { ProblemDetailsFilter } from './errors/problem-details.filter';
-import { DatabaseHealthIndicator, HealthController } from './health/health.controller';
+import {
+  DatabaseHealthIndicator,
+  HealthController,
+  RedisHealthIndicator,
+} from './health/health.controller';
 import { getRequestId } from './http/request-id';
 
 const UNLOGGED_PATHS = new Set(['/health', '/ready']);
@@ -55,12 +60,14 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     }),
     TerminusModule,
     DatabaseModule,
+    MessagingModule,
   ],
   controllers: [HealthController],
   providers: [
     RequestContext,
     JwtVerifier,
     DatabaseHealthIndicator,
+    RedisHealthIndicator,
     // L'ordre compte : le rate limiting s'applique avant l'authentification.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },

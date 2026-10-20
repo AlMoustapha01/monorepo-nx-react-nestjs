@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { domainIdGenerator } from '@nx-react-nestjs/api-core';
+import { DatabaseSession, domainIdGenerator } from '@nx-react-nestjs/api-core';
 import {
   createTestRequestContext,
   startTestDatabase,
@@ -20,7 +20,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
 
   beforeAll(async () => {
     database = await startTestDatabase();
-    repository = new DrizzleProductRepository(database.db, context);
+    repository = new DrizzleProductRepository(new DatabaseSession(database.db), context);
   });
 
   afterAll(() => database?.stop());
