@@ -11,6 +11,8 @@ export function configureApp(app: INestApplication): void {
   const config = app.get(AppConfig);
 
   app.useLogger(app.get(Logger));
+  // Sans ça, derrière un load balancer, tous les clients anonymes partagent l'IP du proxy.
+  app.getHttpAdapter().getInstance().set('trust proxy', config.get('TRUST_PROXY_HOPS'));
   app.use(requestIdMiddleware);
   app.use(helmet());
   app.enableCors({

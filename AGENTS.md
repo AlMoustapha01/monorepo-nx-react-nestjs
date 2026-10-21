@@ -94,6 +94,7 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 - **Sondes** : `/health` (liveness : le process répond) et `/ready` (readiness : Postgres et Redis joignables, et pas d'arrêt en cours). Le worker n'a pas de port HTTP : un crash fait sortir le process et l'orchestrateur le relance.
 - **Arrêt** : sur SIGTERM, `/ready` passe en 503, le process attend `SHUTDOWN_DRAIN_MS` (le temps que le load balancer retire l'instance ; 5 s derrière Kubernetes), puis termine les requêtes et les jobs en cours et ferme Redis et Postgres. Au-delà de `SHUTDOWN_TIMEOUT_MS` (25 s), il sort en erreur : rester sous le délai avant SIGKILL de l'orchestrateur (30 s par défaut).
 - **Redis** en production : `maxmemory-policy noeviction` et persistance (AOF), sinon BullMQ peut perdre des jobs.
+- **Rate limiting** : `RATE_LIMIT_MAX` requêtes par `RATE_LIMIT_TTL_MS`, compteurs dans Redis partagés par toutes les instances. Un utilisateur authentifié a son compteur ; sans token, c'est par IP : derrière un load balancer, `TRUST_PROXY_HOPS=1`, sinon tous les anonymes partagent l'IP du proxy. Au-delà : 429 `TOO_MANY_REQUESTS` avec `Retry-After`. Redis en panne : on laisse passer (avertissement journalisé, une fois par minute). Une requête au token invalide est refusée avant d'être comptée : les floods anonymes se filtrent en amont (load balancer, WAF). `@SkipThrottle()` pour exclure une route (sondes).
 
 ## Observabilité
 

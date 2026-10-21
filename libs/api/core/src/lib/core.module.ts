@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { ClsModule } from 'nestjs-cls';
 import { LoggerModule } from 'nestjs-pino';
@@ -23,6 +23,7 @@ import {
   RedisHealthIndicator,
 } from './health/health.controller';
 import { ShutdownState } from './lifecycle/graceful-shutdown';
+import { RateLimitModule } from './http/rate-limit/rate-limit.module';
 import { getRequestId } from './http/request-id';
 
 const UNLOGGED_PATHS = new Set(['/health', '/ready']);
@@ -57,12 +58,7 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
         },
       }),
     }),
-    ThrottlerModule.forRootAsync({
-      inject: [AppConfig],
-      useFactory: (config: AppConfig) => ({
-        throttlers: [{ ttl: config.get('RATE_LIMIT_TTL_MS'), limit: config.get('RATE_LIMIT_MAX') }],
-      }),
-    }),
+    RateLimitModule,
     TerminusModule,
     DatabaseModule,
     MessagingModule,
@@ -75,9 +71,10 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     RedisHealthIndicator,
     ShutdownState,
     { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },
-    // L'ordre compte : rate limiting, authentification, flag (404 avant tout 403), puis rôles.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // L'ordre compte : authentification, rate limiting (par utilisateur), flag (404 avant tout
+    // 403), puis rôles.
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: FeatureFlagsGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },

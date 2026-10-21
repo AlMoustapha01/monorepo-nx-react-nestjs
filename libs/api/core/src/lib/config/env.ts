@@ -59,6 +59,8 @@ const envSchema = z.object({
   CORS_ORIGINS: csv,
   RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  /** Proxys de confiance devant l'API (load balancer : 1) : l'IP du client vient de X-Forwarded-For. */
+  TRUST_PROXY_HOPS: z.coerce.number().int().nonnegative().default(0),
 
   /** Surcharge les valeurs par défaut du catalogue (`FEATURE_FLAGS` des contrats). */
   FEATURE_FLAGS: featureFlagOverrides,
