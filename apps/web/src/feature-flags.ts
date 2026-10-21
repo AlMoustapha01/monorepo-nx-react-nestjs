@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery, type QueryClient } from '@tanstack/react-query';
 import { notFound, useRouteContext } from '@tanstack/react-router';
 import type { FeatureFlag } from '@nx-react-nestjs/contracts';
 import {
@@ -6,7 +6,6 @@ import {
   isFeatureEnabled,
   type ApiClient,
 } from '@nx-react-nestjs/web-data-access';
-import type { QueryClient } from '@tanstack/react-query';
 
 import { reportError } from './report-error';
 
