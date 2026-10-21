@@ -5,6 +5,7 @@ import {
   RouterProvider,
   createMemoryHistory,
   createRoute,
+  createRootRouteWithContext,
   createRouter,
 } from '@tanstack/react-router';
 import { render, screen } from '@testing-library/react';
@@ -14,7 +15,7 @@ import { createApiClient, createQueryClient } from '@nx-react-nestjs/web-data-ac
 import { ErrorZone } from './components/error-zone';
 import { activateLocale } from './i18n/i18n';
 import { createAppRouter } from './router';
-import { Route as rootRoute } from './routes/__root';
+import { Route as appRoot, type RouterContext } from './routes/__root';
 
 const api = createApiClient({ baseUrl: 'http://localhost:3000/api/v1' });
 
@@ -74,13 +75,14 @@ describe('app', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
-  // En dernier : `rootRoute.addChildren` modifie la route racine partagée avec `createAppRouter`.
   it('shows the global error page, reports the error and recovers on retry', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     let attempts = 0;
     const queryClient = createQueryClient();
+    // Racine locale : réutilise layout, page d'erreur et 404 sans toucher à l'arbre partagé.
+    const testRoot = createRootRouteWithContext<RouterContext>()(appRoot.options);
     const flaky = createRoute({
-      getParentRoute: () => rootRoute,
+      getParentRoute: () => testRoot,
       path: '/flaky',
       loader: () => {
         attempts += 1;
@@ -90,7 +92,7 @@ describe('app', () => {
       component: () => <p>recovered</p>,
     });
     const router = createRouter({
-      routeTree: rootRoute.addChildren([flaky]),
+      routeTree: testRoot.addChildren([flaky]),
       context: { queryClient, api },
       history: createMemoryHistory({ initialEntries: ['/flaky'] }),
     });

@@ -36,7 +36,8 @@
               "aria-pressed",
               "aria-hidden"
             ],
-            "ignore": ["^[a-z0-9\\s:\\-\\[\\]/_.()&>*=,#%'!@~+]*$"]
+            "ignoreFunctions": ["cva", "cn"],
+            "ignore": ["^(p|div|span|button|h[1-6])$"]
           }
         ]
       }
