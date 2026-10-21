@@ -1,17 +1,7 @@
 {
-  "extends": ["../../.oxlintrc.json"],
+  "extends": ["../../libs/web/.oxlintrc.web.json"],
   "ignorePatterns": ["src/routeTree.gen.ts"],
-  "plugins": ["react", "react-perf", "jsx-a11y", "vitest"],
-  "rules": {
-    "no-restricted-globals": [
-      "error",
-      {
-        "name": "fetch",
-        "message": "Passer par @nx-react-nestjs/web-data-access."
-      }
-    ]
-  },
-  "jsPlugins": ["eslint-plugin-lingui"],
+  "plugins": ["react-perf"],
   "overrides": [
     {
       "files": ["src/**/*.tsx"],

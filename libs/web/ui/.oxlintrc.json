@@ -1,16 +1,13 @@
 {
-  "extends": ["../../../.oxlintrc.json"],
-  "plugins": ["react", "jsx-a11y", "vitest"],
+  "extends": ["../.oxlintrc.web.json"],
   "rules": {
-    "no-restricted-globals": [
+    "no-restricted-imports": [
       "error",
       {
-        "name": "fetch",
-        "message": "Passer par @nx-react-nestjs/web-data-access."
+        "patterns": [{ "group": ["@tanstack/*"], "message": "web-ui est purement visuel." }]
       }
     ]
   },
-  "jsPlugins": ["eslint-plugin-lingui"],
   "overrides": [
     {
       "files": ["src/**/*.tsx"],
