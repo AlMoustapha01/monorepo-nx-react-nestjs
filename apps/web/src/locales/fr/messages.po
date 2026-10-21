@@ -7,25 +7,57 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: fr\n"
 
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "✓ {inCart} dans le panier"
+msgstr "✓ {inCart} dans le panier"
+
 #: src/routes/__root.tsx
 msgid "404 : page introuvable"
 msgstr "404 : page introuvable"
+
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Ajouter au panier"
+msgstr "Ajouter au panier"
+
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Aucun produit pour le moment"
+msgstr "Aucun produit pour le moment"
 
 #: src/routes/index.tsx
 msgid "Boilerplate web"
 msgstr "Boilerplate web"
 
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Catalogue"
+msgstr "Catalogue"
+
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
 msgstr "Cette page n'existe pas."
+
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Chargement…"
+msgstr "Chargement…"
 
 #: src/components/locale-switcher.tsx
 msgid "Impossible de changer de langue."
 msgstr "Impossible de changer de langue."
 
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Impossible de charger le catalogue."
+msgstr "Impossible de charger le catalogue."
+
 #: src/components/locale-switcher.tsx
 msgid "Langue"
 msgstr "Langue"
+
+#: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
+msgid "Mes commandes"
+msgstr "Mes commandes"
+
+#: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
+msgid "Panier ({count})"
+msgstr "Panier ({count})"
 
 #: src/routes/__root.tsx
 msgid "Quelque chose s'est mal passé. Vous pouvez réessayer."
@@ -47,3 +79,7 @@ msgstr "Une erreur est survenue"
 #: src/main.tsx
 msgid "Une erreur est survenue."
 msgstr "Une erreur est survenue."
+
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Voir plus"
+msgstr "Voir plus"

@@ -27,9 +27,15 @@
               "name",
               "aria-pressed",
               "aria-hidden",
+              "aria-live",
+              "direction",
+              "align",
+              "justify",
+              "tone",
+              "weight",
               "defaultPreload"
             ],
-            "ignoreFunctions": ["document.getElementById"]
+            "ignoreFunctions": ["document.getElementById", "useFeatureFlag"]
           }
         ]
       }

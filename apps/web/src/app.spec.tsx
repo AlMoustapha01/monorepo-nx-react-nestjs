@@ -72,6 +72,35 @@ describe('app', () => {
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
+  it('shows the catalog and the cart link when storefront is on', async () => {
+    server.use(
+      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
+      http.get(`${API}/catalog/products`, () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: 'PRD-00000000000000000001',
+              sku: 'TEE-WHITE-M',
+              name: 'Tee-shirt blanc (M)',
+              description: null,
+              price: { amountMinor: 1990, currency: 'EUR' },
+              status: 'active',
+              soldCount: 0,
+              version: 1,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+          nextCursor: null,
+        }),
+      ),
+    );
+    renderAt('/');
+    expect(await screen.findByText('Tee-shirt blanc (M)')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Panier (0)' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Mes commandes' })).toBeTruthy();
+  });
+
   it('renders the home page when the flags call fails', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     server.use(http.get(`${API}/feature-flags`, () => new HttpResponse(null, { status: 500 })));

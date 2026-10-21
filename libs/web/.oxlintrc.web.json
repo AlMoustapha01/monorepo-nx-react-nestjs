@@ -49,14 +49,20 @@
               "htmlFor",
               "name",
               "aria-pressed",
-              "aria-hidden"
+              "aria-hidden",
+              "aria-live",
+              "direction",
+              "align",
+              "justify",
+              "tone",
+              "weight"
             ]
           }
         ]
       }
     },
     {
-      "files": ["**/*.spec.tsx", "**/*.stories.tsx", "**/routeTree.gen.ts"],
+      "files": ["**/*.spec.tsx", "**/test-utils.tsx", "**/*.stories.tsx", "**/routeTree.gen.ts"],
       "rules": {
         "lingui/no-unlocalized-strings": "off"
       }

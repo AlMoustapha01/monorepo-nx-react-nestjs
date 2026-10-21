@@ -12,7 +12,6 @@
     "apps/web/lingui.config.ts",
     "libs/web/*/lingui.config.ts",
     "apps/web/src/routes/**/*.tsx",
-    "apps/web/src/feature-flags.ts",
     "libs/web/*/src/**/*.stories.tsx",
     "libs/web/*/.storybook/main.ts"
   ],
