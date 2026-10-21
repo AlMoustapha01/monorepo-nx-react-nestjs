@@ -35,13 +35,18 @@ libs/api/<domaine>/         un domaine métier = une lib Nx
   src/lib/infra/            adapters : Drizzle (*.schema.ts), clients externes
   src/lib/http/             controllers fins + DTO zod
 libs/shared/contracts/      schémas zod partagés entre front et API
+apps/web/                   front React : routes TanStack Router (src/routes), i18n Lingui (voir apps/web/AGENTS.md)
+libs/web/ui/                design system : thème Tailwind 4, composants shadcn, Storybook
+libs/web/data-access/       client API, TanStack Query, mutations idempotentes
 ```
+
+Conventions du front : [`apps/web/AGENTS.md`](apps/web/AGENTS.md) et [`libs/web/AGENTS.md`](libs/web/AGENTS.md).
 
 Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de ventes alimenté par événements), `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade, publication d'événements) et `libs/api/notifications` (domaine purement réactif : aucun controller, seulement des handlers).
 
 ## Règles de frontières
 
-- Tags Nx : `scope:api|web|shared` × `type:app|domain|core|contract`. `core` ne dépend jamais d'un domaine (lint).
+- Tags Nx : `scope:api|web|shared` × `type:app|domain|core|contract|feature|ui|data-access`. `core` ne dépend jamais d'un domaine (lint).
 - Un domaine n'importe d'un autre domaine que sa façade (`@nx-react-nestjs/api-<domaine>`). Les imports profonds ne compilent pas (alias TypeScript limités à `index.ts`).
 - Consommer un autre domaine : un port dans `application/` (ce dont on a besoin, rien de plus) et un adapter dans `infra/` qui délègue à sa façade. Exemple : `orders` → `ProductCatalog` → `CatalogFacade`.
 - `index.ts` d'un domaine : exports nommés uniquement, jamais `export *`. N'y exposer que le module Nest, la façade et des types de contrat (snapshots), jamais une entité ni un repository (vérifié en revue).
@@ -75,7 +80,7 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite. Toute route qui modifie des données partagées du tenant déclare son rôle (`@RequireRole`).
 4. Toute clé Redis a un TTL ; tout appel externe a un timeout, et passe par une queue s'il est lent.
 5. Les migrations sont générées (`db-generate`), jamais éditées à la main, et rétrocompatibles (expand/contract).
-6. Toute nouvelle fonctionnalité passe derrière un feature flag ; une PR fait moins de 500 lignes.
+6. Toute nouvelle fonctionnalité passe derrière un feature flag ; une PR fait moins de 500 lignes. Le flag s'applique à l'API pour l'instant ; le mécanisme front sera défini avec le premier écran métier (voir `apps/web/AGENTS.md`).
 
 ## Conventions
 

@@ -45,7 +45,7 @@ jobs:
       # Les tests d'intégration et e2e démarrent Postgres, Redis et Mailpit via Testcontainers
       # (Docker est disponible sur les runners Ubuntu).
       - name: Lint, types, tests, build (projets affectés)
-        run: pnpm nx affected -t lint typecheck test build i18n-check --parallel=3
+        run: pnpm nx affected -t lint typecheck test build i18n-check size --parallel=3
 
       - name: Scripts de dev
         run: pnpm typecheck:tools
