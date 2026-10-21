@@ -65,6 +65,7 @@ msgstr "Cette page n'existe pas."
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Chargement…"
 msgstr "Chargement…"
 
@@ -97,6 +98,10 @@ msgstr "Impossible de charger ce produit"
 msgid "Impossible de charger le catalogue."
 msgstr "Impossible de charger le catalogue."
 
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
+msgid "Impossible de charger vos commandes."
+msgstr "Impossible de charger vos commandes."
+
 #: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
 msgid "La commande a changé entre-temps, elle a été rechargée."
 msgstr "La commande a changé entre-temps, elle a été rechargée."
@@ -105,6 +110,7 @@ msgstr "La commande a changé entre-temps, elle a été rechargée."
 msgid "Langue"
 msgstr "Langue"
 
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
 msgid "Mes commandes"
 msgstr "Mes commandes"
@@ -172,6 +178,7 @@ msgid "Voir le catalogue"
 msgstr "Voir le catalogue"
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Voir plus"
 msgstr "Voir plus"
 
@@ -182,3 +189,7 @@ msgstr "Votre panier est vide"
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander."
 msgstr "Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander."
+
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
+msgid "Vous n'avez pas encore de commande"
+msgstr "Vous n'avez pas encore de commande"

@@ -8,8 +8,7 @@ export function StorefrontNav() {
   const count = cartCount(useCart());
   return (
     <Stack as="nav" direction="row" gap={2} align="center">
-      {/* Route ajoutée par une tâche suivante : cast temporaire pour le typage du routeur. */}
-      <Link to={'/commandes' as '/'} className={buttonVariants({ variant: 'ghost' })}>
+      <Link to="/commandes" className={buttonVariants({ variant: 'ghost' })}>
         <Trans>Mes commandes</Trans>
       </Link>
       <Link to="/panier" className={buttonVariants({ variant: 'ghost' })}>

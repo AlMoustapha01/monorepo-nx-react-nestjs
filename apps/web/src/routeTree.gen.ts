@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PanierRouteImport } from './routes/panier'
+import { Route as CommandesIndexRouteImport } from './routes/commandes.index'
 import { Route as CommandesOrderIdRouteImport } from './routes/commandes.$orderId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const PanierRoute = PanierRouteImport.update({
   path: '/panier',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommandesIndexRoute = CommandesIndexRouteImport.update({
+  id: '/commandes/',
+  path: '/commandes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommandesOrderIdRoute = CommandesOrderIdRouteImport.update({
   id: '/commandes/$orderId',
   path: '/commandes/$orderId',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/panier': typeof PanierRoute
   '/commandes/$orderId': typeof CommandesOrderIdRoute
+  '/commandes/': typeof CommandesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/panier': typeof PanierRoute
   '/commandes/$orderId': typeof CommandesOrderIdRoute
+  '/commandes': typeof CommandesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/panier': typeof PanierRoute
   '/commandes/$orderId': typeof CommandesOrderIdRoute
+  '/commandes/': typeof CommandesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/panier' | '/commandes/$orderId'
+  fullPaths: '/' | '/panier' | '/commandes/$orderId' | '/commandes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/panier' | '/commandes/$orderId'
-  id: '__root__' | '/' | '/panier' | '/commandes/$orderId'
+  to: '/' | '/panier' | '/commandes/$orderId' | '/commandes'
+  id: '__root__' | '/' | '/panier' | '/commandes/$orderId' | '/commandes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PanierRoute: typeof PanierRoute
   CommandesOrderIdRoute: typeof CommandesOrderIdRoute
+  CommandesIndexRoute: typeof CommandesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanierRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/commandes/': {
+      id: '/commandes/'
+      path: '/commandes'
+      fullPath: '/commandes/'
+      preLoaderRoute: typeof CommandesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/commandes/$orderId': {
       id: '/commandes/$orderId'
       path: '/commandes/$orderId'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PanierRoute: PanierRoute,
   CommandesOrderIdRoute: CommandesOrderIdRoute,
+  CommandesIndexRoute: CommandesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

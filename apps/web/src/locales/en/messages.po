@@ -65,6 +65,7 @@ msgstr "This page does not exist."
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Chargement…"
 msgstr "Loading…"
 
@@ -97,6 +98,10 @@ msgstr "Unable to load this product"
 msgid "Impossible de charger le catalogue."
 msgstr "Unable to load the catalog."
 
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
+msgid "Impossible de charger vos commandes."
+msgstr "Unable to load your orders."
+
 #: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
 msgid "La commande a changé entre-temps, elle a été rechargée."
 msgstr "The order changed in the meantime and has been reloaded."
@@ -105,6 +110,7 @@ msgstr "The order changed in the meantime and has been reloaded."
 msgid "Langue"
 msgstr "Language"
 
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
 msgid "Mes commandes"
 msgstr "My orders"
@@ -172,6 +178,7 @@ msgid "Voir le catalogue"
 msgstr "View the catalog"
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Voir plus"
 msgstr "Load more"
 
@@ -182,3 +189,7 @@ msgstr "Your cart is empty"
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander."
 msgstr "Your cart mixes several currencies: remove products to be able to order."
+
+#: ../../libs/web/storefront/src/lib/components/orders-page.tsx
+msgid "Vous n'avez pas encore de commande"
+msgstr "You have no orders yet"
