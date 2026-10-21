@@ -26,6 +26,12 @@ Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent 
 
 La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage des scripts de `tools/dev`, puis knip. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.
 
+Dépendances :
+
+- **Audit** (`.github/workflows/audit.yml`, sur les PR qui touchent les dépendances et chaque jour sur `main`) : toute faille connue d'une dépendance de production bloque, et pour les outils de dev, les failles hautes et critiques. En local : `pnpm audit --prod`.
+- **Corriger une faille** : mettre à jour le paquet ; s'il est épinglé par une dépendance, une override ciblée (`'parent>paquet'`) dans `pnpm-workspace.yaml`, commentée avec l'advisory et la condition de retrait. Sans correctif publié : `auditConfig.ignoreGhsas`, avec la raison pour laquelle elle n'est pas exploitable ici.
+- **Renovate** (`renovate.json`, application GitHub à installer sur le repo) : PR groupées le lundi matin, versions publiées depuis au moins 3 jours, failles corrigées sans attendre ; une majeure de Postgres reste manuelle.
+
 ## Structure
 
 ```

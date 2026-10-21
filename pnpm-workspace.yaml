@@ -11,3 +11,15 @@ overrides:
   # @sentry/node n'en a besoin que pour ses plugins de bundler, inutilisés ici : sans cette ligne,
   # l'image de production embarque webpack, esbuild et swc (~100 Mo).
   '@sentry/bundler-plugins': '-'
+  # nx 23.3.0 épingle undici 7.29.0 (GHSA-8436-99hf-9mmv et une autre faille haute) ; à retirer
+  # quand une version de nx embarque undici >= 7.29.1.
+  'nx>undici': ^7.29.1
+  # oxfmt 0.60 épingle tinypool 2.1.0 (GHSA critique, prototype pollution) ; à retirer avec oxfmt >= 0.74.
+  'oxfmt>tinypool': ^2.1.2
+  # @nestjs/swagger 11.4.7 épingle js-yaml 5.3.0 (GHSA-r3ph-w7gj-g6xm, dépendance de prod).
+  '@nestjs/swagger>js-yaml': ^5.4.1
+auditConfig:
+  ignoreGhsas:
+    # braces (via @lingui/cli > micromatch) : aucune version corrigée. Outil de dev, qui ne lit que
+    # les motifs de la config du repo, jamais une entrée d'utilisateur.
+    - GHSA-vfj7-8cjw-p6xm

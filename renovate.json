@@ -1,0 +1,66 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "timezone": "Europe/Paris",
+  "schedule": ["before 7am on monday"],
+  "prConcurrentLimit": 5,
+  "minimumReleaseAge": "3 days",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null,
+    "labels": ["security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 7am on monday"]
+  },
+  "commitMessagePrefix": "chore(deps):",
+  "packageRules": [
+    {
+      "description": "Paquets qui se mettent à jour ensemble",
+      "groupName": "nx",
+      "matchPackageNames": ["nx", "@nx/**"]
+    },
+    {
+      "description": "@nestjs/swagger suit la majeure de NestJS",
+      "groupName": "nestjs",
+      "matchPackageNames": ["@nestjs/**"]
+    },
+    {
+      "description": "@opentelemetry/api reste en ~1.9 tant que le SDK est en 2.x : SDK et API ensemble",
+      "groupName": "opentelemetry",
+      "matchPackageNames": ["@opentelemetry/**"]
+    },
+    { "groupName": "sentry", "matchPackageNames": ["@sentry/**"] },
+    { "groupName": "better-auth", "matchPackageNames": ["better-auth", "@better-auth/**"] },
+    { "groupName": "vitest", "matchPackageNames": ["vitest", "@vitest/**"] },
+    {
+      "groupName": "testcontainers",
+      "matchPackageNames": ["testcontainers", "@testcontainers/**"]
+    },
+    { "groupName": "lingui", "matchPackageNames": ["@lingui/**", "eslint-plugin-lingui"] },
+    { "groupName": "tanstack", "matchPackageNames": ["@tanstack/**"] },
+    { "groupName": "storybook", "matchPackageNames": ["storybook", "@storybook/**"] },
+    { "groupName": "tailwind", "matchPackageNames": ["tailwindcss", "@tailwindcss/**"] },
+    { "groupName": "drizzle", "matchPackageNames": ["drizzle-orm", "drizzle-kit"] },
+    {
+      "description": "Node : .nvmrc, image Docker et @types/node ensemble",
+      "groupName": "node",
+      "matchPackageNames": ["node", "@types/node"]
+    },
+    {
+      "description": "Une majeure de Postgres demande une migration des données (pg_upgrade) : à la main",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Actions GitHub (épinglées par SHA) : une PR groupée par mois",
+      "groupName": "github actions",
+      "matchManagers": ["github-actions"],
+      "schedule": ["before 7am on the first day of the month"]
+    }
+  ]
+}
