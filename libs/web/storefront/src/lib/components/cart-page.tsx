@@ -14,6 +14,7 @@ import {
 
 import { formatMoney } from '../data/format-money';
 import { useCartLines, type CartLineView } from '../hooks/use-cart-lines';
+import { isProductUnavailable, usePlaceOrder } from '../hooks/use-place-order';
 import { removeFromCart, setCartQuantity } from '../states/cart';
 
 function QuantityStepper({ line }: { line: CartLineView }) {
@@ -103,6 +104,7 @@ function CartLineRow({ line }: { line: CartLineView }) {
 export function CartPage({ api }: { api: ApiClient }) {
   const { i18n } = useLingui();
   const { lines, total, mixedCurrencies, canOrder } = useCartLines(api);
+  const placeOrder = usePlaceOrder(api);
 
   if (lines.length === 0) {
     return (
@@ -137,11 +139,23 @@ export function CartPage({ api }: { api: ApiClient }) {
           </Trans>
         </Text>
       )}
+      {isProductUnavailable(placeOrder.error) && (
+        <Text role="alert" tone="destructive">
+          <Trans>Certains produits ne sont plus disponibles.</Trans>
+        </Text>
+      )}
       <Stack direction="row" gap={4} align="center" justify="between">
         <Text weight="semibold">
           {total ? <Trans>Total : {formatMoney(total, i18n.locale)}</Trans> : <Trans>Total</Trans>}
         </Text>
-        <Button disabled={!canOrder}>
+        <Button
+          disabled={!canOrder || placeOrder.isPending}
+          onClick={() =>
+            placeOrder.mutate({
+              lines: lines.map(({ productId, quantity }) => ({ productId, quantity })),
+            })
+          }
+        >
           <Trans>Passer la commande</Trans>
         </Button>
       </Stack>

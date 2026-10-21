@@ -145,4 +145,93 @@ describe('CartPage', () => {
     const link = screen.getByRole('link', { name: 'Voir le catalogue' });
     expect(link.getAttribute('href')).toBe('/');
   });
+
+  describe('placing the order', () => {
+    const ORDER_ID = 'ORD-00000000000000000001';
+    const order = {
+      id: ORDER_ID,
+      customerId: '3f2c9c0e-6d0e-4b8e-9d57-0d6a1c1d7a11',
+      status: 'placed',
+      lines: [],
+      total: { amountMinor: 3000, currency: 'EUR' },
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    it('places the order, empties the cart and opens the summary', async () => {
+      seedCart([{ productId: ID_A, name: 'Casquette', quantity: 2 }]);
+      serveProduct(ID_A, product(ID_A, 'Casquette', 1500));
+      let body: unknown;
+      let key: string | null = null;
+      server.use(
+        http.post(`${API}/orders`, async ({ request }) => {
+          body = await request.json();
+          key = request.headers.get('idempotency-key');
+          return HttpResponse.json(order, { status: 201 });
+        }),
+      );
+      const { router } = await renderWithProviders(<CartPage api={api} />, {
+        routes: ['/commandes/$orderId'],
+      });
+      await screen.findByText('Casquette');
+      await userEvent.click(orderButton());
+      expect(await screen.findByText('/commandes/$orderId')).toBeTruthy();
+      expect(router.state.location.pathname).toBe(`/commandes/${ORDER_ID}`);
+      expect(body).toEqual({ lines: [{ productId: ID_A, quantity: 2 }] });
+      expect(key).toBeTruthy();
+      expect(JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? '{"lines":[]}').lines).toEqual(
+        [],
+      );
+    });
+
+    it('sends a single order on double click', async () => {
+      seedCart([{ productId: ID_A, name: 'Casquette', quantity: 1 }]);
+      serveProduct(ID_A, product(ID_A, 'Casquette', 1500));
+      let calls = 0;
+      server.use(
+        http.post(`${API}/orders`, async () => {
+          calls += 1;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          return HttpResponse.json(order, { status: 201 });
+        }),
+      );
+      await renderWithProviders(<CartPage api={api} />, { routes: ['/commandes/$orderId'] });
+      await screen.findByText('Casquette');
+      await userEvent.dblClick(orderButton());
+      await screen.findByText('/commandes/$orderId');
+      expect(calls).toBe(1);
+    });
+
+    it('marks products unavailable when the API refuses them', async () => {
+      seedCart([
+        { productId: ID_A, name: 'Casquette', quantity: 1 },
+        { productId: ID_B, name: 'Boubou', quantity: 1 },
+      ]);
+      serveProduct(ID_A, product(ID_A, 'Casquette', 1500));
+      serveProduct(ID_B, product(ID_B, 'Boubou', 2500));
+      server.use(
+        http.post(`${API}/orders`, () => {
+          serveProduct(ID_A, null);
+          return HttpResponse.json(
+            {
+              type: 'about:blank',
+              title: 'Unprocessable',
+              status: 422,
+              code: 'PRODUCT_UNAVAILABLE',
+              detail: 'Some products are unavailable.',
+              details: { productIds: [ID_A] },
+            },
+            { status: 422 },
+          );
+        }),
+      );
+      await renderWithProviders(<CartPage api={api} />);
+      await screen.findByText('Casquette');
+      await screen.findByText('Boubou');
+      await userEvent.click(orderButton());
+      expect(await screen.findByText('Certains produits ne sont plus disponibles.')).toBeTruthy();
+      expect((await screen.findAllByText("Ce produit n'est plus disponible")).length).toBe(1);
+      expect(orderButton().disabled).toBe(true);
+    });
+  });
 });

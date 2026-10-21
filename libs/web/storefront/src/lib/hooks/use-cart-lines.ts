@@ -31,8 +31,8 @@ export function useCartLines(api: ApiClient): CartLines {
 
   const lines = cart.map((line, index): CartLineView => {
     const query = queries[index];
-    const unavailable =
-      query?.error instanceof ApiError && query.error.status === 404 && !query.data;
+    // Un 404 prime sur une donnée en cache : le produit a disparu depuis son dernier chargement.
+    const unavailable = query?.error instanceof ApiError && query.error.status === 404;
     return {
       ...line,
       ...(query?.data ? { product: query.data } : {}),

@@ -39,6 +39,10 @@ msgstr "Catalogue"
 msgid "Ce produit n'est plus disponible"
 msgstr "Ce produit n'est plus disponible"
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Certains produits ne sont plus disponibles."
+msgstr "Certains produits ne sont plus disponibles."
+
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
 msgstr "Cette page n'existe pas."
@@ -113,6 +117,7 @@ msgstr "Total : {0}"
 msgid "Une erreur est survenue"
 msgstr "Une erreur est survenue"
 
+#: ../../libs/web/storefront/src/lib/hooks/use-place-order.ts
 #: src/components/error-zone.tsx
 #: src/main.tsx
 msgid "Une erreur est survenue."
