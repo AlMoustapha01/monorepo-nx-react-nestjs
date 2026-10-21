@@ -1,15 +1,10 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import App from './app';
 
 describe('App', () => {
-  it('should render successfully', () => {
-    const { baseElement } = render(<App />);
-    expect(baseElement).toBeTruthy();
-  });
-
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(<App />);
-    expect(getAllByText(new RegExp('Welcome web', 'gi')).length > 0).toBeTruthy();
+  it('affiche le titre de niveau 1', () => {
+    render(<App />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Boilerplate web');
   });
 });

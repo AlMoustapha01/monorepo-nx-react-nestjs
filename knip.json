@@ -7,8 +7,12 @@
     "libs/api/core/src/testing.ts",
     "libs/api/*/src/lib/infra/*.schema.ts",
     "libs/api/core/src/lib/**/*.schema.ts",
-    "tools/dev/{setup,token,seed}.mts"
+    "tools/dev/{setup,token,seed}.mts",
+    "apps/web/src/main.tsx",
+    "apps/web/src/routes/**/*.tsx",
+    "libs/web/*/src/**/*.stories.tsx"
   ],
-  "project": ["apps/api/**/*.ts", "libs/**/*.ts", "tools/**/*.mts"],
+  "project": ["apps/api/**/*.ts", "apps/web/**/*.{ts,tsx}", "libs/**/*.{ts,tsx}", "tools/**/*.mts"],
+  "ignore": ["apps/web/src/routeTree.gen.ts"],
   "ignoreDependencies": ["pino-pretty", "@nestjs/schematics", "@nx/.*", "@swc/helpers", "ts-node"]
 }

@@ -1,9 +1,11 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
+  envDir: '../../',
   cacheDir: '../../node_modules/.vite/apps/web',
   resolve: {
     tsconfigPaths: true,
@@ -16,7 +18,7 @@ export default defineConfig(() => ({
     port: 4300,
     host: 'localhost',
   },
-  plugins: [react()],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
   // Uncomment this if you are using workers.
   // worker: {
   //    plugins: () => [ tsconfigPaths() ],
