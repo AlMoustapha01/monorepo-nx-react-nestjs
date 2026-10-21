@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MAX_LINE_QUANTITY, MAX_ORDER_LINES } from '@nx-react-nestjs/contracts';
 import { createApiClient } from '@nx-react-nestjs/web-data-access';
 
 import { CART_STORAGE_KEY } from '../states/cart';
@@ -79,6 +80,46 @@ describe('CatalogPage', () => {
     await userEvent.click(add);
     expect(await screen.findByText('✓ 2 dans le panier')).toBeTruthy();
     expect(localStorage.getItem(CART_STORAGE_KEY)).toContain('Casquette');
+  });
+
+  it('explains why Ajouter au panier is disabled when the cart has MAX_ORDER_LINES products', async () => {
+    const lines = Array.from({ length: MAX_ORDER_LINES }, (_, index) => ({
+      productId: product(index + 1).id,
+      name: `Produit ${index + 1}`,
+      quantity: 1,
+    }));
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ version: 1, lines }));
+    server.use(
+      http.get(`${API}/catalog/products`, () =>
+        HttpResponse.json({ items: [product(MAX_ORDER_LINES + 1)], nextCursor: null }),
+      ),
+    );
+    await renderWithProviders(<CatalogPage api={api} />);
+    const add = await screen.findByRole('button', { name: 'Ajouter au panier' });
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen.getByText(`Votre panier contient déjà ${MAX_ORDER_LINES} produits différents.`),
+    ).toBeTruthy();
+  });
+
+  it('shows no message when a single product reaches MAX_LINE_QUANTITY', async () => {
+    const id = product(1).id;
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        lines: [{ productId: id, name: 'Produit 1', quantity: MAX_LINE_QUANTITY }],
+      }),
+    );
+    server.use(
+      http.get(`${API}/catalog/products`, () =>
+        HttpResponse.json({ items: [product(1)], nextCursor: null }),
+      ),
+    );
+    await renderWithProviders(<CatalogPage api={api} />);
+    const add = await screen.findByRole('button', { name: 'Ajouter au panier' });
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByText(/produits différents/)).toBeNull();
   });
 
   it('shows the empty state', async () => {

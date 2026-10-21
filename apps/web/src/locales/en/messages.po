@@ -182,6 +182,10 @@ msgstr "View the catalog"
 msgid "Voir plus"
 msgstr "Load more"
 
+#: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
+msgid "Votre panier contient déjà {MAX_ORDER_LINES} produits différents."
+msgstr "Your cart already contains {MAX_ORDER_LINES} different products."
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Votre panier est vide"
 msgstr "Your cart is empty"

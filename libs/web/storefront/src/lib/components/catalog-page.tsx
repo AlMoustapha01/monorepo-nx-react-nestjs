@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { ProductResponse } from '@nx-react-nestjs/contracts';
+import { MAX_ORDER_LINES, type ProductResponse } from '@nx-react-nestjs/contracts';
 import type { ApiClient } from '@nx-react-nestjs/web-data-access';
 import {
   Button,
@@ -55,6 +55,7 @@ export function CatalogPage({ api }: { api: ApiClient }) {
   const { data, isPending, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery(productsInfiniteQueryOptions(api));
   const products = data?.pages.flatMap((page) => page.items) ?? [];
+  const cartFull = useCart().length >= MAX_ORDER_LINES;
 
   return (
     <Stack as="section" className="p-4">
@@ -74,13 +75,20 @@ export function CatalogPage({ api }: { api: ApiClient }) {
           <Trans>Aucun produit pour le moment</Trans>
         </Text>
       ) : (
-        <Stack as="ul" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <li key={product.id} className="list-none">
-              <ProductCard product={product} />
-            </li>
-          ))}
-        </Stack>
+        <>
+          {cartFull && (
+            <Text role="status" tone="muted">
+              <Trans>Votre panier contient déjà {MAX_ORDER_LINES} produits différents.</Trans>
+            </Text>
+          )}
+          <Stack as="ul" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <li key={product.id} className="list-none">
+                <ProductCard product={product} />
+              </li>
+            ))}
+          </Stack>
+        </>
       )}
       {hasNextPage && (
         <Button
