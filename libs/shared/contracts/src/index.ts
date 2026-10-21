@@ -1,3 +1,4 @@
+export * from './lib/auth/auth';
 export * from './lib/domain-id';
 export * from './lib/feature-flags';
 export * from './lib/integration-event';

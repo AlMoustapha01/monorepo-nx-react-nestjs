@@ -2,7 +2,7 @@ import { http, HttpResponse, delay } from 'msw';
 import { setupServer } from 'msw/node';
 import { z } from 'zod';
 import { ApiError } from './api-error';
-import { createApiClient } from './api-client';
+import { createApiClient, type GetToken } from './api-client';
 
 const BASE = 'http://api.test/api/v1';
 const server = setupServer();
@@ -87,6 +87,33 @@ describe('createApiClient', () => {
     token = undefined;
     await authed.request('/me');
     expect(seen).toEqual(['Bearer abc', null]);
+  });
+
+  it('retries once with a refreshed token after a 401', async () => {
+    const seen: (string | null)[] = [];
+    server.use(
+      http.post(`${BASE}/orders`, ({ request }) => {
+        seen.push(request.headers.get('authorization'));
+        return request.headers.get('authorization') === 'Bearer fresh'
+          ? HttpResponse.json({ id: 'ORD-1' })
+          : HttpResponse.json(
+              { status: 401, code: 'UNAUTHENTICATED', title: 'Unauthorized', detail: 'expired' },
+              { status: 401, headers: { 'content-type': 'application/problem+json' } },
+            );
+      }),
+    );
+    const getToken = vi.fn<GetToken>(({ refresh }) => Promise.resolve(refresh ? 'fresh' : 'stale'));
+    const authed = createApiClient({ baseUrl: BASE, getToken });
+    await expect(authed.request('/orders', { method: 'POST', body: {} })).resolves.toEqual({
+      id: 'ORD-1',
+    });
+    expect(seen).toEqual(['Bearer stale', 'Bearer fresh']);
+
+    // Un second refus n'est pas rejoué en boucle.
+    getToken.mockImplementation(() => Promise.resolve('stale'));
+    const error = await catchError(authed.request('/orders', { method: 'POST', body: {} }));
+    expect(error).toMatchObject({ status: 401 });
+    expect(seen).toHaveLength(4);
   });
 
   it('sends a uuid x-request-id and exposes it on ApiError', async () => {

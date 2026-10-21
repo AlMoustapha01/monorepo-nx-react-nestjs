@@ -2,9 +2,15 @@ import { problemDetailsSchema } from '@nx-react-nestjs/contracts';
 import type { z } from 'zod';
 import { ApiError } from './api-error';
 
+/** `refresh` : le token envoyé vient d'être refusé (401), il en faut un nouveau. */
+export type GetToken = (options: {
+  refresh: boolean;
+}) => string | undefined | Promise<string | undefined>;
+
 export interface ApiClientOptions {
   baseUrl: string;
-  getToken?: () => string | undefined;
+  /** Token d'accès ; sur un 401, rappelé avec `refresh: true` et la requête est rejouée une fois. */
+  getToken?: GetToken;
   /** Délai maximal d'une requête, 10 000 ms par défaut. */
   timeoutMs?: number;
 }
@@ -28,12 +34,25 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   async function request<T>(path: string, init: ApiRequest<T> = {}): Promise<T> {
+    try {
+      return await send(path, init, false);
+    } catch (error) {
+      // Token expiré ou révoqué : un seul nouvel essai, avec un token neuf. Un 401 n'a rien
+      // exécuté côté serveur, le rejouer est sans risque (même Idempotency-Key).
+      if (error instanceof ApiError && error.status === 401 && options.getToken) {
+        return send(path, init, true);
+      }
+      throw error;
+    }
+  }
+
+  async function send<T>(path: string, init: ApiRequest<T>, refresh: boolean): Promise<T> {
     const requestId = crypto.randomUUID();
     const headers = new Headers({
       accept: 'application/json, application/problem+json',
       'x-request-id': requestId,
     });
-    const token = options.getToken?.();
+    const token = await options.getToken?.({ refresh });
     if (token) headers.set('authorization', `Bearer ${token}`);
     if (init.idempotencyKey) headers.set('idempotency-key', init.idempotencyKey);
     if (init.body !== undefined) headers.set('content-type', 'application/json');
