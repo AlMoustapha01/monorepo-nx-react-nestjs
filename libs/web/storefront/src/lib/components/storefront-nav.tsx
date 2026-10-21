@@ -8,11 +8,11 @@ export function StorefrontNav() {
   const count = cartCount(useCart());
   return (
     <Stack as="nav" direction="row" gap={2} align="center">
-      {/* Routes ajoutées par les tâches suivantes : cast temporaire pour le typage du routeur. */}
+      {/* Route ajoutée par une tâche suivante : cast temporaire pour le typage du routeur. */}
       <Link to={'/commandes' as '/'} className={buttonVariants({ variant: 'ghost' })}>
         <Trans>Mes commandes</Trans>
       </Link>
-      <Link to={'/panier' as '/'} className={buttonVariants({ variant: 'ghost' })}>
+      <Link to="/panier" className={buttonVariants({ variant: 'ghost' })}>
         <Trans>Panier ({count})</Trans>
       </Link>
     </Stack>

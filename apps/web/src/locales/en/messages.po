@@ -23,6 +23,10 @@ msgstr "Add to cart"
 msgid "Aucun produit pour le moment"
 msgstr "No products yet"
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Augmenter la quantité"
+msgstr "Increase quantity"
+
 #: src/routes/index.tsx
 msgid "Boilerplate web"
 msgstr "Web boilerplate"
@@ -31,17 +35,30 @@ msgstr "Web boilerplate"
 msgid "Catalogue"
 msgstr "Catalog"
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Ce produit n'est plus disponible"
+msgstr "This product is no longer available"
+
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
 msgstr "This page does not exist."
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Chargement…"
 msgstr "Loading…"
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Diminuer la quantité"
+msgstr "Decrease quantity"
+
 #: src/components/locale-switcher.tsx
 msgid "Impossible de changer de langue."
 msgstr "Unable to change the language."
+
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Impossible de charger ce produit"
+msgstr "Unable to load this product"
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Impossible de charger le catalogue."
@@ -55,9 +72,17 @@ msgstr "Language"
 msgid "Mes commandes"
 msgstr "My orders"
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Panier"
+msgstr "Cart"
+
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
 msgid "Panier ({count})"
 msgstr "Cart ({count})"
+
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Passer la commande"
+msgstr "Place order"
 
 #: src/routes/__root.tsx
 msgid "Quelque chose s'est mal passé. Vous pouvez réessayer."
@@ -67,9 +92,22 @@ msgstr "Something went wrong. You can try again."
 msgid "Réessayer"
 msgstr "Try again"
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Retirer"
+msgstr "Remove"
+
 #: src/routes/__root.tsx
 msgid "Retour à l'accueil"
 msgstr "Back to home"
+
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Total"
+msgstr "Total"
+
+#. placeholder {0}: formatMoney(total, i18n.locale)
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Total : {0}"
+msgstr "Total: {0}"
 
 #: src/routes/__root.tsx
 msgid "Une erreur est survenue"
@@ -80,6 +118,18 @@ msgstr "An error occurred"
 msgid "Une erreur est survenue."
 msgstr "An error occurred."
 
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Voir le catalogue"
+msgstr "View the catalog"
+
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Voir plus"
 msgstr "Load more"
+
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Votre panier est vide"
+msgstr "Your cart is empty"
+
+#: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+msgid "Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander."
+msgstr "Your cart mixes several currencies: remove products to be able to order."

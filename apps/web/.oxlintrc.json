@@ -35,7 +35,12 @@
               "weight",
               "defaultPreload"
             ],
-            "ignoreFunctions": ["document.getElementById", "useFeatureFlag"]
+            "ignoreFunctions": [
+              "document.getElementById",
+              "useFeatureFlag",
+              "createFileRoute",
+              "requireFeature"
+            ]
           }
         ]
       }
