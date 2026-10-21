@@ -55,8 +55,10 @@
               "align",
               "justify",
               "tone",
-              "weight"
-            ]
+              "weight",
+              "autoComplete"
+            ],
+            "ignoreFunctions": ["*.register", "*.setError"]
           }
         ]
       }

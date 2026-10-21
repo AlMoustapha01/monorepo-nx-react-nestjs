@@ -22,6 +22,7 @@
       "@nx-react-nestjs/api-orders": ["./libs/api/orders/src/index.ts"],
       "@nx-react-nestjs/api-notifications": ["./libs/api/notifications/src/index.ts"],
       "@nx-react-nestjs/web-ui": ["./libs/web/ui/src/index.ts"],
+      "@nx-react-nestjs/web-auth": ["./libs/web/auth/src/index.ts"],
       "@nx-react-nestjs/web-data-access": ["./libs/web/data-access/src/index.ts"],
       "@nx-react-nestjs/web-storefront": ["./libs/web/storefront/src/index.ts"]
     }

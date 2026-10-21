@@ -14,6 +14,7 @@
     "dev:seed": "node tools/dev/seed.mts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.2",
     "@lingui/core": "^6.10.0",
     "@lingui/react": "^6.10.0",
     "@nestjs/common": "^11.0.0",
@@ -53,6 +54,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-error-boundary": "^6.1.6",
+    "react-hook-form": "^7.90.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "sonner": "^2.0.8",

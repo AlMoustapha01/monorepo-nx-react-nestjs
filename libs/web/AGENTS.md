@@ -8,7 +8,7 @@ Libs front React. App qui les assemble : [`apps/web/AGENTS.md`](../../apps/web/A
 | ------------------------------------------------------ | ------------------ | ----------------------------------------------------------------------------------- | ---------------------------------- |
 | `web-ui` (`@nx-react-nestjs/web-ui`)                   | `type:ui`          | design system : thème Tailwind 4, `cn`, `Stack`/`Text`/`Heading`, composants shadcn | `type:ui` seulement                |
 | `web-data-access` (`@nx-react-nestjs/web-data-access`) | `type:data-access` | `createApiClient`, `ApiError`, `createQueryClient`, `useIdempotentMutation`         | `type:contract`                    |
-| `libs/web/<feature>` (à venir)                         | `type:feature`     | un écran ou parcours métier                                                         | feature, ui, data-access, contract |
+| `web-storefront`, `web-auth`, `libs/web/<feature>`     | `type:feature`     | un écran ou parcours métier                                                         | feature, ui, data-access, contract |
 
 - `web-ui` n'importe ni `@tanstack/*`, ni `@nx-react-nestjs/contracts`, ni aucune autre lib.
 - `fetch` n'apparaît que dans `web-data-access`.
@@ -37,7 +37,7 @@ Libs front React. App qui les assemble : [`apps/web/AGENTS.md`](../../apps/web/A
 
 ## Formulaires
 
-Convention pour le premier formulaire (react-hook-form n'est pas encore installé) : `react-hook-form` + `zodResolver`, avec les schémas de `libs/shared/contracts` (les mêmes que l'API). Libellés et messages d'erreur localisés.
+`react-hook-form` + `zodResolver`, avec les schémas de `libs/shared/contracts` (les mêmes que l'API). Libellés et messages d'erreur localisés : le message affiché vient du composant (`t`), jamais du texte anglais de zod. Exemple : `libs/web/auth` (`FormField` relie libellé, `aria-invalid` et message d'erreur ; erreur globale en `role="alert"`).
 
 ## État d'interface
 
