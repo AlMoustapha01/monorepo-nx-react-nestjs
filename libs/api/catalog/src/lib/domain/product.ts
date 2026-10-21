@@ -12,6 +12,8 @@ export interface ProductProps {
   status: ProductStatus;
   /** Projection alimentée par les événements de commande, jamais modifiée par l'entité. */
   soldCount: number;
+  /** Verrou optimiste : version de la ligne lue en base, avancée à chaque écriture. */
+  version: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,7 +36,14 @@ export class Product {
   private constructor(private props: ProductProps) {}
 
   static create({ now, ...input }: NewProduct): Product {
-    return new Product({ ...input, status: 'draft', soldCount: 0, createdAt: now, updatedAt: now });
+    return new Product({
+      ...input,
+      status: 'draft',
+      soldCount: 0,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
   /** Reconstruit un produit depuis la persistance, sans rejouer les règles de création. */
@@ -72,6 +81,10 @@ export class Product {
 
   get soldCount(): number {
     return this.props.soldCount;
+  }
+
+  get version(): number {
+    return this.props.version;
   }
 
   get createdAt(): Date {
@@ -118,6 +131,11 @@ export class Product {
       });
     }
     this.props = { ...this.props, price, updatedAt: now };
+  }
+
+  /** Appelé par le repository après une écriture réussie : la ligne porte la version suivante. */
+  markPersisted(): void {
+    this.props = { ...this.props, version: this.props.version + 1 };
   }
 
   private assertNotArchived(): void {

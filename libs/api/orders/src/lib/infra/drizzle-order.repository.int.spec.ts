@@ -74,7 +74,10 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
     await context.runAs(tenantA, async () => {
       expect(await repository.findById(foreign.id)).toBeNull();
       foreign.cancel(new Date());
-      await repository.update(foreign);
+      // L'écriture conditionnelle ne trouve aucune ligne de ce tenant : rien n'est écrit.
+      await expect(repository.update(foreign)).rejects.toMatchObject({
+        code: 'ORDER_VERSION_CONFLICT',
+      });
     });
 
     const untouched = await context.runAs(tenantB, () => repository.findById(foreign.id));
@@ -126,4 +129,22 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
       expect(all.every((order) => order.lines.length === 2)).toBe(true);
     });
   });
+
+  it('verrou optimiste : une seconde annulation concurrente est refusée', () =>
+    context.runAs(tenantA, async () => {
+      const order = newOrder(tenantA.tenantId);
+      await repository.insert(order);
+
+      const [first, second] = [
+        await repository.findById(order.id),
+        await repository.findById(order.id),
+      ];
+      first?.cancel(new Date());
+      second?.cancel(new Date());
+      await repository.update(first!);
+      await expect(repository.update(second!)).rejects.toMatchObject({
+        code: 'ORDER_VERSION_CONFLICT',
+      });
+      expect((await repository.findById(order.id))?.version).toBe(2);
+    }));
 });

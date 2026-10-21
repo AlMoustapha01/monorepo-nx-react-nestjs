@@ -17,6 +17,7 @@ export class OrderMapper extends PersistenceMapper<Order, OrderRecord> {
       customerId: order.customerId,
       currency: currencySchema.parse(order.currency),
       status: order.status,
+      version: order.version,
       lines: [...lines]
         .sort((a, b) => a.position - b.position)
         .map((line) => ({
@@ -39,6 +40,7 @@ export class OrderMapper extends PersistenceMapper<Order, OrderRecord> {
         customerId: order.customerId,
         currency: order.currency,
         status: order.status,
+        version: order.version,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
       },

@@ -16,6 +16,7 @@ describe('ProductMapper', () => {
     priceCurrency: 'EUR',
     status: 'active',
     soldCount: 12,
+    version: 4,
     createdAt: new Date('2026-10-20T10:00:00.000Z'),
     updatedAt: new Date('2026-10-20T11:00:00.000Z'),
   };

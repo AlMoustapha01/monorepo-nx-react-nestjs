@@ -212,4 +212,38 @@ describe('API catalogue (e2e)', () => {
       true,
     );
   });
+
+  it('verrou optimiste : ETag, If-Match et 412 sur une copie périmée', async () => {
+    const created = await createProduct(tokenA, 'ETAG-01').expect(201);
+    expect(created.headers['etag']).toBe('"1"');
+    const id: string = created.body.id;
+    const changePrice = (amountMinor: number, ifMatch?: string) => {
+      const call = api()
+        .patch(`/api/v1/catalog/products/${id}/price`)
+        .auth(tokenA, { type: 'bearer' });
+      return (ifMatch ? call.set('If-Match', ifMatch) : call).send({
+        price: { amountMinor, currency: 'EUR' },
+      });
+    };
+
+    const fresh = await api()
+      .get(`/api/v1/catalog/products/${id}`)
+      .auth(tokenA, { type: 'bearer' })
+      .expect(200);
+    expect(fresh.body.version).toBe(1);
+
+    const updated = await changePrice(2500, fresh.headers['etag']).expect(200);
+    expect(updated.headers['etag']).toBe('"2"');
+
+    // Un second membre du staff travaille encore sur la version 1.
+    await changePrice(2600, '"1"')
+      .expect(412)
+      .expect(({ body }) => {
+        expect(body.code).toBe('PRECONDITION_FAILED');
+        expect(body.details).toEqual({ expectedVersion: 1, currentVersion: 2 });
+      });
+    await changePrice(2600, '1')
+      .expect(400)
+      .expect(({ body }) => expect(body.code).toBe('INVALID_IF_MATCH'));
+  });
 });

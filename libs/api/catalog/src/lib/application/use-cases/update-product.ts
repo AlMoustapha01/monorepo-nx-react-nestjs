@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { assertExpectedVersion } from '@nx-react-nestjs/api-core';
 import type { ChangeProductPriceInput } from '@nx-react-nestjs/contracts';
 import { Money } from '../../domain/money';
 import type { Product } from '../../domain/product';
@@ -14,8 +15,10 @@ abstract class ProductCommand<TInput> {
     private readonly products: ProductRepository,
   ) {}
 
-  async execute(id: string, input: TInput): Promise<Product> {
+  /** `expectedVersion` : version lue par le client (`If-Match`) ; 412 si elle a changé depuis. */
+  async execute(id: string, input: TInput, expectedVersion?: number): Promise<Product> {
     const product = await this.getProduct.execute(id);
+    assertExpectedVersion(expectedVersion, product.version);
     this.apply(product, input, new Date());
     await this.products.update(product);
     return product;

@@ -1,5 +1,6 @@
 import type { KeysetCursor, RequestContext } from '@nx-react-nestjs/api-core';
 import type { ProductStatus } from '@nx-react-nestjs/contracts';
+import { CatalogError } from '../../domain/catalog.errors';
 import { Product } from '../../domain/product';
 import {
   type ProductListPage,
@@ -49,10 +50,16 @@ export class InMemoryProductRepository extends ProductRepository {
 
   async update(product: Product): Promise<void> {
     const stored = this.rows.get(product.id);
-    if (stored?.tenantId === this.context.tenantId) {
-      // Comme en base : `update` ne touche pas au compteur de ventes.
-      this.rows.set(product.id, clone(product, stored.tenantId, stored.soldCount));
+    // Comme en base : une ligne d'un autre tenant ou déjà modifiée n'est pas écrite.
+    if (stored?.tenantId !== this.context.tenantId || stored.version !== product.version) {
+      throw new CatalogError(
+        'PRODUCT_VERSION_CONFLICT',
+        `Product ${product.id} was modified concurrently`,
+      );
     }
+    product.markPersisted();
+    // Comme en base : `update` ne touche pas au compteur de ventes.
+    this.rows.set(product.id, clone(product, stored.tenantId, stored.soldCount));
   }
 
   async adjustSoldCounts(changes: readonly SoldCountChange[]): Promise<void> {
@@ -91,6 +98,7 @@ function clone(product: Product, tenantId: string, soldCount = product.soldCount
     price: product.price,
     status: product.status,
     soldCount,
+    version: product.version,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   });

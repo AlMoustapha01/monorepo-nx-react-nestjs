@@ -20,6 +20,8 @@ export interface OrderProps {
   currency: Currency;
   status: OrderStatus;
   lines: readonly OrderLine[];
+  /** Verrou optimiste : version de la ligne lue en base, avancée à chaque écriture. */
+  version: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +56,7 @@ export class Order {
       ...input,
       lines: input.lines.map((line) => ({ ...line })),
       status: 'placed',
+      version: 1,
       createdAt: now,
       updatedAt: now,
     });
@@ -88,6 +91,10 @@ export class Order {
     return this.props.lines;
   }
 
+  get version(): number {
+    return this.props.version;
+  }
+
   get createdAt(): Date {
     return this.props.createdAt;
   }
@@ -106,6 +113,11 @@ export class Order {
       return;
     }
     this.props = { ...this.props, status: 'cancelled', updatedAt: now };
+  }
+
+  /** Appelé par le repository après une écriture réussie : la ligne porte la version suivante. */
+  markPersisted(): void {
+    this.props = { ...this.props, version: this.props.version + 1 };
   }
 }
 

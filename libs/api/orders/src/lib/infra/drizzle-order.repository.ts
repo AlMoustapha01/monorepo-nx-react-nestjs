@@ -3,6 +3,7 @@ import { DatabaseSession, type KeysetCursor, RequestContext } from '@nx-react-ne
 import { and, desc, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import { OrderRepository, type OrderListPage } from '../application/order.repository';
 import type { Order } from '../domain/order';
+import { OrdersError } from '../domain/orders.errors';
 import { OrderMapper } from './order.mapper';
 import { type OrderRow, orderLines, orders } from './orders.schema';
 
@@ -65,11 +66,23 @@ export class DrizzleOrderRepository extends OrderRepository {
   }
 
   async update(order: Order): Promise<void> {
-    const { status, updatedAt } = this.mapper.toRow(order).order;
-    await this.session.db
+    const { status, updatedAt, version } = this.mapper.toRow(order).order;
+    const [written] = await this.session.db
       .update(orders)
-      .set({ status, updatedAt })
-      .where(and(this.tenantScope(), eq(orders.id, order.id)));
+      .set({ status, updatedAt, version: version + 1 })
+      // Verrou optimiste : deux annulations simultanées ne publient pas deux OrderCancelled.
+      .where(and(this.tenantScope(), eq(orders.id, order.id), eq(orders.version, version)))
+      .returning({ id: orders.id });
+    if (!written) {
+      throw new OrdersError(
+        'ORDER_VERSION_CONFLICT',
+        `Order ${order.id} was modified concurrently`,
+        {
+          orderId: order.id,
+        },
+      );
+    }
+    order.markPersisted();
   }
 
   /** Charge les lignes de plusieurs commandes en une requête, pour éviter le N+1. */

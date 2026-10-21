@@ -28,8 +28,14 @@ export abstract class ProductRepository {
     status?: ProductStatus;
   }): Promise<ProductListPage>;
   abstract insert(product: Product): Promise<void>;
-  /** Ne touche pas à `soldCount`, mis à jour uniquement par `adjustSoldCounts`. */
+  /**
+   * Écrit si la ligne est encore à `product.version`, puis avance la version de l'entité ;
+   * sinon PRODUCT_VERSION_CONFLICT. Ne touche pas à `soldCount` (cf. `adjustSoldCounts`).
+   */
   abstract update(product: Product): Promise<void>;
-  /** Incrément atomique en base : pas de perte de mise à jour entre ventes concurrentes. */
+  /**
+   * Incrément atomique en base : pas de perte de mise à jour entre ventes concurrentes.
+   * N'avance pas la version : une vente ne doit pas invalider la copie d'un membre du staff.
+   */
   abstract adjustSoldCounts(changes: readonly SoldCountChange[]): Promise<void>;
 }

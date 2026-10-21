@@ -35,6 +35,7 @@ export const products = catalog.table(
     priceCurrency: char('price_currency', { length: 3 }).notNull(),
     status: productStatus('status').notNull(),
     soldCount: integer('sold_count').notNull().default(0),
+    version: integer('version').notNull().default(1),
     // Précision milliseconde = celle de Date en JS, pour des curseurs exacts.
     createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 }).notNull(),

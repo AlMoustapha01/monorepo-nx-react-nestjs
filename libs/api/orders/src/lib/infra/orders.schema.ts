@@ -29,6 +29,7 @@ export const orders = ordersSchema.table(
     customerId: uuid('customer_id').notNull(),
     currency: char('currency', { length: 3 }).notNull(),
     status: orderStatus('status').notNull(),
+    version: integer('version').notNull().default(1),
     // Précision milliseconde = celle de Date en JS, pour des curseurs exacts.
     createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 }).notNull(),

@@ -8,6 +8,8 @@ export type ErrorKind =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
+  /** La copie du client n'est plus à jour (`If-Match` ne correspond plus). */
+  | 'PRECONDITION_FAILED'
   | 'BUSINESS_RULE'
   | 'INTERNAL';
 
@@ -33,6 +35,8 @@ const CORE_ERROR_KINDS = {
   INVALID_CURSOR: 'VALIDATION',
   TENANT_CONTEXT_MISSING: 'INTERNAL',
   OUTBOX_REQUIRES_TRANSACTION: 'INTERNAL',
+  INVALID_IF_MATCH: 'VALIDATION',
+  PRECONDITION_FAILED: 'PRECONDITION_FAILED',
   IDEMPOTENCY_KEY_REQUIRED: 'VALIDATION',
   INVALID_IDEMPOTENCY_KEY: 'VALIDATION',
   /** 422, comme le recommande le brouillon IETF « The Idempotency-Key HTTP Header Field ». */

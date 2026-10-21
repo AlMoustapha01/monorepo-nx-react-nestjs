@@ -137,4 +137,21 @@ describe('catalogue (couche application)', () => {
     const staffView = await context.runAs(tenantA, () => listProducts.execute({ limit: 20 }));
     expect(staffView.items).toHaveLength(2);
   });
+
+  it('verrou optimiste : 412 si la version lue par le client n’est plus la bonne', () =>
+    context.runAs(tenantA, async () => {
+      const { createProduct, changePrice } = setup();
+      const { id, version } = await createProduct.execute(input('IFMATCH-01'));
+      const price = (amountMinor: number) => ({ price: { amountMinor, currency: 'EUR' as const } });
+
+      const updated = await changePrice.execute(id, price(2000), version);
+      expect(updated.version).toBe(version + 1);
+
+      await expect(changePrice.execute(id, price(2100), version)).rejects.toMatchObject({
+        code: 'PRECONDITION_FAILED',
+        details: { expectedVersion: version, currentVersion: version + 1 },
+      });
+      // Sans version attendue, le dernier écrit gagne (mais jamais sur une copie périmée en base).
+      await expect(changePrice.execute(id, price(2200))).resolves.toMatchObject({ version: 3 });
+    }));
 });

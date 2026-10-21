@@ -62,7 +62,10 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       expect(await repository.findManyByIds([foreign.id])).toEqual([]);
 
       foreign.archive(new Date());
-      await repository.update(foreign);
+      // L'écriture conditionnelle ne trouve aucune ligne de ce tenant : rien n'est écrit.
+      await expect(repository.update(foreign)).rejects.toMatchObject({
+        code: 'PRODUCT_VERSION_CONFLICT',
+      });
     });
 
     const untouched = await context.runAs(tenantB, () => repository.findById(foreign.id));
@@ -157,4 +160,35 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       );
     });
   });
+
+  it('verrou optimiste : avance la version et refuse une copie périmée', () =>
+    context.runAs(tenantA, async () => {
+      const product = newProduct(tenantA.tenantId, 'LOCKED');
+      await repository.insert(product);
+
+      const [first, second] = [
+        await repository.findById(product.id),
+        await repository.findById(product.id),
+      ];
+      first?.changePrice(Money.of(2500, 'EUR'), new Date());
+      await repository.update(first!);
+      expect(first?.version).toBe(2);
+
+      second?.changePrice(Money.of(3000, 'EUR'), new Date());
+      await expect(repository.update(second!)).rejects.toMatchObject({
+        code: 'PRODUCT_VERSION_CONFLICT',
+      });
+
+      const stored = await repository.findById(product.id);
+      expect(stored).toMatchObject({ version: 2 });
+      expect(stored?.price.amountMinor).toBe(2500);
+    }));
+
+  it('une vente n’avance pas la version', () =>
+    context.runAs(tenantA, async () => {
+      const product = newProduct(tenantA.tenantId, 'SALE-NO-VERSION');
+      await repository.insert(product);
+      await repository.adjustSoldCounts([{ productId: product.id, delta: 1 }]);
+      expect((await repository.findById(product.id))?.version).toBe(1);
+    }));
 });

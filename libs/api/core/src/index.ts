@@ -19,4 +19,5 @@ export { Outbox } from './lib/events/outbox';
 export { domainIdGenerator } from './lib/ids/domain-id';
 export { type KeysetCursor, decodeCursor, encodeCursor } from './lib/http/cursor';
 export { configureApp } from './lib/http/configure-app';
+export { assertExpectedVersion, etagFor, IfMatchVersion } from './lib/http/entity-version';
 export { Idempotent } from './lib/http/idempotency/idempotency.interceptor';

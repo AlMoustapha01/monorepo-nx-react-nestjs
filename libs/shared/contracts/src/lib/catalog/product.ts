@@ -46,6 +46,8 @@ export const productSchema = z.object({
   status: productStatusSchema,
   /** Unités vendues (commandes passées moins commandes annulées), mis à jour en asynchrone. */
   soldCount: z.number().int().nonnegative(),
+  /** À renvoyer dans `If-Match` (via l'en-tête ETag) pour une modification sans écrasement. */
+  version: z.number().int().positive(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });

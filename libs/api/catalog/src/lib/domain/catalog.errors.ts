@@ -4,6 +4,8 @@ import { AppError, type ErrorKind } from '@nx-react-nestjs/api-core';
 const CATALOG_ERROR_KINDS = {
   PRODUCT_NOT_FOUND: 'NOT_FOUND',
   SKU_ALREADY_EXISTS: 'CONFLICT',
+  /** Deux écritures concurrentes sur le même produit : la seconde doit relire et réessayer. */
+  PRODUCT_VERSION_CONFLICT: 'CONFLICT',
   INVALID_PRICE: 'VALIDATION',
   PRODUCT_ARCHIVED: 'BUSINESS_RULE',
   PRODUCT_NOT_PUBLISHABLE: 'BUSINESS_RULE',

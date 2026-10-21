@@ -21,6 +21,9 @@ export abstract class OrderRepository {
   }): Promise<OrderListPage>;
   /** Écrit la commande et ses lignes de façon atomique. */
   abstract insert(order: Order): Promise<void>;
-  /** Seuls le statut et `updatedAt` évoluent : les lignes sont figées. */
+  /**
+   * Seuls le statut et `updatedAt` évoluent : les lignes sont figées.
+   * Écrit si la ligne est encore à `order.version`, sinon ORDER_VERSION_CONFLICT.
+   */
   abstract update(order: Order): Promise<void>;
 }

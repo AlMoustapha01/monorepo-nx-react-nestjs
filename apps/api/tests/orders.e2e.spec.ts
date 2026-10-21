@@ -276,4 +276,34 @@ describe('API commandes (e2e)', () => {
         .expect(({ body }) => expect(body.code).toBe('INVALID_IDEMPOTENCY_KEY'));
     });
   });
+
+  it('des annulations simultanées ne retirent les ventes qu’une fois', async () => {
+    const tee = await catalogProduct('ORD-RACE-CANCEL', 1000);
+    const soldCount = async () =>
+      (
+        await api()
+          .get(`/api/v1/catalog/products/${tee}`)
+          .auth(token, { type: 'bearer' })
+          .expect(200)
+      ).body.soldCount;
+    const { body } = await placeOrder([{ productId: tee, quantity: 2 }]).expect(201);
+    await placeOrder([{ productId: tee, quantity: 3 }]).expect(201);
+    await eventually(async () => expect(await soldCount()).toBe(5));
+
+    const statuses = (
+      await Promise.all(
+        [1, 2, 3, 4].map(() =>
+          api().post(`/api/v1/orders/${body.id}/cancel`).auth(token, { type: 'bearer' }),
+        ),
+      )
+    ).map((response) => response.status);
+
+    // Au moins une annulation passe ; les perdantes de la course reçoivent 409 (ou 200 si elles
+    // relisent après coup une commande déjà annulée). Dans tous les cas, un seul OrderCancelled.
+    expect(statuses).toContain(200);
+    expect(statuses.every((status) => status === 200 || status === 409)).toBe(true);
+    await eventually(async () => expect(await soldCount()).toBe(3));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(await soldCount()).toBe(3);
+  });
 });

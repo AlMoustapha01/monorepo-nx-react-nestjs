@@ -1,5 +1,6 @@
 import type { KeysetCursor, RequestContext } from '@nx-react-nestjs/api-core';
 import { Order } from '../../domain/order';
+import { OrdersError } from '../../domain/orders.errors';
 import { OrderRepository, type OrderListPage } from '../order.repository';
 
 /** Fake fidèle au contrat du port (tenant implicite, tri keyset), pour tester l'application sans base. */
@@ -35,9 +36,16 @@ export class InMemoryOrderRepository extends OrderRepository {
   }
 
   async update(order: Order): Promise<void> {
-    if (this.rows.get(order.id)?.tenantId === this.context.tenantId) {
-      this.rows.set(order.id, clone(order, this.context.tenantId));
+    const stored = this.rows.get(order.id);
+    // Comme en base : une ligne d'un autre tenant ou déjà modifiée n'est pas écrite.
+    if (stored?.tenantId !== this.context.tenantId || stored.version !== order.version) {
+      throw new OrdersError(
+        'ORDER_VERSION_CONFLICT',
+        `Order ${order.id} was modified concurrently`,
+      );
     }
+    order.markPersisted();
+    this.rows.set(order.id, clone(order, stored.tenantId));
   }
 
   private scoped(): Order[] {
@@ -61,6 +69,7 @@ function clone(order: Order, tenantId: string): Order {
     customerId: order.customerId,
     currency: order.currency,
     status: order.status,
+    version: order.version,
     lines: order.lines,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,

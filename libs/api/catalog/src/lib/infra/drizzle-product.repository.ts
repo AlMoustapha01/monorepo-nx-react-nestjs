@@ -13,6 +13,7 @@ import {
   type SoldCountChange,
 } from '../application/product.repository';
 import { skuAlreadyExists } from '../application/use-cases/create-product';
+import { CatalogError } from '../domain/catalog.errors';
 import type { Product } from '../domain/product';
 import { PRODUCTS_TENANT_SKU_KEY, products } from './catalog.schema';
 import { ProductMapper } from './product.mapper';
@@ -92,12 +93,23 @@ export class DrizzleProductRepository extends ProductRepository {
       tenantId: _tenantId,
       createdAt: _createdAt,
       soldCount: _soldCount,
+      version,
       ...changes
     } = this.mapper.toRow(product);
-    await this.session.db
+    const [written] = await this.session.db
       .update(products)
-      .set(changes)
-      .where(and(this.tenantScope(), eq(products.id, id)));
+      .set({ ...changes, version: version + 1 })
+      // Verrou optimiste : n'écrit que si personne n'a modifié la ligne depuis sa lecture.
+      .where(and(this.tenantScope(), eq(products.id, id), eq(products.version, version)))
+      .returning({ id: products.id });
+    if (!written) {
+      throw new CatalogError(
+        'PRODUCT_VERSION_CONFLICT',
+        `Product ${id} was modified concurrently`,
+        { productId: id },
+      );
+    }
+    product.markPersisted();
   }
 
   async adjustSoldCounts(changes: readonly SoldCountChange[]): Promise<void> {

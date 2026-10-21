@@ -24,6 +24,7 @@ describe('OrderMapper', () => {
       customerId: randomUUID(),
       currency: 'EUR',
       status: 'placed',
+      version: 3,
       createdAt: new Date('2026-10-20T10:00:00.000Z'),
       updatedAt: new Date('2026-10-20T10:00:00.000Z'),
     },
