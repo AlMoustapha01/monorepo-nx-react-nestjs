@@ -321,7 +321,7 @@ describe('API commandes (e2e)', () => {
         .get('/api/v1/feature-flags')
         .auth(token, { type: 'bearer' })
         .expect(200);
-      expect(body).toEqual({ flags: { 'orders.cancellation': false } });
+      expect(body).toEqual({ flags: { 'orders.cancellation': false, storefront: false } });
     });
 
     it('masque l’annulation quand son flag est désactivé, même pour le staff', async () => {
