@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
+import { orderIdSchema } from '@nx-react-nestjs/contracts';
 import { ApiError } from '@nx-react-nestjs/web-data-access';
 import { OrderPage, orderQueryOptions } from '@nx-react-nestjs/web-storefront';
 
@@ -19,6 +20,8 @@ function Order() {
 export const Route = createFileRoute('/commandes/$orderId')({
   beforeLoad: requireFeature('storefront'),
   loader: async ({ context, params }) => {
+    // L'API refuserait l'ID (400) : un lien mal formé est une page introuvable, pas une panne.
+    if (!orderIdSchema.safeParse(params.orderId).success) throw notFound();
     try {
       await context.queryClient.ensureQueryData(orderQueryOptions(context.api, params.orderId));
     } catch (error) {

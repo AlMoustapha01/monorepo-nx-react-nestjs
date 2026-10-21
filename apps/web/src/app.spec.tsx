@@ -102,18 +102,37 @@ describe('app', () => {
   });
 
   it('shows the 404 page for an unknown order', async () => {
+    const id = 'ORD-00000000000000000001';
     server.use(
       http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
-      http.get(`${API}/orders/ORD-x`, () =>
+      http.get(`${API}/orders/${id}`, () =>
         HttpResponse.json(
           { status: 404, code: 'NOT_FOUND', title: 'Not Found', detail: 'Order not found' },
           { status: 404, headers: { 'Content-Type': 'application/problem+json' } },
         ),
       ),
     );
-    renderAt('/commandes/ORD-x');
+    renderAt(`/commandes/${id}`);
     const heading = await screen.findByRole('heading', { level: 1 });
     expect(heading.textContent).toBe('404 : page introuvable');
+  });
+
+  it('shows the 404 page for a malformed order ID without calling the API', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
+      http.get(`${API}/orders/:id`, () => {
+        calls += 1;
+        return HttpResponse.json(
+          { status: 400, code: 'VALIDATION_FAILED', title: 'Bad Request', detail: 'Invalid id' },
+          { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
+        );
+      }),
+    );
+    renderAt('/commandes/abc');
+    const heading = await screen.findByRole('heading', { level: 1 });
+    expect(heading.textContent).toBe('404 : page introuvable');
+    expect(calls).toBe(0);
   });
 
   it('shows the 404 page on /panier when storefront is off', async () => {
