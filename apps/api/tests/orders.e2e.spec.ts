@@ -59,8 +59,16 @@ describe('API commandes (e2e)', () => {
     return body.id as string;
   }
 
-  const placeOrder = (lines: { productId: string; quantity: number }[], as = token) =>
-    api().post('/api/v1/orders').auth(as, { type: 'bearer' }).send({ lines });
+  const placeOrder = (
+    lines: { productId: string; quantity: number }[],
+    as = token,
+    idempotencyKey: string = randomUUID(),
+  ) =>
+    api()
+      .post('/api/v1/orders')
+      .auth(as, { type: 'bearer' })
+      .set('Idempotency-Key', idempotencyKey)
+      .send({ lines });
 
   it('passe une commande depuis le catalogue, puis l’annule', async () => {
     const tee = await catalogProduct('ORD-TEE', 1990);
@@ -178,5 +186,94 @@ describe('API commandes (e2e)', () => {
       .expect(({ body: page }) => expect(page.items).toEqual([]));
 
     await api().get(`/api/v1/orders/${body.id}`).auth(staffToken, { type: 'bearer' }).expect(200);
+  });
+
+  describe('Idempotency-Key', () => {
+    /** Un client neuf par test : sa liste de commandes ne contient que ce que le test a créé. */
+    const freshCustomer = () =>
+      signTestToken({ userId: randomUUID(), tenantId: customer.tenantId });
+    const myOrders = async (as: string) =>
+      (await api().get('/api/v1/orders').auth(as, { type: 'bearer' }).expect(200)).body.items;
+
+    it('refuse une commande sans clé', async () => {
+      const tee = await catalogProduct('IDEM-NOKEY', 1000);
+      await api()
+        .post('/api/v1/orders')
+        .auth(token, { type: 'bearer' })
+        .send({ lines: [{ productId: tee, quantity: 1 }] })
+        .expect(400)
+        .expect(({ body }) => expect(body.code).toBe('IDEMPOTENCY_KEY_REQUIRED'));
+    });
+
+    it('rejoue la réponse d’origine sans créer de seconde commande', async () => {
+      const tee = await catalogProduct('IDEM-REPLAY', 1000);
+      const buyer = await freshCustomer();
+      const key = randomUUID();
+
+      const first = await placeOrder([{ productId: tee, quantity: 1 }], buyer, key).expect(201);
+      const retry = await placeOrder([{ productId: tee, quantity: 1 }], buyer, key).expect(201);
+
+      expect(retry.body).toEqual(first.body);
+      expect(first.headers['idempotent-replayed']).toBeUndefined();
+      expect(retry.headers['idempotent-replayed']).toBe('true');
+      expect(await myOrders(buyer)).toHaveLength(1);
+    });
+
+    it('traite une seule fois des requêtes simultanées avec la même clé', async () => {
+      const tee = await catalogProduct('IDEM-RACE', 1000);
+      const buyer = await freshCustomer();
+      const key = randomUUID();
+
+      const responses = await Promise.all(
+        [1, 2, 3].map(() => placeOrder([{ productId: tee, quantity: 1 }], buyer, key)),
+      );
+
+      expect(responses.map((response) => response.status)).toEqual([201, 201, 201]);
+      expect(new Set(responses.map((response) => response.body.id)).size).toBe(1);
+      expect(await myOrders(buyer)).toHaveLength(1);
+    });
+
+    it('refuse la même clé pour une requête différente, en 422', async () => {
+      const tee = await catalogProduct('IDEM-REUSE', 1000);
+      const buyer = await freshCustomer();
+      const key = randomUUID();
+
+      await placeOrder([{ productId: tee, quantity: 1 }], buyer, key).expect(201);
+      await placeOrder([{ productId: tee, quantity: 2 }], buyer, key)
+        .expect(422)
+        .expect(({ body }) => expect(body.code).toBe('IDEMPOTENCY_KEY_REUSED'));
+    });
+
+    it('ne réserve pas la clé quand la requête échoue', async () => {
+      const draft = await catalogProduct('IDEM-LATER', 1000, false);
+      const buyer = await freshCustomer();
+      const key = randomUUID();
+
+      await placeOrder([{ productId: draft, quantity: 1 }], buyer, key).expect(422);
+      await api()
+        .post(`/api/v1/catalog/products/${draft}/publish`)
+        .auth(staffToken, { type: 'bearer' })
+        .expect(200);
+      const retried = await placeOrder([{ productId: draft, quantity: 1 }], buyer, key).expect(201);
+      expect(retried.headers['idempotent-replayed']).toBeUndefined();
+      expect(await myOrders(buyer)).toHaveLength(1);
+    });
+
+    it('isole les clés par utilisateur', async () => {
+      const tee = await catalogProduct('IDEM-USERS', 1000);
+      const [alice, bob] = await Promise.all([freshCustomer(), freshCustomer()]);
+      const key = randomUUID();
+
+      const forAlice = await placeOrder([{ productId: tee, quantity: 1 }], alice, key).expect(201);
+      const forBob = await placeOrder([{ productId: tee, quantity: 1 }], bob, key).expect(201);
+      expect(forBob.body.id).not.toBe(forAlice.body.id);
+    });
+
+    it('refuse une clé mal formée', async () => {
+      const tee = await catalogProduct('IDEM-BADKEY', 1000);
+      await placeOrder([{ productId: tee, quantity: 1 }], token, 'clé avec espaces')
+        .expect(400)
+        .expect(({ body }) => expect(body.code).toBe('INVALID_IDEMPOTENCY_KEY'));
+    });
   });
 });

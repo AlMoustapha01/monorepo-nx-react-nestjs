@@ -83,6 +83,7 @@ describe('Email de confirmation de commande (e2e)', () => {
     const order = await api()
       .post('/api/v1/orders')
       .auth(token, { type: 'bearer' })
+      .set('Idempotency-Key', randomUUID())
       .send({ lines: [{ productId: product.body.id, quantity: 2 }] })
       .expect(201);
 

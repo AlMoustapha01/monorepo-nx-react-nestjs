@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Idempotent } from '@nx-react-nestjs/api-core';
 import {
   type CursorPage,
   cursorPageQuerySchema,
@@ -36,6 +37,8 @@ export class OrdersController {
   ) {}
 
   @Post()
+  // Un retry (timeout, réseau) ne doit jamais créer une seconde commande.
+  @Idempotent({ required: true })
   @ZodSerializerDto(OrderDto)
   async place(@Body() body: PlaceOrderDto): Promise<OrderResponse> {
     return toResponse(await this.placeOrder.execute(body));

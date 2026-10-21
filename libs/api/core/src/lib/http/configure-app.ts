@@ -13,7 +13,12 @@ export function configureApp(app: INestApplication): void {
   app.useLogger(app.get(Logger));
   app.use(requestIdMiddleware);
   app.use(helmet());
-  app.enableCors({ origin: config.get('CORS_ORIGINS'), credentials: true });
+  app.enableCors({
+    origin: config.get('CORS_ORIGINS'),
+    credentials: true,
+    // En-têtes de réponse que le front doit pouvoir lire.
+    exposedHeaders: ['ETag', 'Idempotent-Replayed', 'X-Request-Id'],
+  });
   app.setGlobalPrefix('api', { exclude: ['health', 'ready'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableShutdownHooks();

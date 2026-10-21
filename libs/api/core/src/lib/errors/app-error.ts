@@ -33,6 +33,10 @@ const CORE_ERROR_KINDS = {
   INVALID_CURSOR: 'VALIDATION',
   TENANT_CONTEXT_MISSING: 'INTERNAL',
   OUTBOX_REQUIRES_TRANSACTION: 'INTERNAL',
+  IDEMPOTENCY_KEY_REQUIRED: 'VALIDATION',
+  INVALID_IDEMPOTENCY_KEY: 'VALIDATION',
+  /** 422, comme le recommande le brouillon IETF « The Idempotency-Key HTTP Header Field ». */
+  IDEMPOTENCY_KEY_REUSED: 'BUSINESS_RULE',
 } as const satisfies Record<string, ErrorKind>;
 
 export type CoreErrorCode = keyof typeof CORE_ERROR_KINDS;

@@ -18,6 +18,7 @@ import {
   MESSAGING_CLEANUP_JOB,
   redisConnection,
 } from './integration-event.queue';
+import { idempotencyKeys } from '../http/idempotency/idempotency.schema';
 import { outbox, processedEvents } from './messaging.schema';
 
 const DAY_MS = 24 * 3600 * 1000;
@@ -148,5 +149,9 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
     await this.session.db
       .delete(processedEvents)
       .where(lt(processedEvents.processedAt, new Date(now - PROCESSED_RETENTION_MS)));
+    // Le même job quotidien purge les autres tables techniques d'api-core.
+    await this.session.db
+      .delete(idempotencyKeys)
+      .where(lt(idempotencyKeys.expiresAt, new Date(now)));
   }
 }
