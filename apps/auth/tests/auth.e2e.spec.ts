@@ -1,10 +1,14 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { NodeSDK, tracing } from '@opentelemetry/sdk-node';
+import type { ErrorEvent } from '@sentry/core';
+import * as Sentry from '@sentry/node';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { APIError } from 'better-auth/api';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { Pool } from 'pg';
 import { pino } from 'pino';
-import { createAuth, createPool } from '../src/auth';
+import { type Auth, createAuth, createPool } from '../src/auth';
 import { validateEnv } from '../src/env';
 import type { AuthEmail } from '../src/mailer';
 import { migrateAuthDatabase } from '../src/migrations';
@@ -20,9 +24,25 @@ describe('Service d’authentification', () => {
   let server: Server;
   let pool: Pool;
   let baseUrl: string;
+  let auth: Auth;
   const emails: AuthEmail[] = [];
+  const spans = new tracing.InMemorySpanExporter();
+  const telemetry = new NodeSDK({
+    spanProcessors: [new tracing.SimpleSpanProcessor(spans)],
+    instrumentations: [],
+    autoDetectResources: false,
+  });
+  const reported: ErrorEvent[] = [];
 
   beforeAll(async () => {
+    telemetry.start();
+    Sentry.initWithoutDefaultIntegrations({
+      dsn: 'https://public@sentry.example/1',
+      beforeSend: (event) => {
+        reported.push(event);
+        return null;
+      },
+    });
     container = await new PostgreSqlContainer('postgres:17-alpine').start();
     server = createServer();
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -45,10 +65,15 @@ describe('Service d’authentification', () => {
     await migrateAuthDatabase(env, logger);
 
     pool = createPool(env, logger);
-    const auth = createAuth({
+    auth = createAuth({
       env,
       pool,
-      sendEmail: async (email) => void emails.push(email),
+      sendEmail: async (email) => {
+        if (email.to.startsWith('smtp-down')) {
+          throw new Error('SMTP unreachable');
+        }
+        emails.push(email);
+      },
       logger,
     });
     server.on(
@@ -64,6 +89,8 @@ describe('Service d’authentification', () => {
   });
 
   afterAll(async () => {
+    await Sentry.close(0);
+    await telemetry.shutdown();
     await new Promise((resolve) => server.close(resolve));
     await pool.end();
     await container.stop();
@@ -169,6 +196,36 @@ describe('Service d’authentification', () => {
        where table_schema = 'auth' and table_name = 'user' and column_name = 'id'`,
     );
     expect(ids[0]?.data_type).toBe('uuid');
+  });
+
+  it('trace ses endpoints (spans de Better Auth)', async () => {
+    await call('/api/auth/sign-in/email', {
+      body: { email: 'owner@shop.test', password: 'correct-horse-battery' },
+    });
+    const names = spans.getFinishedSpans().map((span) => span.name);
+    expect(names.some((name) => name.includes('/sign-in/email'))).toBe(true);
+  });
+
+  it('envoie à Sentry un email impossible à envoyer', async () => {
+    await call('/api/auth/sign-up/email', {
+      body: { email: 'smtp-down@shop.test', password: 'correct-horse-battery', name: 'Eve' },
+    });
+    await vi.waitFor(() =>
+      expect(reported).toContainEqual(
+        expect.objectContaining({ tags: expect.objectContaining({ operation: 'send-email' }) }),
+      ),
+    );
+  });
+
+  it('n’envoie à Sentry que les erreurs inattendues', async () => {
+    reported.length = 0;
+    const onError = auth.options.onAPIError?.onError as (error: unknown) => Promise<void> | void;
+    await onError(new APIError('UNAUTHORIZED', { message: 'Invalid password' }));
+    expect(reported).toEqual([]);
+    await onError(new Error('connection terminated'));
+    expect(reported).toEqual([
+      expect.objectContaining({ tags: expect.objectContaining({ operation: 'api' }) }),
+    ]);
   });
 
   it('répond aux sondes', async () => {

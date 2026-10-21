@@ -2,6 +2,7 @@ import type { IncomingMessage, RequestListener, ServerResponse } from 'node:http
 import { toNodeHandler } from 'better-auth/node';
 import type { Pool } from 'pg';
 import { type Auth, CLIENT_IP_HEADER } from './auth';
+import { reportError } from './report-error';
 
 interface ServerDependencies {
   auth: Auth;
@@ -45,7 +46,14 @@ export function createRequestListener({
     } else {
       delete request.headers[CLIENT_IP_HEADER];
     }
-    void handleAuth(request, response);
+    handleAuth(request, response).catch((error: unknown) => {
+      reportError(error, { operation: 'http' });
+      if (!response.headersSent) {
+        json(response, 500, { message: 'Internal server error' });
+      } else {
+        response.destroy();
+      }
+    });
   };
 }
 

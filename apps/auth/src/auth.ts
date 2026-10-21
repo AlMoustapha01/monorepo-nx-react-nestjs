@@ -1,10 +1,12 @@
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { jwt, organization } from 'better-auth/plugins';
 import { Pool } from 'pg';
 import type { Logger } from 'pino';
 import { apiClaims } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
+import { reportError } from './report-error';
 
 /** En-tête interne : toute valeur envoyée par le client est remplacée par le serveur. */
 export const CLIENT_IP_HEADER = 'x-auth-client-ip';
@@ -34,9 +36,10 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
   // Pas d'attente : la réponse ne révèle pas, par sa durée, si un compte existe ; un SMTP lent ne
   // bloque pas la requête.
   const sendInBackground = (email: AuthEmail) => {
-    sendEmail(email).catch((error: unknown) =>
-      logger.error({ err: error, subject: email.subject }, 'Auth email failed'),
-    );
+    sendEmail(email).catch((error: unknown) => {
+      logger.error({ err: error, subject: email.subject }, 'Auth email failed');
+      reportError(error, { operation: 'send-email' });
+    });
   };
 
   /** Rôle du membre dans l'organisation active ; absent s'il n'en fait plus partie. */
@@ -61,6 +64,17 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     logger: {
       level: 'info',
       log: (level, message, ...args) => logger[level]({ args }, message),
+    },
+    onAPIError: {
+      // Les refus attendus (mauvais mot de passe, session expirée…) sont des APIError 4xx : seules
+      // les erreurs inattendues vont à Sentry.
+      onError: (error) => {
+        if (error instanceof APIError && error.statusCode < 500) {
+          return;
+        }
+        logger.error({ err: error }, 'Unexpected auth error');
+        reportError(error, { operation: 'api' });
+      },
     },
     // En base : partagé entre les instances, contrairement à la mémoire.
     rateLimit: { storage: 'database' },

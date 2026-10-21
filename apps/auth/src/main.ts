@@ -1,14 +1,11 @@
-import { existsSync } from 'node:fs';
+// En premier : charge .env et active OpenTelemetry et Sentry avant tout autre module.
+import { shutdownTelemetry } from './instrumentation';
 import { createServer } from 'node:http';
 import { pino } from 'pino';
 import { createAuth, createPool } from './auth';
 import { validateEnv } from './env';
 import { createSendEmail } from './mailer';
 import { createRequestListener } from './server';
-
-if (existsSync('.env')) {
-  process.loadEnvFile('.env');
-}
 
 /** Service d'identité : inscription, connexion, organisations (tenants), access tokens pour l'API. */
 function main() {
@@ -43,7 +40,7 @@ function main() {
     // Au-delà, l'orchestrateur enverrait SIGKILL : on sort en erreur avant.
     setTimeout(() => process.exit(1), 25_000).unref();
     server.close(() => {
-      pool.end().then(
+      Promise.all([pool.end(), shutdownTelemetry()]).then(
         () => process.exit(0),
         () => process.exit(1),
       );
