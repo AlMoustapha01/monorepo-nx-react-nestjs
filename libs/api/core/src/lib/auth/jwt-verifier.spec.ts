@@ -16,8 +16,19 @@ describe('JwtVerifier', () => {
   const verifier = new JwtVerifier(new AppConfig(env));
   const principal = { userId: randomUUID(), tenantId: randomUUID() };
 
-  it('extrait le principal d’un token valide', async () => {
-    await expect(verifier.verify(await signTestToken(principal))).resolves.toEqual(principal);
+  it('extrait le principal d’un token valide, sans rôle par défaut', async () => {
+    await expect(verifier.verify(await signTestToken(principal))).resolves.toEqual({
+      ...principal,
+      roles: [],
+    });
+  });
+
+  it('garde les rôles connus et ignore les autres', async () => {
+    const token = await signTestToken({
+      ...principal,
+      roles: ['staff', 'superadmin'] as unknown as ['staff'],
+    });
+    await expect(verifier.verify(token)).resolves.toMatchObject({ roles: ['staff'] });
   });
 
   it('rejette un token expiré', async () => {

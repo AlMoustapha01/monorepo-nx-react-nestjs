@@ -3,13 +3,18 @@ import { jwtVerify } from 'jose';
 import { z } from 'zod';
 import { AppConfig } from '../config/app-config';
 import type { Principal } from '../context/request-context';
+import { ROLES, type Role } from './roles';
 import { CoreError } from '../errors/app-error';
 
 const claimsSchema = z.object({
   sub: z.uuid(),
   tenant_id: z.uuid(),
   email: z.email().optional(),
+  roles: z.array(z.string()).default([]),
 });
+
+/** Les rôles inconnus de l'application sont ignorés, jamais interprétés. */
+const isKnownRole = (role: string): role is Role => (ROLES as readonly string[]).includes(role);
 
 @Injectable()
 export class JwtVerifier {
@@ -35,6 +40,7 @@ export class JwtVerifier {
         userId: claims.sub,
         tenantId: claims.tenant_id,
         ...(claims.email && { email: claims.email }),
+        roles: claims.roles.filter(isKnownRole),
       };
     } catch {
       throw new CoreError('UNAUTHENTICATED', 'Invalid or expired access token');

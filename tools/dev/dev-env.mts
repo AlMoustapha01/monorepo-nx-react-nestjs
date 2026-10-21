@@ -24,11 +24,17 @@ export interface DevPrincipal {
   tenantId: string;
   userId: string;
   email?: string;
+  /** `staff` pour gérer le catalogue et voir toutes les commandes du tenant. */
+  roles?: string[];
 }
 
 /** Même format que le fournisseur d'identité : HS256, claims `sub`, `tenant_id`, `email`. */
 export function signDevToken(principal: DevPrincipal, expiresIn = '12h'): Promise<string> {
-  return new SignJWT({ tenant_id: principal.tenantId, email: principal.email })
+  return new SignJWT({
+    tenant_id: principal.tenantId,
+    email: principal.email,
+    roles: principal.roles,
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(principal.userId)
     .setIssuer(env('AUTH_JWT_ISSUER'))

@@ -12,7 +12,7 @@ import { CreateProduct } from './use-cases/create-product';
 import { GetProduct } from './use-cases/get-product';
 
 const context = createTestRequestContext();
-const tenant = { userId: randomUUID(), tenantId: randomUUID() };
+const tenant = { userId: randomUUID(), tenantId: randomUUID(), roles: ['staff'] as const };
 
 function eventOf<TDefinition extends IntegrationEventDefinition>(
   definition: TDefinition,
@@ -39,7 +39,7 @@ describe('compteur de ventes du catalogue', () => {
       });
       const line = { productId: id, sku: 'TEE-01', name: 'Tee-shirt', unitPriceMinor: 1990 };
       const orderId = 'ORD-01jb4x7k2m9qwfzp3hd8';
-      const getProduct = new GetProduct(products);
+      const getProduct = new GetProduct(products, context);
 
       await new RecordSales(products).handle(
         eventOf(OrderPlaced, {
@@ -73,6 +73,6 @@ describe('compteur de ventes du catalogue', () => {
         price: { amountMinor: 900, currency: 'EUR' },
       });
       await products.adjustSoldCounts([{ productId: id, delta: -5 }]);
-      expect((await new GetProduct(products).execute(id)).soldCount).toBe(0);
+      expect((await new GetProduct(products, context).execute(id)).soldCount).toBe(0);
     }));
 });

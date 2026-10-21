@@ -1,0 +1,1 @@
+CREATE INDEX "orders_tenant_customer_keyset_idx" ON "orders"."orders" USING btree ("tenant_id","customer_id","created_at" DESC NULLS LAST,"id" DESC NULLS LAST);

@@ -28,6 +28,7 @@ describe('Email de confirmation de commande (e2e)', () => {
   let app: INestApplication;
   const customer = { userId: randomUUID(), tenantId: randomUUID(), email: 'ada@example.com' };
   let token: string;
+  let staffToken: string;
 
   beforeAll(async () => {
     [database, redis, mailpit] = await Promise.all([
@@ -47,6 +48,11 @@ describe('Email de confirmation de commande (e2e)', () => {
     configureApp(app);
     await app.init();
     token = await signTestToken(customer);
+    staffToken = await signTestToken({
+      userId: randomUUID(),
+      tenantId: customer.tenantId,
+      roles: ['staff'],
+    });
   });
 
   afterAll(async () => {
@@ -66,12 +72,12 @@ describe('Email de confirmation de commande (e2e)', () => {
   it('envoie la confirmation au client après la commande', async () => {
     const product = await api()
       .post('/api/v1/catalog/products')
-      .auth(token, { type: 'bearer' })
+      .auth(staffToken, { type: 'bearer' })
       .send({ sku: 'MAIL-TEE', name: 'Tee-shirt', price: { amountMinor: 1990, currency: 'EUR' } })
       .expect(201);
     await api()
       .post(`/api/v1/catalog/products/${product.body.id}/publish`)
-      .auth(token, { type: 'bearer' })
+      .auth(staffToken, { type: 'bearer' })
       .expect(200);
 
     const order = await api()

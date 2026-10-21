@@ -35,6 +35,13 @@ export const orders = ordersSchema.table(
   },
   (table) => [
     index('orders_tenant_keyset_idx').on(table.tenantId, table.createdAt.desc(), table.id.desc()),
+    // « Mes commandes » : la liste d'un client, paginée dans le même ordre.
+    index('orders_tenant_customer_keyset_idx').on(
+      table.tenantId,
+      table.customerId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
   ],
 );
 

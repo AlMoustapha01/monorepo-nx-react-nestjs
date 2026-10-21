@@ -1,6 +1,7 @@
 /**
  * Génère un JWT de dev, signé avec le secret de .env.
- *   pnpm -s dev:token                      → utilisateur et tenant de dev
+ *   pnpm -s dev:token                      → client de dev (voit le catalogue publié, ses commandes)
+ *   pnpm -s dev:token --staff              → staff de dev (gère le catalogue, voit tout le tenant)
  *   pnpm -s dev:token --tenant <uuid> --user <uuid> --email a@b.c --expires 1h
  *   TOKEN=$(pnpm -s dev:token) && curl -H "authorization: Bearer $TOKEN" …
  */
@@ -14,6 +15,7 @@ const { values } = parseArgs({
     user: { type: 'string', default: DEV_USER_ID },
     email: { type: 'string', default: DEV_EMAIL },
     'no-email': { type: 'boolean', default: false },
+    staff: { type: 'boolean', default: false },
     'new-tenant': { type: 'boolean', default: false },
     expires: { type: 'string', default: '12h' },
   },
@@ -24,6 +26,7 @@ const token = await signDevToken(
     tenantId: values['new-tenant'] ? randomUUID() : values.tenant,
     userId: values.user,
     ...(!values['no-email'] && { email: values.email }),
+    ...(values.staff && { roles: ['staff'] }),
   },
   values.expires,
 );

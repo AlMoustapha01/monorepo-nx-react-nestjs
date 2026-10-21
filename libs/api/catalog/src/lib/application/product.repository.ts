@@ -1,4 +1,5 @@
 import type { KeysetCursor } from '@nx-react-nestjs/api-core';
+import type { ProductStatus } from '@nx-react-nestjs/contracts';
 import type { Product } from '../domain/product';
 
 /** Variation des ventes d'un produit (négative pour une annulation). */
@@ -21,7 +22,11 @@ export abstract class ProductRepository {
   abstract findBySku(sku: string): Promise<Product | null>;
   abstract findManyByIds(ids: readonly string[]): Promise<Product[]>;
   /** Trié par (createdAt DESC, id DESC). */
-  abstract list(page: { limit: number; after?: KeysetCursor }): Promise<ProductListPage>;
+  abstract list(page: {
+    limit: number;
+    after?: KeysetCursor;
+    status?: ProductStatus;
+  }): Promise<ProductListPage>;
   abstract insert(product: Product): Promise<void>;
   /** Ne touche pas à `soldCount`, mis à jour uniquement par `adjustSoldCounts`. */
   abstract update(product: Product): Promise<void>;

@@ -25,10 +25,12 @@ const PRODUCTS: SeedProduct[] = [
 ];
 
 const base = apiBaseUrl();
+// Créer et publier des produits est réservé au staff.
 const token = await signDevToken({
   tenantId: DEV_TENANT_ID,
   userId: DEV_USER_ID,
   email: DEV_EMAIL,
+  roles: ['staff'],
 });
 
 async function call(method: string, path: string, body?: unknown): Promise<Response> {
@@ -70,4 +72,6 @@ for (const product of PRODUCTS) {
   console.log(`+ ${product.sku} ${id}${product.publish ? '' : ' (brouillon)'}`);
 }
 
-console.log(`\nTenant de dev ${DEV_TENANT_ID} prêt. Token : pnpm -s dev:token`);
+console.log(
+  `\nTenant de dev ${DEV_TENANT_ID} prêt. Tokens : pnpm -s dev:token (client), --staff (gestion).`,
+);

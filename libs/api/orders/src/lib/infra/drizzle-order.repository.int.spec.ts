@@ -90,6 +90,18 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
     expect(own?.lines).toHaveLength(2);
   });
 
+  it('filtre la liste par client', async () => {
+    const tenant = { userId: randomUUID(), tenantId: randomUUID() };
+    const mine = newOrder(tenant.tenantId);
+    const theirs = newOrder(tenant.tenantId);
+    await context.runAs(tenant, async () => {
+      await repository.insert(mine);
+      await repository.insert(theirs);
+      const page = await repository.list({ limit: 10, customerId: mine.customerId });
+      expect(page.items.map((order) => order.id)).toEqual([mine.id]);
+    });
+  });
+
   it('pagine par (created_at, id) décroissants et charge les lignes de chaque page', async () => {
     const tenant = { userId: randomUUID(), tenantId: randomUUID() };
     const sameInstant = new Date('2026-10-20T10:00:00.000Z');

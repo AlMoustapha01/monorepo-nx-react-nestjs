@@ -13,7 +13,12 @@ export interface OrderListPage {
 export abstract class OrderRepository {
   abstract findById(id: string): Promise<Order | null>;
   /** Trié par (createdAt DESC, id DESC). */
-  abstract list(page: { limit: number; after?: KeysetCursor }): Promise<OrderListPage>;
+  /** `customerId` limite aux commandes d'un client. */
+  abstract list(page: {
+    limit: number;
+    after?: KeysetCursor;
+    customerId?: string;
+  }): Promise<OrderListPage>;
   /** Écrit la commande et ses lignes de façon atomique. */
   abstract insert(order: Order): Promise<void>;
   /** Seuls le statut et `updatedAt` évoluent : les lignes sont figées. */

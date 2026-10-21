@@ -19,7 +19,9 @@ describe('API commandes (e2e)', () => {
   let redis: TestRedis;
   let app: INestApplication;
   const customer = { userId: randomUUID(), tenantId: randomUUID() };
+  const staff = { userId: randomUUID(), tenantId: customer.tenantId, roles: ['staff' as const] };
   let token: string;
+  let staffToken: string;
 
   beforeAll(async () => {
     [database, redis] = await Promise.all([startTestDatabase(), startTestRedis()]);
@@ -31,6 +33,7 @@ describe('API commandes (e2e)', () => {
     await app.init();
 
     token = await signTestToken(customer);
+    staffToken = await signTestToken(staff);
   });
 
   afterAll(async () => {
@@ -40,17 +43,17 @@ describe('API commandes (e2e)', () => {
 
   const api = () => request(app.getHttpServer());
 
-  /** Crée un produit dans le catalogue, publié par défaut. */
+  /** Crée un produit dans le catalogue (rôle staff), publié par défaut. */
   async function catalogProduct(sku: string, amountMinor: number, publish = true) {
     const { body } = await api()
       .post('/api/v1/catalog/products')
-      .auth(token, { type: 'bearer' })
+      .auth(staffToken, { type: 'bearer' })
       .send({ sku, name: sku, price: { amountMinor, currency: 'EUR' } })
       .expect(201);
     if (publish) {
       await api()
         .post(`/api/v1/catalog/products/${body.id}/publish`)
-        .auth(token, { type: 'bearer' })
+        .auth(staffToken, { type: 'bearer' })
         .expect(200);
     }
     return body.id as string;
@@ -115,7 +118,7 @@ describe('API commandes (e2e)', () => {
 
     await api()
       .patch(`/api/v1/catalog/products/${tee}/price`)
-      .auth(token, { type: 'bearer' })
+      .auth(staffToken, { type: 'bearer' })
       .send({ price: { amountMinor: 5000, currency: 'EUR' } })
       .expect(200);
 
@@ -152,5 +155,28 @@ describe('API commandes (e2e)', () => {
       .auth(outsider, { type: 'bearer' })
       .expect(404)
       .expect(({ body: problem }) => expect(problem.code).toBe('ORDER_NOT_FOUND'));
+  });
+
+  it('un client ne voit que ses commandes ; le staff voit celles de tout le tenant', async () => {
+    const tee = await catalogProduct('ORD-OWNER', 1000);
+    const { body } = await placeOrder([{ productId: tee, quantity: 1 }]).expect(201);
+    const neighbour = await signTestToken({ userId: randomUUID(), tenantId: customer.tenantId });
+
+    await api()
+      .get(`/api/v1/orders/${body.id}`)
+      .auth(neighbour, { type: 'bearer' })
+      .expect(404)
+      .expect(({ body: problem }) => expect(problem.code).toBe('ORDER_NOT_FOUND'));
+    await api()
+      .post(`/api/v1/orders/${body.id}/cancel`)
+      .auth(neighbour, { type: 'bearer' })
+      .expect(404);
+    await api()
+      .get('/api/v1/orders')
+      .auth(neighbour, { type: 'bearer' })
+      .expect(200)
+      .expect(({ body: page }) => expect(page.items).toEqual([]));
+
+    await api().get(`/api/v1/orders/${body.id}`).auth(staffToken, { type: 'bearer' }).expect(200);
   });
 });

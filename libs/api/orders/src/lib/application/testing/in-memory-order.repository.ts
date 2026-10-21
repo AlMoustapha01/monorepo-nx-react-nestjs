@@ -14,8 +14,17 @@ export class InMemoryOrderRepository extends OrderRepository {
     return this.scoped().find((order) => order.id === id) ?? null;
   }
 
-  async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<OrderListPage> {
+  async list({
+    limit,
+    after,
+    customerId,
+  }: {
+    limit: number;
+    after?: KeysetCursor;
+    customerId?: string;
+  }): Promise<OrderListPage> {
     const sorted = this.scoped()
+      .filter((order) => customerId === undefined || order.customerId === customerId)
       .sort((a, b) => compareKeyset(b, a))
       .filter((order) => !after || compareKeyset(order, after) < 0);
     return { items: sorted.slice(0, limit), hasMore: sorted.length > limit };

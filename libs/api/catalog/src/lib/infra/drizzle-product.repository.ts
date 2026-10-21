@@ -5,6 +5,7 @@ import {
   type KeysetCursor,
   RequestContext,
 } from '@nx-react-nestjs/api-core';
+import type { ProductStatus } from '@nx-react-nestjs/contracts';
 import { and, desc, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import {
   type ProductListPage,
@@ -46,13 +47,22 @@ export class DrizzleProductRepository extends ProductRepository {
     return this.mapper.toDomainList(rows);
   }
 
-  async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<ProductListPage> {
+  async list({
+    limit,
+    after,
+    status,
+  }: {
+    limit: number;
+    after?: KeysetCursor;
+    status?: ProductStatus;
+  }): Promise<ProductListPage> {
     const rows = await this.session.db
       .select()
       .from(products)
       .where(
         and(
           this.tenantScope(),
+          status && eq(products.status, status),
           after &&
             sql`(${products.createdAt}, ${products.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id})`,
         ),

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ClsService, type ClsStore } from 'nestjs-cls';
+import type { Role } from '../auth/roles';
 import { CoreError } from '../errors/app-error';
 
 export interface Principal {
@@ -7,6 +8,8 @@ export interface Principal {
   tenantId: string;
   /** Claim `email` du token, si le fournisseur d'identité le transmet. */
   email?: string;
+  /** Absent ou vide : simple client. */
+  roles?: readonly Role[];
 }
 
 interface RequestContextStore extends ClsStore {
@@ -35,6 +38,10 @@ export class RequestContext {
 
   get userId(): string {
     return this.requirePrincipal().userId;
+  }
+
+  hasRole(role: Role): boolean {
+    return this.principal?.roles?.includes(role) ?? false;
   }
 
   setPrincipal(principal: Principal): void {

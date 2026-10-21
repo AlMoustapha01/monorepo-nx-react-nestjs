@@ -8,6 +8,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from './auth/auth.guard';
 import { JwtVerifier } from './auth/jwt-verifier';
+import { RolesGuard } from './auth/roles.guard';
 import { AppConfig, AppConfigModule } from './config/app-config';
 import { RequestContext } from './context/request-context';
 import { DatabaseModule } from './database/database.module';
@@ -68,9 +69,10 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     JwtVerifier,
     DatabaseHealthIndicator,
     RedisHealthIndicator,
-    // L'ordre compte : le rate limiting s'applique avant l'authentification.
+    // L'ordre compte : rate limiting, puis authentification, puis rôles.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },

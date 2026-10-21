@@ -19,6 +19,7 @@ describe('API catalogue (e2e)', () => {
   let app: INestApplication;
   let tokenA: string;
   let tokenB: string;
+  let customerTokenA: string;
 
   beforeAll(async () => {
     [database, redis] = await Promise.all([startTestDatabase(), startTestRedis()]);
@@ -29,8 +30,15 @@ describe('API catalogue (e2e)', () => {
     configureApp(app);
     await app.init();
 
-    tokenA = await signTestToken({ userId: randomUUID(), tenantId: randomUUID() });
-    tokenB = await signTestToken({ userId: randomUUID(), tenantId: randomUUID() });
+    // Les tokens A et B gèrent le catalogue (staff) ; le client A est dans le même tenant que A.
+    const tenantA = randomUUID();
+    tokenA = await signTestToken({ userId: randomUUID(), tenantId: tenantA, roles: ['staff'] });
+    tokenB = await signTestToken({
+      userId: randomUUID(),
+      tenantId: randomUUID(),
+      roles: ['staff'],
+    });
+    customerTokenA = await signTestToken({ userId: randomUUID(), tenantId: tenantA });
   });
 
   afterAll(async () => {
@@ -141,7 +149,11 @@ describe('API catalogue (e2e)', () => {
   });
 
   it('pagine la liste par curseur', async () => {
-    const token = await signTestToken({ userId: randomUUID(), tenantId: randomUUID() });
+    const token = await signTestToken({
+      userId: randomUUID(),
+      tenantId: randomUUID(),
+      roles: ['staff'],
+    });
     for (const sku of ['A-01', 'A-02', 'A-03']) {
       await createProduct(token, sku).expect(201);
     }
@@ -166,5 +178,38 @@ describe('API catalogue (e2e)', () => {
       .auth(token, { type: 'bearer' })
       .expect(400)
       .expect(({ body }) => expect(body.code).toBe('INVALID_CURSOR'));
+  });
+
+  it('réserve la gestion du catalogue au staff, en 403', async () => {
+    await createProduct(customerTokenA, 'CUST-01')
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body.code).toBe('FORBIDDEN');
+        expect(body.type).toBe('urn:problem-type:forbidden');
+      });
+  });
+
+  it('ne montre à un client que les produits publiés', async () => {
+    const draft = await createProduct(tokenA, 'HIDDEN-01').expect(201);
+    const active = await createProduct(tokenA, 'VISIBLE-01').expect(201);
+    await api()
+      .post(`/api/v1/catalog/products/${active.body.id}/publish`)
+      .auth(tokenA, { type: 'bearer' })
+      .expect(200);
+
+    await api()
+      .get(`/api/v1/catalog/products/${draft.body.id}`)
+      .auth(customerTokenA, { type: 'bearer' })
+      .expect(404);
+    const { body } = await api()
+      .get('/api/v1/catalog/products?limit=100')
+      .auth(customerTokenA, { type: 'bearer' })
+      .expect(200);
+    const skus = body.items.map((product: { sku: string }) => product.sku);
+    expect(skus).toContain('VISIBLE-01');
+    expect(skus).not.toContain('HIDDEN-01');
+    expect(body.items.every((product: { status: string }) => product.status === 'active')).toBe(
+      true,
+    );
   });
 });

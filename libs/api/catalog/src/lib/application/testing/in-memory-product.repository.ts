@@ -1,4 +1,5 @@
 import type { KeysetCursor, RequestContext } from '@nx-react-nestjs/api-core';
+import type { ProductStatus } from '@nx-react-nestjs/contracts';
 import { Product } from '../../domain/product';
 import {
   type ProductListPage,
@@ -26,8 +27,17 @@ export class InMemoryProductRepository extends ProductRepository {
     return this.scoped().filter((product) => ids.includes(product.id));
   }
 
-  async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<ProductListPage> {
+  async list({
+    limit,
+    after,
+    status,
+  }: {
+    limit: number;
+    after?: KeysetCursor;
+    status?: ProductStatus;
+  }): Promise<ProductListPage> {
     const sorted = this.scoped()
+      .filter((product) => !status || product.status === status)
       .sort((a, b) => compareKeyset(b, a))
       .filter((product) => !after || compareKeyset(product, after) < 0);
     return { items: sorted.slice(0, limit), hasMore: sorted.length > limit };

@@ -4,18 +4,18 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 ## Commandes
 
-| Besoin                                                               | Commande                                                                    |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Première installation : `.env`, Postgres, Redis, Mailpit, migrations | `pnpm install && pnpm dev:setup`                                            |
-| Lancer l'API                                                         | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs` |
-| Données de démo (API démarrée)                                       | `pnpm dev:seed`                                                             |
-| Token pour appeler l'API (Swagger, curl)                             | `pnpm -s dev:token` (`--new-tenant`, `--no-email`, `--expires 1h`)          |
-| Voir les emails envoyés en local                                     | http://localhost:8025 (Mailpit)                                             |
-| Appliquer les migrations                                             | `pnpm nx run api:db-migrate`                                                |
-| Générer une migration après un changement de schéma                  | `pnpm nx run api:db-generate --name=<sujet>`                                |
-| Tout vérifier, comme la CI (format, lint, types, tests, code mort)   | `pnpm check`                                                                |
-| Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                   |
-| Formater                                                             | `pnpm format`                                                               |
+| Besoin                                                               | Commande                                                                                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Première installation : `.env`, Postgres, Redis, Mailpit, migrations | `pnpm install && pnpm dev:setup`                                                               |
+| Lancer l'API                                                         | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                    |
+| Données de démo (API démarrée)                                       | `pnpm dev:seed`                                                                                |
+| Token pour appeler l'API (Swagger, curl)                             | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h` |
+| Voir les emails envoyés en local                                     | http://localhost:8025 (Mailpit)                                                                |
+| Appliquer les migrations                                             | `pnpm nx run api:db-migrate`                                                                   |
+| Générer une migration après un changement de schéma                  | `pnpm nx run api:db-generate --name=<sujet>`                                                   |
+| Tout vérifier, comme la CI (format, lint, types, tests, code mort)   | `pnpm check`                                                                                   |
+| Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                                      |
+| Formater                                                             | `pnpm format`                                                                                  |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
@@ -48,6 +48,14 @@ Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de 
 - `domain/` n'importe ni NestJS, ni Drizzle, ni `pg` (lint, `no-restricted-imports` du `.oxlintrc.json` de chaque domaine).
 - Chaque domaine possède son schéma Postgres (`pgSchema('<domaine>')`). Pas de jointure ni de clé étrangère vers les tables d'un autre domaine : passer par sa façade ou ne garder qu'un ID.
 
+## Autorisations
+
+- Tout utilisateur authentifié est un **client**. Un rôle ajoute des droits ; il vient de la claim `roles` du JWT (`staff` aujourd'hui, liste `ROLES` dans api-core). Un rôle inconnu est ignoré.
+- **Rôle requis par une route** : `@RequireRole('staff')` sur la méthode ou le controller ; le `RolesGuard` global renvoie 403 `FORBIDDEN`.
+- **Accès à une ressource** (propriété, visibilité) : c'est une règle métier, appliquée dans le cas d'usage avec `RequestContext` (`userId`, `hasRole`), jamais dans le controller. Une ressource qu'on n'a pas le droit de voir répond **404**, comme si elle n'existait pas : on ne révèle pas son existence.
+- Règles actuelles : un client ne voit que les produits publiés et que ses commandes ; le staff gère le catalogue et voit toutes les commandes du tenant.
+- Un handler d'événement s'exécute au nom de l'auteur de l'événement, sans rôle : il passe par les repositories, pas par les cas d'usage soumis à autorisation.
+
 ## Événements d'intégration (outbox + BullMQ)
 
 Les façades servent aux lectures et commandes synchrones entre domaines ; les événements servent aux réactions asynchrones. Un domaine qui réagit ne dépend que du contrat de l'événement, jamais du domaine émetteur (le catalogue écoute les commandes alors que les commandes dépendent du catalogue).
@@ -64,7 +72,7 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 
 1. Toute table métier a une colonne `tenant_id`, et aucun repository ne lit ni n'écrit sans ce filtre. Le tenant vient de `RequestContext`, jamais d'un paramètre de requête.
 2. Toute erreur métier est une sous-classe d'`AppError` avec un code stable en union littérale. `throw new Error()` est interdit hors `infra/` et du démarrage. La conversion en HTTP (RFC 9457) se fait uniquement dans `ProblemDetailsFilter`.
-3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite.
+3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite. Toute route qui modifie des données partagées du tenant déclare son rôle (`@RequireRole`).
 4. Toute clé Redis a un TTL ; tout appel externe a un timeout, et passe par une queue s'il est lent.
 5. Les migrations sont générées (`db-generate`), jamais éditées à la main, et rétrocompatibles (expand/contract).
 6. Toute nouvelle fonctionnalité passe derrière un feature flag ; une PR fait moins de 500 lignes.

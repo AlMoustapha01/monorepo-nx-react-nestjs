@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RequireRole } from '@nx-react-nestjs/api-core';
 import {
   changeProductPriceSchema,
   createProductSchema,
@@ -44,6 +45,7 @@ export class ProductsController {
   ) {}
 
   @Post()
+  @RequireRole('staff')
   @ZodSerializerDto(ProductDto)
   async create(@Body() body: CreateProductDto): Promise<ProductResponse> {
     return toResponse(await this.createProduct.execute(body));
@@ -63,6 +65,7 @@ export class ProductsController {
   }
 
   @Patch(':id/price')
+  @RequireRole('staff')
   @ZodSerializerDto(ProductDto)
   async changePrice(
     @Param() { id }: ProductIdParamsDto,
@@ -72,6 +75,7 @@ export class ProductsController {
   }
 
   @Post(':id/publish')
+  @RequireRole('staff')
   @HttpCode(200)
   @ZodSerializerDto(ProductDto)
   async publish(@Param() { id }: ProductIdParamsDto): Promise<ProductResponse> {
@@ -79,6 +83,7 @@ export class ProductsController {
   }
 
   @Post(':id/archive')
+  @RequireRole('staff')
   @HttpCode(200)
   @ZodSerializerDto(ProductDto)
   async archive(@Param() { id }: ProductIdParamsDto): Promise<ProductResponse> {

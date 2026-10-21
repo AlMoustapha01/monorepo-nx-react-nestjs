@@ -22,7 +22,7 @@ const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
 function setup() {
   const orders = new InMemoryOrderRepository(context);
   const catalog = new FakeProductCatalog();
-  const getOrder = new GetOrder(orders);
+  const getOrder = new GetOrder(orders, context);
   const outbox = new RecordingOutbox();
   const transactions = new InlineTransactionManager();
   return {
@@ -30,7 +30,7 @@ function setup() {
     outbox,
     placeOrder: new PlaceOrder(orders, catalog, context, transactions, outbox),
     getOrder,
-    listOrders: new ListOrders(orders),
+    listOrders: new ListOrders(orders, context),
     cancelOrder: new CancelOrder(getOrder, orders, transactions, outbox),
   };
 }
@@ -208,4 +208,44 @@ describe('commandes (couche application)', () => {
       expect(second.nextCursor).toBeNull();
       expect(all.find((order) => order.id === ids[0])?.status).toBe('cancelled');
     }));
+
+  describe('propriété des commandes', () => {
+    const otherCustomer = { userId: randomUUID(), tenantId: tenantA.tenantId };
+    const staff = { userId: randomUUID(), tenantId: tenantA.tenantId, roles: ['staff'] as const };
+
+    it('un client ne voit ni n’annule la commande d’un autre client', async () => {
+      const { catalog, placeOrder, getOrder, cancelOrder, listOrders } = setup();
+      const tee = catalog.add(product());
+      const { id } = await context.runAs(tenantA, () =>
+        placeOrder.execute({ lines: [{ productId: tee.id, quantity: 1 }] }),
+      );
+
+      await context.runAs(otherCustomer, async () => {
+        await expect(getOrder.execute(id)).rejects.toMatchObject({ code: 'ORDER_NOT_FOUND' });
+        await expect(cancelOrder.execute(id)).rejects.toMatchObject({ code: 'ORDER_NOT_FOUND' });
+        expect((await listOrders.execute({ limit: 20 })).items).toEqual([]);
+      });
+      expect((await context.runAs(tenantA, () => getOrder.execute(id))).status).toBe('placed');
+    });
+
+    it('le staff voit et annule toutes les commandes du tenant', async () => {
+      const { catalog, placeOrder, cancelOrder, listOrders } = setup();
+      const tee = catalog.add(product());
+      for (const customer of [tenantA, otherCustomer]) {
+        await context.runAs(customer, () =>
+          placeOrder.execute({ lines: [{ productId: tee.id, quantity: 1 }] }),
+        );
+      }
+
+      await context.runAs(staff, async () => {
+        const { items } = await listOrders.execute({ limit: 20 });
+        expect(new Set(items.map((order) => order.customerId))).toEqual(
+          new Set([tenantA.userId, otherCustomer.userId]),
+        );
+        await expect(cancelOrder.execute(items[0]?.id ?? '')).resolves.toMatchObject({
+          status: 'cancelled',
+        });
+      });
+    });
+  });
 });

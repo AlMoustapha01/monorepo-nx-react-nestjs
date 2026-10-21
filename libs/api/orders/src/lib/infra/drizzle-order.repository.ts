@@ -26,13 +26,23 @@ export class DrizzleOrderRepository extends OrderRepository {
     return order ? ((await this.withLines([order]))[0] ?? null) : null;
   }
 
-  async list({ limit, after }: { limit: number; after?: KeysetCursor }): Promise<OrderListPage> {
+  async list({
+    limit,
+    after,
+    customerId,
+  }: {
+    limit: number;
+    after?: KeysetCursor;
+    customerId?: string;
+  }): Promise<OrderListPage> {
     const rows = await this.session.db
       .select()
       .from(orders)
       .where(
         and(
           this.tenantScope(),
+          // Test explicite : une chaîne vide doit filtrer (et ne rien trouver), pas tout ouvrir.
+          customerId === undefined ? undefined : eq(orders.customerId, customerId),
           after &&
             sql`(${orders.createdAt}, ${orders.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id})`,
         ),

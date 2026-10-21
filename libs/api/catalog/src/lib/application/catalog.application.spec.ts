@@ -10,16 +10,18 @@ import { ListProducts } from './use-cases/list-products';
 import { ChangeProductPrice, PublishProduct } from './use-cases/update-product';
 
 const context = createTestRequestContext();
-const tenantA = { userId: randomUUID(), tenantId: randomUUID() };
-const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
+// Le staff gère le catalogue ; un client du même tenant ne voit que les produits publiés.
+const tenantA = { userId: randomUUID(), tenantId: randomUUID(), roles: ['staff'] as const };
+const tenantB = { userId: randomUUID(), tenantId: randomUUID(), roles: ['staff'] as const };
+const customerA = { userId: randomUUID(), tenantId: tenantA.tenantId };
 
 function setup() {
   const products = new InMemoryProductRepository(context);
-  const getProduct = new GetProduct(products);
+  const getProduct = new GetProduct(products, context);
   return {
     createProduct: new CreateProduct(products, context),
     getProduct,
-    listProducts: new ListProducts(products),
+    listProducts: new ListProducts(products, context),
     changePrice: new ChangeProductPrice(getProduct, products),
     publish: new PublishProduct(getProduct, products),
     facade: new CatalogFacade(products),
@@ -113,4 +115,26 @@ describe('catalogue (couche application)', () => {
         },
       ]);
     }));
+
+  it('ne montre à un client que les produits publiés, en liste comme à l’unité', async () => {
+    const { createProduct, publish, getProduct, listProducts } = setup();
+    const { draftId, activeId } = await context.runAs(tenantA, async () => {
+      const draft = await createProduct.execute(input('DRAFT-01'));
+      const active = await createProduct.execute(input('ACTIVE-01'));
+      await publish.execute(active.id);
+      return { draftId: draft.id, activeId: active.id };
+    });
+
+    await context.runAs(customerA, async () => {
+      const page = await listProducts.execute({ limit: 20 });
+      expect(page.items.map((product) => product.id)).toEqual([activeId]);
+      await expect(getProduct.execute(activeId)).resolves.toBeDefined();
+      await expect(getProduct.execute(draftId)).rejects.toMatchObject({
+        code: 'PRODUCT_NOT_FOUND',
+      });
+    });
+
+    const staffView = await context.runAs(tenantA, () => listProducts.execute({ limit: 20 }));
+    expect(staffView.items).toHaveLength(2);
+  });
 });

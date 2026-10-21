@@ -105,6 +105,21 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     expect(untouched?.soldCount).toBe(0);
   });
 
+  it('filtre la liste par statut', async () => {
+    const tenant = { userId: randomUUID(), tenantId: randomUUID() };
+    await context.runAs(tenant, async () => {
+      const draft = newProduct(tenant.tenantId, 'STATUS-DRAFT');
+      const active = newProduct(tenant.tenantId, 'STATUS-ACTIVE');
+      await repository.insert(draft);
+      await repository.insert(active);
+      active.publish(new Date());
+      await repository.update(active);
+
+      const page = await repository.list({ limit: 10, status: 'active' });
+      expect(page.items.map((product) => product.sku)).toEqual(['STATUS-ACTIVE']);
+    });
+  });
+
   it('traduit la contrainte d’unicité SKU en erreur métier', () =>
     context.runAs(tenantA, async () => {
       await repository.insert(newProduct(tenantA.tenantId, 'DUP'));
