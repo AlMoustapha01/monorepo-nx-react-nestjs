@@ -17,7 +17,7 @@ Libs front React. App qui les assemble : [`apps/web/AGENTS.md`](../../apps/web/A
 - Aucun effet de bord à l'import d'un module `.ts`/`.tsx` (enregistrement global, mutation au chargement) : le build de l'app les déclare sans effet de bord pour découper les façades par route, et retirerait un module importé seulement pour son effet.
 - `strict` et `noUncheckedIndexedAccess` sont activés partout.
 - Règles de lint web (ban de `fetch`, `window.fetch` et `globalThis.fetch`, `lingui/no-unlocalized-strings`) : `libs/web/.oxlintrc.web.json`. `web-ui` ajoute le ban de `@tanstack/*`. `web-data-access` étend seulement la config racine (il est le seul à appeler `fetch`).
-- Nouvelle lib feature : son `.oxlintrc.json` contient `{ "extends": ["../.oxlintrc.web.json"] }`, et son `vitest.config.mts` reprend les plugins de `apps/web/vite.config.mts` (`@rolldown/plugin-babel` avec `@lingui/babel-plugin-lingui-macro`, plus `lingui()` de `@lingui/vite-plugin`), sinon les tests qui rendent `<Trans>` échouent.
+- Nouvelle lib feature : son `.oxlintrc.json` contient `{ "extends": ["../.oxlintrc.web.json"] }`, et son `vitest.config.mts` reprend les plugins de `apps/web/vite.config.mts` (`@rolldown/plugin-babel` avec `@lingui/babel-plugin-lingui-macro`, plus `lingui()` de `@lingui/vite-plugin`), sinon les tests qui rendent `<Trans>` échouent. La macro y lit un `lingui.config.ts` minimal à la racine de la lib (`sourceLocale: 'fr'`, `locales: ['fr', 'en']`, sans `catalogs` : les catalogues restent dans `apps/web`, dont l'extraction parcourt `libs/web`). Ce fichier n'étant importé par personne, knip le déclare comme point d'entrée : l'entrée `libs/web/*/lingui.config.ts` de `knip.json` couvre toute lib placée sous `libs/web/`.
 
 ## Design system (`web-ui`)
 
