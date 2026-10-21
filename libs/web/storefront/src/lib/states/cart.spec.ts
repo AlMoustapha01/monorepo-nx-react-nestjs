@@ -152,4 +152,14 @@ describe('cart', () => {
     act(() => setCartQuantity('PRD-1', 0));
     expect(result.current[0]?.quantity).toBe(1);
   });
+
+  it('setCartQuantity ignores a non-finite quantity', () => {
+    const { result } = renderHook(() => useCart());
+    act(() => addToCart(product(1)));
+    act(() => setCartQuantity('PRD-1', 3));
+    for (const quantity of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      act(() => setCartQuantity('PRD-1', quantity));
+    }
+    expect(result.current).toEqual([{ productId: 'PRD-1', name: 'Product 1', quantity: 3 }]);
+  });
 });

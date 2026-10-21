@@ -111,6 +111,8 @@ export function addToCart(product: { id: string; name: string }): void {
 }
 
 export function setCartQuantity(productId: string, quantity: number): void {
+  // NaN serait stocké `null` et rendrait tout le panier invalide à la lecture suivante.
+  if (!Number.isFinite(quantity)) return;
   const clamped = Math.min(MAX_LINE_QUANTITY, Math.max(1, Math.trunc(quantity)));
   const lines = getSnapshot();
   if (!lines.some((line) => line.productId === productId)) return;
