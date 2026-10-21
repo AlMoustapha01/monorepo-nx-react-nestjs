@@ -101,6 +101,27 @@ describe('app', () => {
     expect(screen.getByRole('link', { name: 'Mes commandes' })).toBeTruthy();
   });
 
+  it('shows the 404 page for an unknown order', async () => {
+    server.use(
+      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
+      http.get(`${API}/orders/ORD-x`, () =>
+        HttpResponse.json(
+          { status: 404, code: 'NOT_FOUND', title: 'Not Found', detail: 'Order not found' },
+          { status: 404, headers: { 'Content-Type': 'application/problem+json' } },
+        ),
+      ),
+    );
+    renderAt('/commandes/ORD-x');
+    const heading = await screen.findByRole('heading', { level: 1 });
+    expect(heading.textContent).toBe('404 : page introuvable');
+  });
+
+  it('shows the 404 page on /panier when storefront is off', async () => {
+    renderAt('/panier');
+    const heading = await screen.findByRole('heading', { level: 1 });
+    expect(heading.textContent).toBe('404 : page introuvable');
+  });
+
   it('renders the home page when the flags call fails', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     server.use(http.get(`${API}/feature-flags`, () => new HttpResponse(null, { status: 500 })));

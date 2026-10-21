@@ -37,8 +37,7 @@ export function usePlaceOrder(
       clearCart();
       queryClient.setQueryData(storefrontKeys.order(order.id), order);
       void queryClient.invalidateQueries({ queryKey: storefrontKeys.orders() });
-      // Route ajoutée par une tâche suivante : cast temporaire, retiré par la tâche qui l'ajoute.
-      await navigate({ to: '/commandes/$orderId' as '/', params: { orderId: order.id } as never });
+      await navigate({ to: '/commandes/$orderId', params: { orderId: order.id } });
     },
     onError: (error) => {
       if (error instanceof ApiError && isProductUnavailable(error)) {

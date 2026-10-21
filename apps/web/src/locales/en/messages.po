@@ -19,6 +19,18 @@ msgstr "404: page not found"
 msgid "Ajouter au panier"
 msgstr "Add to cart"
 
+#: ../../libs/web/storefront/src/lib/components/order-status-badge.tsx
+msgid "Annulée"
+msgstr "Cancelled"
+
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Annuler cette commande ?"
+msgstr "Cancel this order?"
+
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Annuler la commande"
+msgstr "Cancel order"
+
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Aucun produit pour le moment"
 msgstr "No products yet"
@@ -43,6 +55,10 @@ msgstr "This product is no longer available"
 msgid "Certains produits ne sont plus disponibles."
 msgstr "Some products are no longer available."
 
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Cette action est définitive."
+msgstr "This action cannot be undone."
+
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
 msgstr "This page does not exist."
@@ -52,9 +68,22 @@ msgstr "This page does not exist."
 msgid "Chargement…"
 msgstr "Loading…"
 
+#. placeholder {0}: order.id
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Commande {0}"
+msgstr "Order {0}"
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Diminuer la quantité"
 msgstr "Decrease quantity"
+
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Fermer"
+msgstr "Close"
+
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Garder"
+msgstr "Keep"
 
 #: src/components/locale-switcher.tsx
 msgid "Impossible de changer de langue."
@@ -68,6 +97,10 @@ msgstr "Unable to load this product"
 msgid "Impossible de charger le catalogue."
 msgstr "Unable to load the catalog."
 
+#: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
+msgid "La commande a changé entre-temps, elle a été rechargée."
+msgstr "The order changed in the meantime and has been reloaded."
+
 #: src/components/locale-switcher.tsx
 msgid "Langue"
 msgstr "Language"
@@ -76,6 +109,10 @@ msgstr "Language"
 msgid "Mes commandes"
 msgstr "My orders"
 
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
+msgid "Oui, annuler"
+msgstr "Yes, cancel"
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Panier"
 msgstr "Cart"
@@ -83,6 +120,10 @@ msgstr "Cart"
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
 msgid "Panier ({count})"
 msgstr "Cart ({count})"
+
+#: ../../libs/web/storefront/src/lib/components/order-status-badge.tsx
+msgid "Passée"
+msgstr "Placed"
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Passer la commande"
@@ -108,8 +149,10 @@ msgstr "Back to home"
 msgid "Total"
 msgstr "Total"
 
+#. placeholder {0}: formatMoney(order.total, i18n.locale)
 #. placeholder {0}: formatMoney(total, i18n.locale)
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
+#: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Total : {0}"
 msgstr "Total: {0}"
 
@@ -117,6 +160,7 @@ msgstr "Total: {0}"
 msgid "Une erreur est survenue"
 msgstr "An error occurred"
 
+#: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
 #: ../../libs/web/storefront/src/lib/hooks/use-place-order.ts
 #: src/components/error-zone.tsx
 #: src/main.tsx

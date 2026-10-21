@@ -1,0 +1,30 @@
+import { createFileRoute, notFound } from '@tanstack/react-router';
+import { ApiError } from '@nx-react-nestjs/web-data-access';
+import { OrderPage, orderQueryOptions } from '@nx-react-nestjs/web-storefront';
+
+import { ErrorZone } from '../components/error-zone';
+import { requireFeature, useFeatureFlag } from '../feature-flags';
+
+function Order() {
+  const { api } = Route.useRouteContext();
+  const { orderId } = Route.useParams();
+  const canCancel = useFeatureFlag('orders.cancellation');
+  return (
+    <ErrorZone>
+      <OrderPage api={api} orderId={orderId} canCancel={canCancel} />
+    </ErrorZone>
+  );
+}
+
+export const Route = createFileRoute('/commandes/$orderId')({
+  beforeLoad: requireFeature('storefront'),
+  loader: async ({ context, params }) => {
+    try {
+      await context.queryClient.ensureQueryData(orderQueryOptions(context.api, params.orderId));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) throw notFound();
+      throw error;
+    }
+  },
+  component: Order,
+});
