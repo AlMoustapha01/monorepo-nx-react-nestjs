@@ -38,22 +38,35 @@
 ### Task 1: Flag `storefront` et `details` sur `ApiError`
 
 **Files:**
+
 - Modify: `libs/shared/contracts/src/lib/feature-flags.ts` (ajout dans `FEATURE_FLAGS`)
 - Modify: `libs/web/data-access/src/lib/api-error.ts`, `libs/web/data-access/src/lib/api-client.ts` (`toApiError`)
 - Modify: `.env.example:35` (commentaire)
 - Test: `libs/web/data-access/src/lib/api-client.spec.ts`
 
 **Interfaces:**
+
 - Produces: `FeatureFlag` inclut `'storefront'` ; `ApiError.details?: Record<string, unknown>` ; `ApiErrorInit.details?: Record<string, unknown> | undefined`.
 
 - [ ] **Step 1: Write the failing test** dans `api-client.spec.ts`
 
 ```ts
 it('copies problem details onto ApiError', async () => {
-  server.use(http.post(`${BASE}/orders`, () => HttpResponse.json(
-    { type: 'urn:problem-type:PRODUCT_UNAVAILABLE', title: 'Unavailable', status: 422,
-      detail: 'd', code: 'PRODUCT_UNAVAILABLE', details: { productIds: ['PRD-1'] } },
-    { status: 422, headers: { 'content-type': 'application/problem+json' } })));
+  server.use(
+    http.post(`${BASE}/orders`, () =>
+      HttpResponse.json(
+        {
+          type: 'urn:problem-type:PRODUCT_UNAVAILABLE',
+          title: 'Unavailable',
+          status: 422,
+          detail: 'd',
+          code: 'PRODUCT_UNAVAILABLE',
+          details: { productIds: ['PRD-1'] },
+        },
+        { status: 422, headers: { 'content-type': 'application/problem+json' } },
+      ),
+    ),
+  );
   const error = await api.request('/orders', { method: 'POST', body: {} }).catch((e) => e);
   expect(error).toBeInstanceOf(ApiError);
   expect(error.details).toEqual({ productIds: ['PRD-1'] });
@@ -72,18 +85,21 @@ storefront: {
 ```
 
 `.env.example` ligne 35 : `Ex. : orders.cancellation=false ; storefront=true pour la boutique en local`.
+
 - [ ] **Step 4: Run** `pnpm nx run-many -t test typecheck -p web-data-access contracts api-core` — Expected: PASS.
 - [ ] **Step 5: Commit** `feat(contracts): declare storefront feature flag` puis `feat(web-data-access): expose problem details on ApiError` (deux commits).
 
 ### Task 2: Lecture des flags et garde de route
 
 **Files:**
+
 - Create: `libs/web/data-access/src/lib/feature-flags.ts`, `libs/web/data-access/src/lib/feature-flags.spec.ts`
 - Modify: `libs/web/data-access/src/index.ts`
 - Create: `apps/web/src/feature-flags.ts`
 - Modify: `apps/web/src/routes/__root.tsx` (`beforeLoad`), `apps/web/src/app.spec.tsx` (MSW), `apps/web/AGENTS.md` (sections « Feature flags » et « Différé volontairement »)
 
 **Interfaces:**
+
 - Produces (data-access) :
   - `featureFlagsQueryOptions(api: ApiClient, onError?: (error: unknown) => void)` → `queryOptions` de clé `['feature-flags']`, `staleTime: Infinity`, `queryFn` qui appelle `GET /feature-flags` avec `featureFlagsResponseSchema` ; en cas d'échec (hors `AbortError`, qui est relancée), appelle `onError(error)` et renvoie `{ flags: {} }`.
   - `isFeatureEnabled(data: FeatureFlagsResponse, flag: FeatureFlag): boolean` → `data.flags[flag] === true`.
@@ -110,11 +126,13 @@ storefront: {
 ### Task 3: Lib `web-storefront`, `formatMoney` et état du panier
 
 **Files:**
+
 - Create: `libs/web/storefront/{project.json,tsconfig.json,tsconfig.lib.json,tsconfig.spec.json,vitest.config.mts,.oxlintrc.json}`, `src/index.ts`, `src/test-setup.ts`
 - Create: `src/lib/data/format-money.ts` (+ `.spec.ts`), `src/lib/states/cart.ts` (+ `.spec.ts`)
 - Modify: `tsconfig.base.json` (paths), `knip` config si les libs y sont listées
 
 **Interfaces:**
+
 - Produces :
   - Projet Nx `web-storefront`, tags `["scope:web", "type:feature"]`, alias `@nx-react-nestjs/web-storefront` → `libs/web/storefront/src/index.ts`. Config copiée de `libs/web/ui` (tsconfig, cible `typecheck`), `vitest.config.mts` en `jsdom` avec les plugins de `apps/web/vite.config.mts` (`react()`, `babel({ plugins: ['@lingui/babel-plugin-lingui-macro'], presets: [reactCompilerPreset()] })`, `lingui()`), `test-setup.ts` = `import '@testing-library/jest-dom/vitest'`. `.oxlintrc.json` = `{ "extends": ["../.oxlintrc.web.json"] }`.
   - `formatMoney(money: Money, locale: string): string`.
@@ -141,10 +159,12 @@ storefront: {
 ### Task 4: Catalogue et en-tête
 
 **Files:**
+
 - Create: `libs/web/storefront/src/lib/data/keys.ts`, `src/lib/data/products.ts`, `src/lib/components/catalog-page.tsx` (+ `.spec.tsx`), `src/lib/components/storefront-nav.tsx`
 - Modify: `libs/web/storefront/src/index.ts`, `apps/web/src/routes/index.tsx`, `apps/web/src/routes/__root.tsx` (nav dans le `header`), `apps/web/src/app.spec.tsx`
 
 **Interfaces:**
+
 - Consumes : `useCart`, `addToCart`, `canAddToCart`, `cartCount`, `formatMoney` (tâche 3) ; `useFeatureFlag` (tâche 2).
 - Produces :
   - `storefrontKeys = { products: () => ['catalog', 'products'] as const, product: (id: string) => ['catalog', 'products', id] as const, orders: () => ['orders'] as const, order: (id: string) => ['orders', id] as const }`.
@@ -171,11 +191,13 @@ storefront: {
 ### Task 5: Page panier
 
 **Files:**
+
 - Create: `libs/web/storefront/src/lib/components/cart-page.tsx` (+ `.spec.tsx`), `src/lib/hooks/use-cart-lines.ts`
 - Create: `apps/web/src/routes/panier.tsx`
 - Modify: `libs/web/storefront/src/index.ts`
 
 **Interfaces:**
+
 - Consumes : `productQueryOptions`, `useCart`, `setCartQuantity`, `removeFromCart`, `formatMoney`, `requireFeature`.
 - Produces :
   - `useCartLines(api: ApiClient)` → `{ lines: Array<CartLine & { product?: ProductResponse; unavailable: boolean; loading: boolean }>; total?: Money; mixedCurrencies: boolean; canOrder: boolean }`. `useQueries` sur `productQueryOptions` ; `unavailable` = erreur `ApiError` de status 404 ; `total` = somme des `price.amountMinor * quantity` des lignes disponibles si une seule devise ; `canOrder` = au moins une ligne, aucune `unavailable`, aucune en chargement, pas de devises mélangées.
@@ -195,10 +217,12 @@ storefront: {
 ### Task 6: Passer la commande
 
 **Files:**
+
 - Create: `libs/web/storefront/src/lib/data/orders.ts`, `src/lib/hooks/use-place-order.ts`
 - Modify: `src/lib/components/cart-page.tsx` (+ `.spec.tsx`)
 
 **Interfaces:**
+
 - Consumes : `useIdempotentMutation`, `clearCart`, `storefrontKeys`, `ApiError.details` (tâche 1).
 - Produces :
   - `placeOrder(api: ApiClient, input: PlaceOrderInput, idempotencyKey: string): Promise<OrderResponse>` (`POST /orders`, `orderSchema`).
@@ -221,10 +245,12 @@ storefront: {
 ### Task 7: Composant `Badge`
 
 **Files:**
+
 - Create: `libs/web/ui/src/lib/components/badge.tsx`, `badge.stories.tsx`
 - Modify: `libs/web/ui/src/index.ts`
 
 **Interfaces:**
+
 - Produces : `Badge` (shadcn, `cva`, variants `default | secondary | destructive | outline`), `BadgeProps` ; export `{ Badge, badgeVariants, type BadgeProps }`.
 
 - [ ] **Step 1:** Copier le composant shadcn `badge` (imports relatifs, `cn` local), une story par variant. Le test vient de `stories.spec.tsx` (toutes les stories rendues).
@@ -234,11 +260,13 @@ storefront: {
 ### Task 8: Récapitulatif et annulation
 
 **Files:**
+
 - Create: `libs/web/storefront/src/lib/components/order-page.tsx` (+ `.spec.tsx`), `src/lib/components/order-status-badge.tsx`, `src/lib/hooks/use-cancel-order.ts`
 - Create: `apps/web/src/routes/commandes.$orderId.tsx`
 - Modify: `libs/web/storefront/src/index.ts`, `src/lib/data/orders.ts`
 
 **Interfaces:**
+
 - Consumes : `orderQueryOptions`, `storefrontKeys`, `Badge`, `Dialog*`, `useFeatureFlag`, `requireFeature`.
 - Produces :
   - `cancelOrder(api, id): Promise<OrderResponse>` (`POST /orders/:id/cancel`, `orderSchema`).
@@ -261,11 +289,13 @@ storefront: {
 ### Task 9: Mes commandes
 
 **Files:**
+
 - Create: `libs/web/storefront/src/lib/components/orders-page.tsx` (+ `.spec.tsx`)
 - Create: `apps/web/src/routes/commandes.index.tsx`
 - Modify: `libs/web/storefront/src/index.ts`
 
 **Interfaces:**
+
 - Consumes : `ordersInfiniteQueryOptions`, `OrderStatusBadge`, `formatMoney`.
 - Produces : `<OrdersPage api={api} />` ; route `/commandes` avec `requireFeature('storefront')` et `ErrorZone`.
 
