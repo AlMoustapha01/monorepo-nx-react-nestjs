@@ -8,6 +8,8 @@ import {
   createRootRouteWithContext,
   createRouter,
 } from '@tanstack/react-router';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createApiClient, createQueryClient } from '@nx-react-nestjs/web-data-access';
@@ -22,7 +24,15 @@ vi.mock('./i18n/i18n', async (importOriginal) => {
   return { ...actual, activateLocale: vi.fn<typeof actual.activateLocale>(actual.activateLocale) };
 });
 
-const api = createApiClient({ baseUrl: 'http://localhost:3000/api/v1' });
+const API = 'http://localhost:3000/api/v1';
+const api = createApiClient({ baseUrl: API });
+const server = setupServer(
+  http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: {} })),
+);
+
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 function renderRouter(
   router: ReturnType<typeof createAppRouter>,
@@ -62,6 +72,15 @@ describe('app', () => {
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
+  it('renders the home page when the flags call fails', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    server.use(http.get(`${API}/feature-flags`, () => new HttpResponse(null, { status: 500 })));
+    renderAt('/');
+    const heading = await screen.findByRole('heading', { level: 1 });
+    expect(heading.textContent).toBe('Boilerplate web');
+    expect(spy.mock.calls.some((c) => c[0] === '[reportError]')).toBe(true);
+  });
+
   it('renders the 404 page inside the layout for an unknown URL', async () => {
     renderAt('/nope');
     const heading = await screen.findByRole('heading', { level: 1 });
@@ -75,7 +94,7 @@ describe('app', () => {
     renderAt('/');
     await screen.findByRole('heading', { level: 1 });
     await userEvent.click(screen.getByRole('button', { name: 'en' }));
-    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Web boilerplate');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Web boilerplate' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'en' }).getAttribute('aria-pressed')).toBe('true');
     expect(localStorage.getItem('app.locale')).toBe('en');
     expect(document.documentElement.lang).toBe('en');

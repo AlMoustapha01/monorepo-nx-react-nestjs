@@ -41,8 +41,14 @@ Assemblage uniquement : routeur, providers, layout. La logique métier et l'UI r
 
 ## Feature flags
 
-Le principe 6 de la racine (toute fonctionnalité derrière un flag) vaut pour l'API. Le mécanisme côté front n'est pas encore défini : il le sera avec le premier écran métier. Ne pas en improviser un avant.
+Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés dans `FEATURE_FLAGS` (contracts) ; ceux marqués `client: true` sont exposés par `GET /api/v1/feature-flags`.
+
+- Le `beforeLoad` de la racine charge les flags une fois (`featureFlagsQueryOptions`, `staleTime: Infinity`) avant le premier rendu.
+- Garder une route : `beforeLoad: requireFeature('<flag>')` (`src/feature-flags.ts`) ; flag coupé = 404.
+- Lire un flag dans un composant de l'app : `useFeatureFlag('<flag>')`. Les libs `libs/web/*` ne lisent aucun flag : elles reçoivent des booléens en props.
+- Repli « tout coupé » : si l'appel échoue, les flags sont tous faux et l'erreur passe par `reportError` ; la page s'affiche quand même.
+- En local : `FEATURE_FLAGS=storefront=true pnpm nx serve api`.
 
 ## Différé volontairement
 
-react-hook-form (à installer avec le premier formulaire), Jotai, Sentry, Playwright + axe, feature flags.
+react-hook-form (à installer avec le premier formulaire), Jotai, Sentry, Playwright + axe.

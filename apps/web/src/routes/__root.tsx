@@ -3,7 +3,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { Link, Outlet, createRootRouteWithContext, useRouter } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
-import type { ApiClient } from '@nx-react-nestjs/web-data-access';
+import { featureFlagsQueryOptions, type ApiClient } from '@nx-react-nestjs/web-data-access';
 import { Button, Heading, Stack, Text, buttonVariants } from '@nx-react-nestjs/web-ui';
 
 import { LocaleSwitcher } from '../components/locale-switcher';
@@ -63,6 +63,10 @@ function NotFound() {
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  // Les flags sont chargés une fois, avant le premier rendu.
+  beforeLoad: async ({ context }) => {
+    await context.queryClient.ensureQueryData(featureFlagsQueryOptions(context.api, reportError));
+  },
   component: RootLayout,
   errorComponent: GlobalError,
   notFoundComponent: NotFound,
