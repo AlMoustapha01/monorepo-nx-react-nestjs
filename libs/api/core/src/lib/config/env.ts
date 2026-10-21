@@ -45,6 +45,11 @@ const envSchema = z.object({
   AUTH_JWT_ISSUER: z.string().min(1),
   AUTH_JWT_AUDIENCE: z.string().min(1),
 
+  /** Délai entre le signal d'arrêt et la fermeture, `/ready` en 503 : le temps que le load balancer retire l'instance. */
+  SHUTDOWN_DRAIN_MS: z.coerce.number().int().nonnegative().default(0),
+  /** Au-delà, le process sort en erreur. Inférieur au délai avant SIGKILL de l'orchestrateur. */
+  SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(25_000),
+
   CORS_ORIGINS: csv,
   RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),

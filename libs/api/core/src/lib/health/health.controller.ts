@@ -1,8 +1,15 @@
-import { Controller, Get, Injectable, VERSION_NEUTRAL } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Injectable,
+  ServiceUnavailableException,
+  VERSION_NEUTRAL,
+} from '@nestjs/common';
 import { HealthCheck, HealthCheckService, HealthIndicatorService } from '@nestjs/terminus';
 import { SkipThrottle } from '@nestjs/throttler';
 import { sql } from 'drizzle-orm';
 import { Public } from '../auth/public.decorator';
+import { ShutdownState } from '../lifecycle/graceful-shutdown';
 import { type Database, InjectDatabase } from '../database/database.tokens';
 import type { Queue } from 'bullmq';
 import {
@@ -63,6 +70,7 @@ export class HealthController {
     private readonly health: HealthCheckService,
     private readonly database: DatabaseHealthIndicator,
     private readonly redis: RedisHealthIndicator,
+    private readonly shutdown: ShutdownState,
   ) {}
 
   @Get('health')
@@ -74,6 +82,10 @@ export class HealthController {
   @Get('ready')
   @HealthCheck()
   readiness() {
+    if (this.shutdown.draining) {
+      // Arrêt en cours : sortir du load balancer, sans lancer les checks (ni les journaliser).
+      throw new ServiceUnavailableException('Shutting down');
+    }
     return this.health.check([
       () => this.database.check('database'),
       () => this.redis.check('redis'),

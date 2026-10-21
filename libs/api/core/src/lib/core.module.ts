@@ -22,6 +22,7 @@ import {
   HealthController,
   RedisHealthIndicator,
 } from './health/health.controller';
+import { ShutdownState } from './lifecycle/graceful-shutdown';
 import { getRequestId } from './http/request-id';
 
 const UNLOGGED_PATHS = new Set(['/health', '/ready']);
@@ -72,6 +73,7 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     JwtVerifier,
     DatabaseHealthIndicator,
     RedisHealthIndicator,
+    ShutdownState,
     { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },
     // L'ordre compte : rate limiting, authentification, flag (404 avant tout 403), puis rôles.
     { provide: APP_GUARD, useClass: ThrottlerGuard },

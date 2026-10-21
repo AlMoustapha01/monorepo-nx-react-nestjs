@@ -53,7 +53,8 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const response = http.getResponse<Response>();
     const problem = toProblem(exception);
 
-    if (problem.status >= 500) {
+    // Une HttpException 5xx est levée exprès (ex. 503 de /ready pendant un arrêt) : pas un bug.
+    if (problem.status >= 500 && !(exception instanceof HttpException)) {
       this.logger.error(exception);
     }
 

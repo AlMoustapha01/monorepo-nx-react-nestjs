@@ -1,0 +1,84 @@
+# Topologie de production, à lancer en local pour la vérifier (ce n'est pas un déploiement) :
+#   AUTH_JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build
+# Même image pour les trois rôles. Ordre : Postgres prêt → migrate (une fois) → api et worker.
+name: nx-react-nestjs-prod
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgres://app:app@postgres:5432/app
+  REDIS_URL: redis://redis:6379
+  SMTP_URL: smtp://mailpit:1025
+  AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET est requis (32 caractères minimum)}
+  AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-https://auth.local}
+  AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-api}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+
+services:
+  migrate:
+    build: .
+    image: nx-react-nestjs-api
+    command: ['node', 'migrate.js']
+    environment:
+      DATABASE_URL: postgres://app:app@postgres:5432/app
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    image: nx-react-nestjs-api
+    environment:
+      <<: *api-env
+      # Les jobs tournent dans le worker : l'API se met à l'échelle selon le trafic HTTP.
+      JOBS_ENABLED: 'false'
+      # /ready passe en 503 au SIGTERM ; le load balancer a 5 s pour retirer l'instance.
+      SHUTDOWN_DRAIN_MS: '5000'
+    ports:
+      - '${API_PORT:-3000}:3000'
+    # Au-delà du drain et de la fermeture (SHUTDOWN_TIMEOUT_MS), Docker envoie SIGKILL.
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  worker:
+    image: nx-react-nestjs-api
+    command: ['node', 'worker.js']
+    environment: *api-env
+    stop_grace_period: 30s
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d app']
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    # BullMQ : une éviction ferait perdre des jobs.
+    command: ['redis-server', '--maxmemory-policy', 'noeviction', '--appendonly', 'yes']
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+
+volumes:
+  postgres-data:

@@ -6,6 +6,8 @@
     "types": ["node"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    // Helpers inlinés dans le bundle : l'image de prod n'installe que les imports réels (pas tslib).
+    "importHelpers": false,
     "target": "es2021",
     "moduleResolution": "bundler"
   },

@@ -21,7 +21,6 @@ export function configureApp(app: INestApplication): void {
   });
   app.setGlobalPrefix('api', { exclude: ['health', 'ready'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
-  app.enableShutdownHooks();
 
   if (config.get('NODE_ENV') !== 'production') {
     const document = SwaggerModule.createDocument(

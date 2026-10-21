@@ -16,6 +16,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Tout vérifier, comme la CI (format, lint, types, tests, code mort)   | `pnpm check`                                                                                   |
 | Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                                      |
 | Formater                                                             | `pnpm format`                                                                                  |
+| Vérifier la topologie de prod en local (image, migrate, api, worker) | `AUTH_JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build` |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
@@ -26,7 +27,7 @@ La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, 
 ## Structure
 
 ```
-apps/api/                   bootstrap uniquement : main.ts, AppModule, migrations/
+apps/api/                   bootstrap uniquement : main.ts (HTTP), worker.ts, migrate.ts, AppModule, migrations/
 libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + BullMQ, logs, health
 libs/api/<domaine>/         un domaine métier = une lib Nx
   src/index.ts              FAÇADE : seul point d'entrée public
@@ -73,6 +74,15 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 - **Exploitation** : 10 tentatives avec backoff exponentiel ; un payload invalide échoue sans retry. Rétention : outbox 7 jours, marques d'idempotence 30 jours, jobs Redis 24 h (succès) et 7 jours (échecs). `JOBS_ENABLED=false` donne un process API sans relais ni worker.
 - **Tests** : `RecordingOutbox` et `InlineTransactionManager` (`api-core/testing`) pour les cas d'usage ; `eventually()` pour attendre un traitement asynchrone en e2e.
 
+## Déploiement
+
+- **Une image** (`Dockerfile`), trois commandes : `node main.js` (HTTP), `node worker.js` (relais de l'outbox, worker BullMQ, purge quotidienne), `node migrate.js`. `docker-compose.prod.yml` montre l'enchaînement.
+- **Migrations** : étape de déploiement à part, avant le démarrage des nouvelles instances, jamais au boot de l'API. `migrate.js` prend un verrou Postgres : deux déploiements simultanés se sérialisent. Comme les anciennes instances tournent encore pendant la migration, elle doit rester rétrocompatible (principe 5).
+- **Rôles** : l'API tourne avec `JOBS_ENABLED=false` ; le worker force les jobs. Chacun se met à l'échelle séparément. En dev, `nx serve api` fait tout dans un seul process.
+- **Sondes** : `/health` (liveness : le process répond) et `/ready` (readiness : Postgres et Redis joignables, et pas d'arrêt en cours). Le worker n'a pas de port HTTP : un crash fait sortir le process et l'orchestrateur le relance.
+- **Arrêt** : sur SIGTERM, `/ready` passe en 503, le process attend `SHUTDOWN_DRAIN_MS` (le temps que le load balancer retire l'instance ; 5 s derrière Kubernetes), puis termine les requêtes et les jobs en cours et ferme Redis et Postgres. Au-delà de `SHUTDOWN_TIMEOUT_MS` (25 s), il sort en erreur : rester sous le délai avant SIGKILL de l'orchestrateur (30 s par défaut).
+- **Redis** en production : `maxmemory-policy noeviction` et persistance (AOF), sinon BullMQ peut perdre des jobs.
+
 ## Principes non négociables
 
 1. Toute table métier a une colonne `tenant_id`, et aucun repository ne lit ni n'écrit sans ce filtre. Le tenant vient de `RequestContext`, jamais d'un paramètre de requête.
@@ -100,6 +110,7 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 - `@nestjs/swagger` reste en v11 tant que NestJS est en v11 (la v12 exige NestJS 12).
 - Node 24 LTS est requis (`.nvmrc`, `engines`) : `nvm use` à l'entrée du repo. pnpm est épinglé via `packageManager` (corepack).
 - `jose` v6 est en ESM uniquement, chargé par `require` (natif et sans avertissement depuis Node 24).
+- Build de l'API : `importHelpers` est désactivé pour le bundle, car le `package.json` généré ne liste que les modules importés (pas `tslib`). Un nouveau point d'entrée s'ajoute dans `additionalEntryPoints` (`apps/api/webpack.config.js`) et dans `knip.json`.
 - BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).
 - Une classe de base abstraite injectée par héritage doit porter `@Injectable()`, sinon Nest ne voit pas les dépendances de son constructeur.
