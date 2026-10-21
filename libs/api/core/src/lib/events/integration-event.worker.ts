@@ -20,6 +20,7 @@ import {
 } from './integration-event.queue';
 import { idempotencyKeys } from '../http/idempotency/idempotency.schema';
 import { outbox, processedEvents } from './messaging.schema';
+import { inHandlerSpan } from './trace-context';
 
 const DAY_MS = 24 * 3600 * 1000;
 const OUTBOX_RETENTION_MS = 7 * DAY_MS;
@@ -71,7 +72,9 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
   }
 
   process(job: Pick<Job<IntegrationEventJob>, 'name' | 'data'>): Promise<void> {
-    return job.name === MESSAGING_CLEANUP_JOB ? this.cleanup() : this.dispatch(job.data);
+    return job.name === MESSAGING_CLEANUP_JOB
+      ? this.cleanup()
+      : inHandlerSpan(job.data, () => this.dispatch(job.data));
   }
 
   private async dispatch({ handler: name, event }: IntegrationEventJob): Promise<void> {

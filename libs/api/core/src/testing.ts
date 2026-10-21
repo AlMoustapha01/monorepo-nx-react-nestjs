@@ -11,6 +11,7 @@ import {
   type IntegrationEventDefinition,
   type IntegrationEventPayload,
 } from '@nx-react-nestjs/contracts';
+import { NodeSDK, tracing } from '@opentelemetry/sdk-node';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -150,6 +151,19 @@ export class StaticFeatureFlags extends FeatureFlags {
   async isEnabled(flag: FeatureFlag): Promise<boolean> {
     return this.values.get(flag) ?? FEATURE_FLAGS[flag].default;
   }
+}
+
+/** Un vrai SDK OpenTelemetry, global, qui garde les spans en mémoire. */
+export function startTestTracing(): { spans: tracing.InMemorySpanExporter; stop(): Promise<void> } {
+  const spans = new tracing.InMemorySpanExporter();
+  const sdk = new NodeSDK({
+    spanProcessors: [new tracing.SimpleSpanProcessor(spans)],
+    instrumentations: [],
+    // Détection asynchrone (hôte, process…) : elle retarderait l'export des spans.
+    autoDetectResources: false,
+  });
+  sdk.start();
+  return { spans, stop: () => sdk.shutdown() };
 }
 
 /** Attend qu'une condition asynchrone devienne vraie (traitement par un worker, par exemple). */

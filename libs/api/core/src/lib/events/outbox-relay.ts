@@ -76,6 +76,7 @@ export class OutboxRelay implements OnApplicationBootstrap, BeforeApplicationShu
               occurredAt: row.occurredAt.toISOString(),
               payload: row.payload,
             },
+            ...(row.traceContext && { traceContext: row.traceContext }),
           },
           // Même ID si le lot est rejoué après un crash : BullMQ ignore le doublon.
           opts: { jobId: jobIdFor(row.id, handler.name) },

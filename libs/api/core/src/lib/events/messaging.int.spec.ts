@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { defineIntegrationEvent } from '@nx-react-nestjs/contracts';
+import { trace } from '@opentelemetry/api';
 import { z } from 'zod';
 import {
   eventually,
   startTestDatabase,
   startTestRedis,
+  startTestTracing,
   type TestDatabase,
   testEnv,
   type TestRedis,
@@ -27,7 +29,11 @@ const Pinged = defineIntegrationEvent('test.pinged.v1', z.object({ n: z.number()
 @Injectable()
 @OnIntegrationEvent(Pinged, { name: 'test.record-ping' })
 class RecordPing implements IntegrationEventHandler<typeof Pinged> {
-  readonly received: { event: IntegrationEvent<typeof Pinged>; tenantInContext: string }[] = [];
+  readonly received: {
+    event: IntegrationEvent<typeof Pinged>;
+    tenantInContext: string;
+    traceId?: string;
+  }[] = [];
   failuresBeforeSuccess = 0;
 
   constructor(private readonly context: RequestContext) {}
@@ -37,7 +43,11 @@ class RecordPing implements IntegrationEventHandler<typeof Pinged> {
       this.failuresBeforeSuccess--;
       throw new Error('transient failure');
     }
-    this.received.push({ event, tenantInContext: this.context.tenantId });
+    this.received.push({
+      event,
+      tenantInContext: this.context.tenantId,
+      traceId: trace.getActiveSpan()?.spanContext().traceId,
+    });
   }
 
   numbers(): number[] {
@@ -89,6 +99,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
   let transactions: TransactionManager;
   let outbox: Outbox;
   let recorder: RecordPing;
+  const tracing = startTestTracing();
 
   beforeAll(async () => {
     [database, redis] = await Promise.all([startTestDatabase(), startTestRedis()]);
@@ -103,7 +114,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
 
   afterAll(async () => {
     await app?.close();
-    await Promise.all([database?.stop(), redis?.stop()]);
+    await Promise.all([database?.stop(), redis?.stop(), tracing.stop()]);
   });
 
   const publish = (n: number) =>
@@ -121,6 +132,17 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
       id: expect.stringMatching(/^EVT-/),
     });
     expect(tenantInContext).toBe(principal.tenantId);
+  });
+
+  it('exécute le handler dans la trace de la requête qui a publié l’événement', async () => {
+    const traceId = await trace.getTracer('test').startActiveSpan('POST /pings', async (span) => {
+      await publish(20);
+      span.end();
+      return span.spanContext().traceId;
+    });
+
+    await eventually(() => expect(recorder.numbers()).toContain(20));
+    expect(recorder.received.find((r) => r.event.payload.n === 20)?.traceId).toBe(traceId);
   });
 
   it('livre chaque événement à chacun de ses handlers', async () => {

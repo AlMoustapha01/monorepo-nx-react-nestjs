@@ -8,6 +8,7 @@ import { DatabaseSession } from '../database/database-session';
 import { CoreError } from '../errors/app-error';
 import { domainIdGenerator } from '../ids/domain-id';
 import { outbox } from './messaging.schema';
+import { captureTraceContext } from './trace-context';
 
 /** Publication d'événements d'intégration, à appeler dans la transaction de l'écriture métier. */
 export abstract class Outbox {
@@ -46,6 +47,7 @@ export class DrizzleOutbox extends Outbox {
       type: definition.type,
       payload: definition.schema.parse(payload),
       occurredAt: new Date(),
+      traceContext: captureTraceContext(),
     });
   }
 }

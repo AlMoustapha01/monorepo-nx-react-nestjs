@@ -4,19 +4,20 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 ## Commandes
 
-| Besoin                                                               | Commande                                                                                       |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Première installation : `.env`, Postgres, Redis, Mailpit, migrations | `pnpm install && pnpm dev:setup`                                                               |
-| Lancer l'API                                                         | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                    |
-| Données de démo (API démarrée)                                       | `pnpm dev:seed`                                                                                |
-| Token pour appeler l'API (Swagger, curl)                             | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h` |
-| Voir les emails envoyés en local                                     | http://localhost:8025 (Mailpit)                                                                |
-| Appliquer les migrations                                             | `pnpm nx run api:db-migrate`                                                                   |
-| Générer une migration après un changement de schéma                  | `pnpm nx run api:db-generate --name=<sujet>`                                                   |
-| Tout vérifier, comme la CI (format, lint, types, tests, code mort)   | `pnpm check`                                                                                   |
-| Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                                      |
-| Formater                                                             | `pnpm format`                                                                                  |
-| Vérifier la topologie de prod en local (image, migrate, api, worker) | `AUTH_JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build` |
+| Besoin                                                               | Commande                                                                                                             |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Première installation : `.env`, Postgres, Redis, Mailpit, migrations | `pnpm install && pnpm dev:setup`                                                                                     |
+| Lancer l'API                                                         | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
+| Données de démo (API démarrée)                                       | `pnpm dev:seed`                                                                                                      |
+| Token pour appeler l'API (Swagger, curl)                             | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
+| Voir les emails envoyés en local                                     | http://localhost:8025 (Mailpit)                                                                                      |
+| Appliquer les migrations                                             | `pnpm nx run api:db-migrate`                                                                                         |
+| Générer une migration après un changement de schéma                  | `pnpm nx run api:db-generate --name=<sujet>`                                                                         |
+| Tout vérifier, comme la CI (format, lint, types, tests, code mort)   | `pnpm check`                                                                                                         |
+| Seulement ce qui a changé                                            | `pnpm nx affected -t lint typecheck test`                                                                            |
+| Formater                                                             | `pnpm format`                                                                                                        |
+| Traces en local (Grafana sur http://localhost:3001)                  | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env` |
+| Vérifier la topologie de prod en local (image, migrate, api, worker) | `AUTH_JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                       |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
@@ -82,6 +83,15 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 - **Sondes** : `/health` (liveness : le process répond) et `/ready` (readiness : Postgres et Redis joignables, et pas d'arrêt en cours). Le worker n'a pas de port HTTP : un crash fait sortir le process et l'orchestrateur le relance.
 - **Arrêt** : sur SIGTERM, `/ready` passe en 503, le process attend `SHUTDOWN_DRAIN_MS` (le temps que le load balancer retire l'instance ; 5 s derrière Kubernetes), puis termine les requêtes et les jobs en cours et ferme Redis et Postgres. Au-delà de `SHUTDOWN_TIMEOUT_MS` (25 s), il sort en erreur : rester sous le délai avant SIGKILL de l'orchestrateur (30 s par défaut).
 - **Redis** en production : `maxmemory-policy noeviction` et persistance (AOF), sinon BullMQ peut perdre des jobs.
+
+## Observabilité
+
+- **Traces** : OpenTelemetry, activé par `OTEL_EXPORTER_OTLP_ENDPOINT` (OTLP/HTTP) et configuré par les variables standard (`OTEL_SERVICE_NAME`, `OTEL_TRACES_SAMPLER`…). `apps/api/src/instrumentation.ts` est le premier import de `main.ts` et `worker.ts` : HTTP, Express, Nest et Postgres sont instrumentés. `/health` et `/ready` ne sont pas tracés ; une requête SQL hors span (sondage du relais) non plus.
+- **Événements** : l'outbox stocke le contexte W3C de la requête (`trace_context`) ; le worker exécute chaque handler dans un span `process <handler>` enfant de cette requête. Une seule trace va de la requête HTTP jusqu'aux handlers, dans le service `api-worker`.
+- **Logs** : chaque ligne émise pendant un span porte `trace_id` et `span_id` (instrumentation pino).
+- **Code métier** : rien à faire. Pour un span sur mesure, `trace.getTracer('<domaine>')` de `@opentelemetry/api`, sans dépendre du SDK.
+- **Tests** : `startTestTracing()` (`api-core/testing`) enregistre un vrai SDK qui garde les spans en mémoire.
+- `@opentelemetry/api` reste en `~1.9` tant que le SDK est en 2.x (la 1.10 n'est acceptée que par le SDK 3).
 
 ## Principes non négociables
 
