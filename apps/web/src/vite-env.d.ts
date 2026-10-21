@@ -6,3 +6,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Catalogues Lingui compilés à la volée par `@lingui/vite-plugin`. */
+declare module '*.po' {
+  export const messages: Record<string, string>;
+}

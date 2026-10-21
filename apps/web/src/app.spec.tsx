@@ -19,7 +19,7 @@ import { Route as appRoot, type RouterContext } from './routes/__root';
 
 vi.mock('./i18n/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./i18n/i18n')>();
-  return { ...actual, activateLocale: vi.fn(actual.activateLocale) };
+  return { ...actual, activateLocale: vi.fn<typeof actual.activateLocale>(actual.activateLocale) };
 });
 
 const api = createApiClient({ baseUrl: 'http://localhost:3000/api/v1' });
