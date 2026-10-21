@@ -8,7 +8,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { createQueryClient } from '@nx-react-nestjs/web-data-access';
 
-import { api } from './api';
+import { api, session } from './api';
 import { activateInitialLocale } from './i18n/i18n';
 import { readStoredLocale, resolveLocale } from './i18n/locale';
 import { createAppRouter } from './router';
@@ -16,7 +16,7 @@ import { createAppRouter } from './router';
 const queryClient = createQueryClient({
   onMutationError: () => toast.error(t`Une erreur est survenue.`),
 });
-const router = createAppRouter(queryClient, api);
+const router = createAppRouter({ queryClient, api, session });
 
 await activateInitialLocale(resolveLocale(readStoredLocale(), navigator.languages));
 

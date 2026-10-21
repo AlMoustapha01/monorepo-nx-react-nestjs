@@ -126,7 +126,7 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
           sendInBackground({
             to: email,
             subject: `Invitation à rejoindre ${invitedTo.name}`,
-            text: `Pour rejoindre ${invitedTo.name} : ${new URL(`/accept-invitation/${id}`, env.AUTH_APP_URL)}`,
+            text: `Pour rejoindre ${invitedTo.name} : ${new URL(`/invitations/${id}`, env.AUTH_APP_URL)}`,
           }),
       }),
       // Access tokens pour l'API (`GET /api/auth/token`), clés publiques sur `/api/auth/jwks`.

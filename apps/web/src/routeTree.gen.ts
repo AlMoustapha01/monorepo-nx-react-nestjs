@@ -9,104 +9,271 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as PanierRouteImport } from './routes/panier'
-import { Route as CommandesIndexRouteImport } from './routes/commandes.index'
-import { Route as CommandesOrderIdRouteImport } from './routes/commandes.$orderId'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as ConnexionRouteImport } from './routes/connexion'
+import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
+import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedPanierRouteImport } from './routes/_authenticated/panier'
+import { Route as InvitationsInvitationIdRouteImport } from './routes/invitations.$invitationId'
+import { Route as OrganisationsNouvelleRouteImport } from './routes/organisations.nouvelle'
+import { Route as AuthenticatedCommandesIndexRouteImport } from './routes/_authenticated/commandes.index'
+import { Route as AuthenticatedCommandesOrderIdRouteImport } from './routes/_authenticated/commandes.$orderId'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InscriptionRoute = InscriptionRouteImport.update({
+  id: '/inscription',
+  path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
+  id: '/mot-de-passe-oublie',
+  path: '/mot-de-passe-oublie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReinitialiserMotDePasseRoute = ReinitialiserMotDePasseRouteImport.update({
+  id: '/reinitialiser-mot-de-passe',
+  path: '/reinitialiser-mot-de-passe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const PanierRoute = PanierRouteImport.update({
+const AuthenticatedPanierRoute = AuthenticatedPanierRouteImport.update({
   id: '/panier',
   path: '/panier',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const InvitationsInvitationIdRoute = InvitationsInvitationIdRouteImport.update({
+  id: '/invitations/$invitationId',
+  path: '/invitations/$invitationId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CommandesIndexRoute = CommandesIndexRouteImport.update({
-  id: '/commandes/',
-  path: '/commandes/',
+const OrganisationsNouvelleRoute = OrganisationsNouvelleRouteImport.update({
+  id: '/organisations/nouvelle',
+  path: '/organisations/nouvelle',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CommandesOrderIdRoute = CommandesOrderIdRouteImport.update({
-  id: '/commandes/$orderId',
-  path: '/commandes/$orderId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedCommandesIndexRoute =
+  AuthenticatedCommandesIndexRouteImport.update({
+    id: '/commandes/',
+    path: '/commandes/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedCommandesOrderIdRoute =
+  AuthenticatedCommandesOrderIdRouteImport.update({
+    id: '/commandes/$orderId',
+    path: '/commandes/$orderId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/panier': typeof PanierRoute
-  '/commandes/$orderId': typeof CommandesOrderIdRoute
-  '/commandes/': typeof CommandesIndexRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/connexion': typeof ConnexionRoute
+  '/inscription': typeof InscriptionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
+  '/panier': typeof AuthenticatedPanierRoute
+  '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
+  '/organisations/nouvelle': typeof OrganisationsNouvelleRoute
+  '/commandes/$orderId': typeof AuthenticatedCommandesOrderIdRoute
+  '/commandes/': typeof AuthenticatedCommandesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/panier': typeof PanierRoute
-  '/commandes/$orderId': typeof CommandesOrderIdRoute
-  '/commandes': typeof CommandesIndexRoute
+  '/connexion': typeof ConnexionRoute
+  '/inscription': typeof InscriptionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
+  '/panier': typeof AuthenticatedPanierRoute
+  '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
+  '/organisations/nouvelle': typeof OrganisationsNouvelleRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/commandes/$orderId': typeof AuthenticatedCommandesOrderIdRoute
+  '/commandes': typeof AuthenticatedCommandesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/panier': typeof PanierRoute
-  '/commandes/$orderId': typeof CommandesOrderIdRoute
-  '/commandes/': typeof CommandesIndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/connexion': typeof ConnexionRoute
+  '/inscription': typeof InscriptionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
+  '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
+  '/_authenticated/panier': typeof AuthenticatedPanierRoute
+  '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
+  '/organisations/nouvelle': typeof OrganisationsNouvelleRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/commandes/$orderId': typeof AuthenticatedCommandesOrderIdRoute
+  '/_authenticated/commandes/': typeof AuthenticatedCommandesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/panier' | '/commandes/$orderId' | '/commandes/'
+  fullPaths:
+    | '/'
+    | '/connexion'
+    | '/inscription'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
+    | '/panier'
+    | '/invitations/$invitationId'
+    | '/organisations/nouvelle'
+    | '/commandes/$orderId'
+    | '/commandes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/panier' | '/commandes/$orderId' | '/commandes'
-  id: '__root__' | '/' | '/panier' | '/commandes/$orderId' | '/commandes/'
+  to:
+    | '/connexion'
+    | '/inscription'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
+    | '/panier'
+    | '/invitations/$invitationId'
+    | '/organisations/nouvelle'
+    | '/'
+    | '/commandes/$orderId'
+    | '/commandes'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/connexion'
+    | '/inscription'
+    | '/mot-de-passe-oublie'
+    | '/reinitialiser-mot-de-passe'
+    | '/_authenticated/panier'
+    | '/invitations/$invitationId'
+    | '/organisations/nouvelle'
+    | '/_authenticated/'
+    | '/_authenticated/commandes/$orderId'
+    | '/_authenticated/commandes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  PanierRoute: typeof PanierRoute
-  CommandesOrderIdRoute: typeof CommandesOrderIdRoute
-  CommandesIndexRoute: typeof CommandesIndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  ConnexionRoute: typeof ConnexionRoute
+  InscriptionRoute: typeof InscriptionRoute
+  MotDePasseOublieRoute: typeof MotDePasseOublieRoute
+  ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
+  InvitationsInvitationIdRoute: typeof InvitationsInvitationIdRoute
+  OrganisationsNouvelleRoute: typeof OrganisationsNouvelleRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inscription': {
+      id: '/inscription'
+      path: '/inscription'
+      fullPath: '/inscription'
+      preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mot-de-passe-oublie': {
+      id: '/mot-de-passe-oublie'
+      path: '/mot-de-passe-oublie'
+      fullPath: '/mot-de-passe-oublie'
+      preLoaderRoute: typeof MotDePasseOublieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reinitialiser-mot-de-passe': {
+      id: '/reinitialiser-mot-de-passe'
+      path: '/reinitialiser-mot-de-passe'
+      fullPath: '/reinitialiser-mot-de-passe'
+      preLoaderRoute: typeof ReinitialiserMotDePasseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/panier': {
-      id: '/panier'
+    '/_authenticated/panier': {
+      id: '/_authenticated/panier'
       path: '/panier'
       fullPath: '/panier'
-      preLoaderRoute: typeof PanierRouteImport
+      preLoaderRoute: typeof AuthenticatedPanierRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/invitations/$invitationId': {
+      id: '/invitations/$invitationId'
+      path: '/invitations/$invitationId'
+      fullPath: '/invitations/$invitationId'
+      preLoaderRoute: typeof InvitationsInvitationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/commandes/': {
-      id: '/commandes/'
+    '/organisations/nouvelle': {
+      id: '/organisations/nouvelle'
+      path: '/organisations/nouvelle'
+      fullPath: '/organisations/nouvelle'
+      preLoaderRoute: typeof OrganisationsNouvelleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/commandes/': {
+      id: '/_authenticated/commandes/'
       path: '/commandes'
       fullPath: '/commandes/'
-      preLoaderRoute: typeof CommandesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCommandesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/commandes/$orderId': {
-      id: '/commandes/$orderId'
+    '/_authenticated/commandes/$orderId': {
+      id: '/_authenticated/commandes/$orderId'
       path: '/commandes/$orderId'
       fullPath: '/commandes/$orderId'
-      preLoaderRoute: typeof CommandesOrderIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCommandesOrderIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedPanierRoute: typeof AuthenticatedPanierRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedCommandesOrderIdRoute: typeof AuthenticatedCommandesOrderIdRoute
+  AuthenticatedCommandesIndexRoute: typeof AuthenticatedCommandesIndexRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedPanierRoute: AuthenticatedPanierRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCommandesOrderIdRoute: AuthenticatedCommandesOrderIdRoute,
+  AuthenticatedCommandesIndexRoute: AuthenticatedCommandesIndexRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  PanierRoute: PanierRoute,
-  CommandesOrderIdRoute: CommandesOrderIdRoute,
-  CommandesIndexRoute: CommandesIndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  ConnexionRoute: ConnexionRoute,
+  InscriptionRoute: InscriptionRoute,
+  MotDePasseOublieRoute: MotDePasseOublieRoute,
+  ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
+  InvitationsInvitationIdRoute: InvitationsInvitationIdRoute,
+  OrganisationsNouvelleRoute: OrganisationsNouvelleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

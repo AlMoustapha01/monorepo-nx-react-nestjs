@@ -3,8 +3,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { CatalogPage } from '@nx-react-nestjs/web-storefront';
 import { Heading } from '@nx-react-nestjs/web-ui';
 
-import { ErrorZone } from '../components/error-zone';
-import { useFeatureFlag } from '../feature-flags';
+import { ErrorZone } from '../../components/error-zone';
+import { useFeatureFlag } from '../../feature-flags';
 
 function Home() {
   const { api } = Route.useRouteContext();
@@ -23,4 +23,4 @@ function Home() {
   );
 }
 
-export const Route = createFileRoute('/')({ component: Home });
+export const Route = createFileRoute('/_authenticated/')({ component: Home });

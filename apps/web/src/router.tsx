@@ -1,13 +1,12 @@
-import type { QueryClient } from '@tanstack/react-query';
 import { createRouter, type RouterHistory } from '@tanstack/react-router';
-import type { ApiClient } from '@nx-react-nestjs/web-data-access';
 
 import { routeTree } from './routeTree.gen';
+import type { RouterContext } from './routes/__root';
 
-export function createAppRouter(queryClient: QueryClient, api: ApiClient, history?: RouterHistory) {
+export function createAppRouter(context: RouterContext, history?: RouterHistory) {
   return createRouter({
     routeTree,
-    context: { queryClient, api },
+    context,
     defaultPreload: 'intent',
     history,
   });

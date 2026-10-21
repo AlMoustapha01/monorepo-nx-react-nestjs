@@ -15,6 +15,16 @@ msgstr "✓ {inCart} dans le panier"
 msgid "404 : page introuvable"
 msgstr "404 : page introuvable"
 
+#: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
+msgid "Accepter l'invitation"
+msgstr "Accepter l'invitation"
+
+#: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Adresse email"
+msgstr "Adresse email"
+
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Ajouter au panier"
 msgstr "Ajouter au panier"
@@ -39,13 +49,18 @@ msgstr "Aucun produit pour le moment"
 msgid "Augmenter la quantité"
 msgstr "Augmenter la quantité"
 
-#: src/routes/index.tsx
+#: src/routes/_authenticated/index.tsx
 msgid "Boilerplate web"
 msgstr "Boilerplate web"
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Catalogue"
 msgstr "Catalogue"
+
+#: ../../libs/web/auth/src/lib/components/reset-password-page.tsx
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Ce lien n'est plus valide. Demandez-en un nouveau."
+msgstr "Ce lien n'est plus valide. Demandez-en un nouveau."
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Ce produit n'est plus disponible"
@@ -59,10 +74,23 @@ msgstr "Certains produits ne sont plus disponibles."
 msgid "Cette action est définitive."
 msgstr "Cette action est définitive."
 
+#: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
+msgid "Cette invitation a déjà été utilisée ou annulée."
+msgstr "Cette invitation a déjà été utilisée ou annulée."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Cette invitation est destinée à une autre adresse email."
+msgstr "Cette invitation est destinée à une autre adresse email."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Cette invitation n'existe pas ou a expiré."
+msgstr "Cette invitation n'existe pas ou a expiré."
+
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
 msgstr "Cette page n'existe pas."
 
+#: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
@@ -74,9 +102,54 @@ msgstr "Chargement…"
 msgid "Commande {0}"
 msgstr "Commande {0}"
 
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien."
+msgstr "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien."
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Connexion"
+msgstr "Connexion"
+
+#: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
+msgid "Créer"
+msgstr "Créer"
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Créer mon compte"
+msgstr "Créer mon compte"
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Créer un compte"
+msgstr "Créer un compte"
+
+#: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
+msgid "Créer votre organisation"
+msgstr "Créer votre organisation"
+
+#: ../../libs/web/auth/src/lib/components/account-menu.tsx
+msgid "Déconnexion"
+msgstr "Déconnexion"
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Déjà un compte ? <0>Se connecter</0>"
+msgstr "Déjà un compte ? <0>Se connecter</0>"
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Diminuer la quantité"
 msgstr "Diminuer la quantité"
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Email ou mot de passe incorrect."
+msgstr "Email ou mot de passe incorrect."
+
+#: ../../libs/web/auth/src/lib/components/reset-password-page.tsx
+msgid "Enregistrer"
+msgstr "Enregistrer"
+
+#: ../../libs/web/auth/src/lib/components/reset-password-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Entre {PASSWORD_MIN_LENGTH} et {PASSWORD_MAX_LENGTH} caractères."
+msgstr "Entre {PASSWORD_MIN_LENGTH} et {PASSWORD_MAX_LENGTH} caractères."
 
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Fermer"
@@ -102,6 +175,10 @@ msgstr "Impossible de charger le catalogue."
 msgid "Impossible de charger vos commandes."
 msgstr "Impossible de charger vos commandes."
 
+#: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
+msgid "Invitation"
+msgstr "Invitation"
+
 #: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
 msgid "La commande a changé entre-temps, elle a été rechargée."
 msgstr "La commande a changé entre-temps, elle a été rechargée."
@@ -110,10 +187,51 @@ msgstr "La commande a changé entre-temps, elle a été rechargée."
 msgid "Langue"
 msgstr "Langue"
 
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Le service est injoignable. Vérifiez votre connexion et réessayez."
+msgstr "Le service est injoignable. Vérifiez votre connexion et réessayez."
+
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
 msgid "Mes commandes"
 msgstr "Mes commandes"
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Mot de passe"
+msgstr "Mot de passe"
+
+#: src/routes/reinitialiser-mot-de-passe.tsx
+msgid "Mot de passe modifié. Connectez-vous avec le nouveau."
+msgstr "Mot de passe modifié. Connectez-vous avec le nouveau."
+
+#: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
+msgid "Mot de passe oublié"
+msgstr "Mot de passe oublié"
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Mot de passe oublié ?"
+msgstr "Mot de passe oublié ?"
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Nom"
+msgstr "Nom"
+
+#: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
+msgid "Nom de l'organisation"
+msgstr "Nom de l'organisation"
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Nous avons envoyé un lien de confirmation à {sentTo}. Ouvrez-le pour activer votre compte."
+msgstr "Nous avons envoyé un lien de confirmation à {sentTo}. Ouvrez-le pour activer votre compte."
+
+#: ../../libs/web/auth/src/lib/components/reset-password-page.tsx
+msgid "Nouveau mot de passe"
+msgstr "Nouveau mot de passe"
+
+#: ../../libs/web/auth/src/lib/components/account-menu.tsx
+msgid "Organisation"
+msgstr "Organisation"
 
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Oui, annuler"
@@ -127,6 +245,10 @@ msgstr "Panier"
 msgid "Panier ({count})"
 msgstr "Panier ({count})"
 
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Pas encore de compte ? <0>Créer un compte</0>"
+msgstr "Pas encore de compte ? <0>Créer un compte</0>"
+
 #: ../../libs/web/storefront/src/lib/components/order-status-badge.tsx
 msgid "Passée"
 msgstr "Passée"
@@ -139,9 +261,25 @@ msgstr "Passer la commande"
 msgid "Quelque chose s'est mal passé. Vous pouvez réessayer."
 msgstr "Quelque chose s'est mal passé. Vous pouvez réessayer."
 
+#: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
+msgid "Recevoir un lien"
+msgstr "Recevoir un lien"
+
+#: ../../libs/web/auth/src/lib/components/reset-password-page.tsx
+msgid "Recevoir un nouveau lien"
+msgstr "Recevoir un nouveau lien"
+
 #: src/routes/__root.tsx
 msgid "Réessayer"
 msgstr "Réessayer"
+
+#: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
+msgid "Rejoindre {organizationName}"
+msgstr "Rejoindre {organizationName}"
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Renvoyer le lien de confirmation"
+msgstr "Renvoyer le lien de confirmation"
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Retirer"
@@ -150,6 +288,40 @@ msgstr "Retirer"
 #: src/routes/__root.tsx
 msgid "Retour à l'accueil"
 msgstr "Retour à l'accueil"
+
+#: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
+msgid "Retour à la connexion"
+msgstr "Retour à la connexion"
+
+#: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
+msgid "Saisissez un nom."
+msgstr "Saisissez un nom."
+
+#: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Saisissez une adresse email valide."
+msgstr "Saisissez une adresse email valide."
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Saisissez votre mot de passe."
+msgstr "Saisissez votre mot de passe."
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Saisissez votre nom."
+msgstr "Saisissez votre nom."
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Se connecter"
+msgstr "Se connecter"
+
+#: ../../libs/web/auth/src/lib/components/account-menu.tsx
+msgid "Se déconnecter"
+msgstr "Se déconnecter"
+
+#: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
+msgid "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
+msgstr "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Total"
@@ -162,6 +334,18 @@ msgstr "Total"
 msgid "Total : {0}"
 msgstr "Total : {0}"
 
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Trop de tentatives. Réessayez dans quelques instants."
+msgstr "Trop de tentatives. Réessayez dans quelques instants."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Un compte existe déjà avec cette adresse email."
+msgstr "Un compte existe déjà avec cette adresse email."
+
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Un nouveau lien de confirmation a été envoyé."
+msgstr "Un nouveau lien de confirmation a été envoyé."
+
 #: src/routes/__root.tsx
 msgid "Une erreur est survenue"
 msgstr "Une erreur est survenue"
@@ -173,6 +357,14 @@ msgstr "Une erreur est survenue"
 msgid "Une erreur est survenue."
 msgstr "Une erreur est survenue."
 
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Une erreur est survenue. Réessayez."
+msgstr "Une erreur est survenue. Réessayez."
+
+#: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
+msgid "Vérifiez votre boîte mail"
+msgstr "Vérifiez votre boîte mail"
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Voir le catalogue"
 msgstr "Voir le catalogue"
@@ -181,6 +373,10 @@ msgstr "Voir le catalogue"
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Voir plus"
 msgstr "Voir plus"
+
+#: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
+msgid "Votre organisation regroupe vos données et vos collègues. Vous pourrez inviter d'autres personnes ensuite."
+msgstr "Votre organisation regroupe vos données et vos collègues. Vous pourrez inviter d'autres personnes ensuite."
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Votre panier contient déjà {MAX_ORDER_LINES} produits différents."
@@ -193,6 +389,10 @@ msgstr "Votre panier est vide"
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander."
 msgstr "Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander."
+
+#: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
+msgid "Vous êtes invité à rejoindre {organizationName} avec l'adresse {email}."
+msgstr "Vous êtes invité à rejoindre {organizationName} avec l'adresse {email}."
 
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Vous n'avez pas encore de commande"

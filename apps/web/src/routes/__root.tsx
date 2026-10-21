@@ -1,27 +1,35 @@
 import { useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
-import { Link, Outlet, createRootRouteWithContext, useRouter } from '@tanstack/react-router';
+import {
+  Link,
+  Outlet,
+  createRootRouteWithContext,
+  useMatch,
+  useRouter,
+} from '@tanstack/react-router';
 import { Toaster } from 'sonner';
-import { featureFlagsQueryOptions, type ApiClient } from '@nx-react-nestjs/web-data-access';
-import { StorefrontNav } from '@nx-react-nestjs/web-storefront';
+import type { ApiClient } from '@nx-react-nestjs/web-data-access';
 import { Button, Heading, Stack, Text, buttonVariants } from '@nx-react-nestjs/web-ui';
 
+import { AppNavigation } from '../components/app-navigation';
 import { LocaleSwitcher } from '../components/locale-switcher';
-import { useFeatureFlag } from '../feature-flags';
 import { reportError } from '../report-error';
+import { AUTHENTICATED_ROUTE, type SessionContext } from '../session';
 
 export interface RouterContext {
   queryClient: QueryClient;
   api: ApiClient;
+  session: SessionContext;
 }
 
 function RootLayout() {
-  const storefront = useFeatureFlag('storefront');
+  // Navigation et compte n'existent qu'une fois connecté (les flags exigent un token).
+  const authenticated = useMatch({ from: AUTHENTICATED_ROUTE, shouldThrow: false });
   return (
     <>
-      <header className="flex items-center justify-between p-4">
-        {storefront ? <StorefrontNav /> : <span />}
+      <header className="flex items-center justify-between gap-4 p-4">
+        {authenticated ? <AppNavigation /> : <span />}
         <LocaleSwitcher />
       </header>
       <Stack as="main">
@@ -67,10 +75,6 @@ function NotFound() {
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  // Les flags sont chargés une fois, avant le premier rendu.
-  beforeLoad: async ({ context }) => {
-    await context.queryClient.ensureQueryData(featureFlagsQueryOptions(context.api, reportError));
-  },
   component: RootLayout,
   errorComponent: GlobalError,
   notFoundComponent: NotFound,

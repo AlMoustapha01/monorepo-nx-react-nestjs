@@ -12,12 +12,18 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createApiClient, createQueryClient } from '@nx-react-nestjs/web-data-access';
+import {
+  createAccessTokenSource,
+  createApiClient,
+  createAuthClient,
+  createQueryClient,
+} from '@nx-react-nestjs/web-data-access';
 
 import { ErrorZone } from './components/error-zone';
 import { activateLocale } from './i18n/i18n';
 import { createAppRouter } from './router';
 import { Route as appRoot, type RouterContext } from './routes/__root';
+import type { SessionContext } from './session';
 
 vi.mock('./i18n/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./i18n/i18n')>();
@@ -25,7 +31,13 @@ vi.mock('./i18n/i18n', async (importOriginal) => {
 });
 
 const API = 'http://localhost:3000/api/v1';
+const AUTH = 'http://localhost:3100/api/auth';
 const api = createApiClient({ baseUrl: API });
+const auth = createAuthClient({ baseUrl: 'http://localhost:3100' });
+
+function sessionContext(devMode: boolean): SessionContext {
+  return { auth, tokens: createAccessTokenSource(() => auth.getAccessToken()), devMode };
+}
 const server = setupServer(
   http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: {} })),
 );
@@ -47,12 +59,15 @@ function renderRouter(
   );
 }
 
-function renderAt(url: string) {
+/** `devMode` : comme avec VITE_DEV_TOKEN, sans connexion. */
+function renderAt(url: string, { devMode = true } = {}) {
   const queryClient = createQueryClient();
-  renderRouter(
-    createAppRouter(queryClient, api, createMemoryHistory({ initialEntries: [url] })),
-    queryClient,
+  const router = createAppRouter(
+    { queryClient, api, session: sessionContext(devMode) },
+    createMemoryHistory({ initialEntries: [url] }),
   );
+  renderRouter(router, queryClient);
+  return router;
 }
 
 beforeEach(async () => {
@@ -200,7 +215,7 @@ describe('app', () => {
     });
     const router = createRouter({
       routeTree: testRoot.addChildren([flaky]),
-      context: { queryClient, api },
+      context: { queryClient, api, session: sessionContext(true) },
       history: createMemoryHistory({ initialEntries: ['/flaky'] }),
     });
     renderRouter(router, queryClient);
@@ -228,5 +243,96 @@ describe('ErrorZone', () => {
     );
     expect(screen.getByText('secours')).toBeTruthy();
     expect(spy.mock.calls.some((c) => c[0] === '[reportError]')).toBe(true);
+  });
+});
+
+describe('authentification', () => {
+  const user = { id: 'u1', name: 'Ada', email: 'ada@shop.test', emailVerified: true };
+  let current: unknown;
+
+  beforeEach(() => {
+    current = null;
+    server.use(
+      http.get(`${AUTH}/get-session`, () => HttpResponse.json(current)),
+      http.post(`${AUTH}/sign-in/email`, () => {
+        current = { user, session: { activeOrganizationId: 'o1' } };
+        return HttpResponse.json({ redirect: false, token: 's', user });
+      }),
+      http.post(`${AUTH}/sign-out`, () => {
+        current = null;
+        return HttpResponse.json({ success: true });
+      }),
+      http.get(`${AUTH}/organization/list`, () =>
+        HttpResponse.json([{ id: 'o1', name: 'Boutique', slug: 'boutique' }]),
+      ),
+    );
+  });
+
+  async function signIn() {
+    const events = userEvent.setup();
+    await events.type(await screen.findByLabelText('Adresse email'), 'ada@shop.test');
+    await events.type(screen.getByLabelText('Mot de passe'), 'secret-password');
+    await events.click(screen.getByRole('button', { name: 'Se connecter' }));
+    return events;
+  }
+
+  it('renvoie vers la connexion, puis vers la page demandée', async () => {
+    const router = renderAt('/panier', { devMode: false });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
+    expect(router.state.location.search).toEqual({ redirect: '/panier' });
+
+    await signIn();
+    // Storefront coupé : la page demandée répond 404, mais on y est bien arrivé, connecté.
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/panier'));
+    expect(await screen.findByRole('button', { name: 'Se déconnecter' })).toBeTruthy();
+  });
+
+  it('ne suit pas une redirection vers un autre site', async () => {
+    const router = renderAt('/connexion?redirect=//evil.example/phish', { devMode: false });
+    await signIn();
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/'));
+  });
+
+  it('demande de créer une organisation à un utilisateur qui n’en a pas', async () => {
+    current = { user, session: { activeOrganizationId: null } };
+    renderAt('/', { devMode: false });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Créer votre organisation' }),
+    ).toBeTruthy();
+  });
+
+  it('déconnecte et revient à la connexion', async () => {
+    current = { user, session: { activeOrganizationId: 'o1' } };
+    renderAt('/', { devMode: false });
+    expect(await screen.findByText('ada@shop.test')).toBeTruthy();
+    expect(await screen.findByText('Boutique')).toBeTruthy();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
+  });
+
+  it('envoie à l’API le token du service d’auth', async () => {
+    current = { user, session: { activeOrganizationId: 'o1' } };
+    const seen: (string | null)[] = [];
+    const exp = Math.floor(Date.now() / 1000) + 900;
+    const token = `h.${btoa(JSON.stringify({ exp })).replace(/=+$/, '')}.s`;
+    server.use(
+      http.get(`${AUTH}/token`, () => HttpResponse.json({ token })),
+      http.get(`${API}/feature-flags`, ({ request }) => {
+        seen.push(request.headers.get('authorization'));
+        return HttpResponse.json({ flags: {} });
+      }),
+    );
+    const queryClient = createQueryClient();
+    const session = sessionContext(false);
+    const authedApi = createApiClient({ baseUrl: API, getToken: session.tokens.getToken });
+    renderRouter(
+      createAppRouter(
+        { queryClient, api: authedApi, session },
+        createMemoryHistory({ initialEntries: ['/'] }),
+      ),
+      queryClient,
+    );
+    expect(await screen.findByRole('heading', { level: 1, name: 'Boilerplate web' })).toBeTruthy();
+    expect(seen).toEqual([`Bearer ${token}`]);
   });
 });

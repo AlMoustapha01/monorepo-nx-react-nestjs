@@ -15,4 +15,6 @@ const initial = [...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.js)"/g)].map(
 );
 if (initial.length === 0) throw new Error(`No initial JS found in ${dist}/index.html`);
 
-export default [{ name: 'initial JS (gzip)', path: initial, gzip: true, limit: '170 kB' }];
+// 180 kB : +10 kB pour l'authentification (client du service d'auth, token, menu de compte, garde
+// des routes), présente sur chaque page. Charger le menu à la demande coûtait plus qu'il ne gagnait.
+export default [{ name: 'initial JS (gzip)', path: initial, gzip: true, limit: '180 kB' }];

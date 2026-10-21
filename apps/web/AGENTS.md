@@ -15,16 +15,16 @@ App React (Vite) qui assemble les libs `libs/web/*`. Conventions des libs : [`li
 
 `web:i18n-check` lance `lingui extract --clean` (il réécrit les catalogues en local), pose `git add --intent-to-add` sur `src/locales`, puis échoue si `git diff` n'est pas vide : committer les catalogues mis à jour.
 
-Variables (voir `.env.example` à la racine) : `VITE_API_URL` (défaut `http://localhost:3000/api/v1`) et `VITE_DEV_TOKEN` (token de dev, absent par défaut).
+Variables (voir `.env.example` à la racine) : `VITE_API_URL` (défaut `http://localhost:3000/api/v1`), `VITE_AUTH_URL` (service d'identité, défaut `http://localhost:3100`) et `VITE_DEV_TOKEN` (token de dev, absent par défaut).
 
 ## Rôle de l'app
 
 Assemblage uniquement : routeur, providers, layout. La logique métier et l'UI réutilisable vivent dans `libs/web/*`.
 
 - Une route = un fichier dans `src/routes/` (TanStack Router, routes par fichiers ; `routeTree.gen.ts` est généré, ne pas l'éditer).
-- `src/routes/__root.tsx` : layout (sélecteur de langue, `Toaster` sonner), page d'erreur globale avec « Réessayer », page 404.
-- `src/router.tsx` : `createAppRouter(queryClient, api, history?)` ; le contexte du routeur est `{ queryClient, api }` (les `loader` y trouvent le client API et le cache).
-- `src/api.ts` : instance unique du client API (`createApiClient`).
+- `src/routes/__root.tsx` : layout (navigation et compte une fois connecté, sélecteur de langue, `Toaster` sonner), page d'erreur globale avec « Réessayer », page 404.
+- `src/router.tsx` : `createAppRouter({ queryClient, api, session }, history?)` ; le contexte du routeur donne aux `beforeLoad` et `loader` le client API, le cache et la session (`src/session.ts`).
+- `src/api.ts` : instances uniques du client API et du client d'auth, et choix du mode (token de dev ou service d'auth).
 - `src/i18n/` : Lingui. `resolveLocale` (langue du navigateur ramenée à sa base, `fr` par défaut), `activateLocale`, préférence en `localStorage` sous la clé `app.locale` (lecture et écriture protégées par try/catch). Pas de préfixe d'URL.
 - Catalogues : `src/locales/{fr,en}/messages.po`. `fr` est la langue source.
 - React Compiler est actif (plugin Babel de `@rolldown/plugin-babel`) : pas de `useMemo`/`useCallback` par réflexe.
@@ -39,11 +39,27 @@ Assemblage uniquement : routeur, providers, layout. La logique métier et l'UI r
 - L'app peut dépendre de feature, ui, data-access et contracts (tags Nx), jamais l'inverse.
 - Budget : `web:size` limite le JS initial (gzip) : script d'entrée et `modulepreload` de `index.html`, sans les chunks des routes chargées à la demande. Les libs sont déclarées sans effet de bord à l'import (`vite.config.mts`) : importer une façade au démarrage n'y entraîne que ce qui est utilisé. Une hausse se justifie en revue ; préférer `lazy`/routes séparées avant de relever la limite.
 
+## Authentification
+
+Deux modes, comme l'API (secret ou JWKS) :
+
+- **Service d'identité** (par défaut, et toujours en production) : connexion au service Better Auth (`apps/auth`). Lancer `pnpm nx serve auth`, l'API avec `AUTH_JWKS_URL`, puis `pnpm dev:seed` pour les comptes de démo (`staff@shop.local`, `dev@shop.local`, mot de passe `demo-password-1234`).
+- **Token de dev** (`VITE_DEV_TOKEN`, dev seulement) : aucune connexion, ce token est envoyé à l'API.
+
+Fonctionnement :
+
+- La session est un cookie du service d'auth. L'API reçoit un access token de 15 min (`GET /api/auth/token`), gardé **en mémoire seulement** (`createAccessTokenSource`, jamais dans localStorage), renouvelé avant expiration ; un 401 de l'API le renouvelle et rejoue la requête une fois.
+- Pages publiques : `/connexion`, `/inscription`, `/mot-de-passe-oublie`, `/reinitialiser-mot-de-passe`. Avec session : `/organisations/nouvelle`, `/invitations/$invitationId` (lien de l'email d'invitation).
+- Les pages de l'app vivent sous la route layout `routes/_authenticated` (URL inchangées) : sans session, `/connexion?redirect=<page>` ; sans organisation active (pas de tenant), `/organisations/nouvelle`. Une nouvelle page protégée va dans `routes/_authenticated/`.
+- `redirect` n'accepte qu'un chemin de l'app (`safeRedirect`) : la page de connexion n'est pas un redirecteur ouvert.
+- Connexion, déconnexion, changement d'organisation : `resetSession` oublie le token et vide tout le cache (données de l'ancien utilisateur ou de l'ancien tenant).
+- Écrans et formulaires : lib `libs/web/auth` (react-hook-form + schémas zod de `contracts`) ; client HTTP : `createAuthClient` (`web-data-access`).
+
 ## Feature flags
 
 Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés dans `FEATURE_FLAGS` (contracts) ; ceux marqués `client: true` sont exposés par `GET /api/v1/feature-flags`.
 
-- Le `beforeLoad` de la racine charge les flags une fois (`featureFlagsQueryOptions`, `staleTime: Infinity`) avant le premier rendu.
+- Le `beforeLoad` de `_authenticated` charge les flags une fois (ils exigent un token) (`featureFlagsQueryOptions`, `staleTime: Infinity`) avant le premier rendu.
 - Garder une route : `beforeLoad: requireFeature('<flag>')` (`src/feature-flags.ts`) ; flag coupé = 404.
 - Lire un flag dans un composant de l'app : `useFeatureFlag('<flag>')`. Les libs `libs/web/*` ne lisent aucun flag : elles reçoivent des booléens en props.
 - Repli « tout coupé » : si l'appel échoue, les flags sont tous faux et l'erreur passe par `reportError` ; la page s'affiche quand même.
@@ -51,4 +67,4 @@ Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés d
 
 ## Différé volontairement
 
-react-hook-form (à installer avec le premier formulaire), Jotai, Sentry, Playwright + axe.
+Jotai, Sentry, Playwright + axe.
