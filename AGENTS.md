@@ -4,21 +4,21 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 ## Commandes
 
-| Besoin                                                                | Commande                                                                                                                                  |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Première installation : `.env`, Postgres, Redis, Mailpit, migrations  | `pnpm install && pnpm dev:setup`                                                                                                          |
-| Lancer l'API                                                          | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                                               |
-| Données de démo (API démarrée)                                        | `pnpm dev:seed`                                                                                                                           |
-| Token pour appeler l'API (Swagger, curl)                              | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                                            |
-| Lancer le service d'identité (Better Auth)                            | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                                     |
-| Voir les emails envoyés en local                                      | http://localhost:8025 (Mailpit)                                                                                                           |
-| Appliquer les migrations                                              | `pnpm nx run api:db-migrate`                                                                                                              |
-| Générer une migration après un changement de schéma                   | `pnpm nx run api:db-generate --name=<sujet>`                                                                                              |
-| Tout vérifier, comme la CI (format, lint, types, tests, code mort)    | `pnpm check`                                                                                                                              |
-| Seulement ce qui a changé                                             | `pnpm nx affected -t lint typecheck test`                                                                                                 |
-| Formater                                                              | `pnpm format`                                                                                                                             |
-| Traces en local (Grafana sur http://localhost:3001)                   | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env`                      |
-| Vérifier la topologie de prod en local (images, migrations, services) | `AUTH_JWT_SECRET=$(openssl rand -hex 32) BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build` |
+| Besoin                                                                | Commande                                                                                                             |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Première installation : `.env`, Postgres, Redis, Mailpit, migrations  | `pnpm install && pnpm dev:setup`                                                                                     |
+| Lancer l'API                                                          | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
+| Données de démo (API démarrée)                                        | `pnpm dev:seed`                                                                                                      |
+| Token pour appeler l'API (Swagger, curl)                              | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
+| Lancer le service d'identité (Better Auth)                            | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
+| Voir les emails envoyés en local                                      | http://localhost:8025 (Mailpit)                                                                                      |
+| Appliquer les migrations                                              | `pnpm nx run api:db-migrate`                                                                                         |
+| Générer une migration après un changement de schéma                   | `pnpm nx run api:db-generate --name=<sujet>`                                                                         |
+| Tout vérifier, comme la CI (format, lint, types, tests, code mort)    | `pnpm check`                                                                                                         |
+| Seulement ce qui a changé                                             | `pnpm nx affected -t lint typecheck test`                                                                            |
+| Formater                                                              | `pnpm format`                                                                                                        |
+| Traces en local (Grafana sur http://localhost:3001)                   | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env` |
+| Vérifier la topologie de prod en local (images, migrations, services) | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                    |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
@@ -56,6 +56,14 @@ Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de 
 - `index.ts` d'un domaine : exports nommés uniquement, jamais `export *`. N'y exposer que le module Nest, la façade et des types de contrat (snapshots), jamais une entité ni un repository (vérifié en revue).
 - `domain/` n'importe ni NestJS, ni Drizzle, ni `pg` (lint, `no-restricted-imports` du `.oxlintrc.json` de chaque domaine).
 - Chaque domaine possède son schéma Postgres (`pgSchema('<domaine>')`). Pas de jointure ni de clé étrangère vers les tables d'un autre domaine : passer par sa façade ou ne garder qu'un ID.
+
+## Authentification
+
+- **Contrat** : l'API accepte un access token JWT signé par le fournisseur d'identité, vérifié avec ses clés publiques (`AUTH_JWKS_URL`, algorithmes EdDSA, ES256 ou RS256) ; `iss` et `aud` obligatoires. `sub` (utilisateur) et le tenant sont des UUID ; tenant et rôles sont lus dans `AUTH_TENANT_CLAIM` et `AUTH_ROLES_CLAIM` (`tenant_id`, `roles` par défaut ; chemin pointé accepté). Changer de fournisseur ne demande que de la configuration, s'il fournit des UUID.
+- **Fournisseur** : `apps/auth`, Better Auth dans un service à part, tables dans le schéma Postgres `auth`. Email et mot de passe avec vérification de l'email ; une **organisation** Better Auth est un tenant ; `owner` et `admin` donnent le rôle `staff`, `member` aucun (`apps/auth/src/claims.ts`). Le front obtient un token de 15 min par `GET /api/auth/token` (cookie de session) et l'envoie en `Authorization: Bearer`.
+- **Contenu du token** : `tenant_id` = organisation active de la session, et seulement si l'utilisateur en est encore membre ; à la connexion, la première organisation de l'utilisateur devient active. `email` seulement s'il est vérifié. Rien d'autre.
+- **Dev et tests** : `AUTH_JWT_SECRET` (HS256) remplace le JWKS, pour `dev:token`, `signTestToken` et les e2e ; refusé en production. Pour tester avec le vrai service en local : `AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks` et commenter `AUTH_JWT_SECRET` (l'un ou l'autre, jamais les deux).
+- **Fournisseur injoignable** : les clés déjà téléchargées restent en cache ; seul un token signé par une clé inconnue échoue (401, journalisé en `warn`).
 
 ## Autorisations
 

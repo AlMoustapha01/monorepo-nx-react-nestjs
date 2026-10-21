@@ -1,6 +1,5 @@
 # Topologie de production, à lancer en local pour la vérifier (ce n'est pas un déploiement) :
-#   AUTH_JWT_SECRET=$(openssl rand -hex 32) BETTER_AUTH_SECRET=$(openssl rand -hex 32) \
-#     docker compose -f docker-compose.prod.yml up --build
+#   BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build
 # Deux images : l'API (api, worker, migrate) et le service d'identité (auth, auth-migrate).
 # Ordre : Postgres prêt → migrations (une fois chacune) → auth, api et worker.
 name: nx-react-nestjs-prod
@@ -16,7 +15,8 @@ x-api-env: &api-env
   DATABASE_URL: postgres://app:app@postgres:5432/app
   REDIS_URL: redis://redis:6379
   SMTP_URL: smtp://mailpit:1025
-  AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET est requis (32 caractères minimum)}
+  # L'API vérifie les tokens avec les clés publiques du service d'identité, par le réseau interne.
+  AUTH_JWKS_URL: http://auth:3100/api/auth/jwks
   # Vide : OpenTelemetry inactif. Sinon l'URL OTLP/HTTP du collecteur (ex. http://otel-collector:4318).
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
   SENTRY_DSN: ${SENTRY_DSN:-}
