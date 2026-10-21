@@ -29,7 +29,11 @@ export function createQueryClient(options: QueryClientOptions = {}): QueryClient
       queries: {
         staleTime: STALE_TIME_MS,
         retry: (failureCount, error) => {
-          if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false;
+          if (error instanceof ApiError) {
+            if (error.status >= 400 && error.status < 500) return false;
+            // Réponse 200 non conforme au schéma : rejouer donnerait le même résultat.
+            if (error.code === 'INVALID_RESPONSE') return false;
+          }
           return failureCount < MAX_QUERY_RETRIES;
         },
       },

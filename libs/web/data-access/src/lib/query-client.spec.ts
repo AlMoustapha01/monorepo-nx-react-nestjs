@@ -27,6 +27,15 @@ describe('createQueryClient', () => {
     expect(queryFn).toHaveBeenCalledTimes(1);
   });
 
+  it('does not retry INVALID_RESPONSE (schema mismatch on a 200)', async () => {
+    const error = new ApiError({ status: 200, code: 'INVALID_RESPONSE', title: 't', detail: 'd' });
+    const queryFn = vi.fn<() => Promise<never>>().mockRejectedValue(error);
+    await expect(
+      createQueryClient().fetchQuery({ queryKey: ['c'], queryFn, retryDelay: 0 }),
+    ).rejects.toBe(error);
+    expect(queryFn).toHaveBeenCalledTimes(1);
+  });
+
   it('retries 5xx up to 3 times', async () => {
     const queryFn = vi.fn<() => Promise<never>>().mockRejectedValue(apiError(503));
     await expect(
