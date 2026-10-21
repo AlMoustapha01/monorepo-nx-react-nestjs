@@ -11,6 +11,7 @@ export interface ApiErrorInit {
   detail: string;
   requestId?: string | undefined;
   errors?: ApiErrorFieldIssue[] | undefined;
+  details?: Record<string, unknown> | undefined;
   cause?: unknown;
 }
 
@@ -22,6 +23,7 @@ export class ApiError extends Error {
   readonly detail: string;
   readonly requestId?: string;
   readonly errors?: ApiErrorFieldIssue[];
+  readonly details?: Record<string, unknown>;
 
   constructor(init: ApiErrorInit) {
     super(init.detail, init.cause === undefined ? undefined : { cause: init.cause });
@@ -32,5 +34,6 @@ export class ApiError extends Error {
     this.detail = init.detail;
     if (init.requestId !== undefined) this.requestId = init.requestId;
     if (init.errors !== undefined) this.errors = init.errors;
+    if (init.details !== undefined) this.details = init.details;
   }
 }

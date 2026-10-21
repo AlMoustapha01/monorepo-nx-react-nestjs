@@ -119,8 +119,16 @@ async function toApiError(
   }
   const problem = problemDetailsSchema.safeParse(body);
   if (problem.success) {
-    const { code, title, detail, errors } = problem.data;
-    return new ApiError({ status: response.status, code, title, detail, requestId, errors });
+    const { code, title, detail, errors, details } = problem.data;
+    return new ApiError({
+      status: response.status,
+      code,
+      title,
+      detail,
+      requestId,
+      errors,
+      details,
+    });
   }
   return new ApiError({
     status: response.status,

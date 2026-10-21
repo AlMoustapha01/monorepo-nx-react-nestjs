@@ -44,6 +44,27 @@ const catchError = async (promise: Promise<unknown>): Promise<unknown> => {
 };
 
 describe('createApiClient', () => {
+  it('copies problem details onto ApiError', async () => {
+    server.use(
+      http.post(`${BASE}/orders`, () =>
+        HttpResponse.json(
+          {
+            type: 'urn:problem-type:PRODUCT_UNAVAILABLE',
+            title: 'Unavailable',
+            status: 422,
+            detail: 'd',
+            code: 'PRODUCT_UNAVAILABLE',
+            details: { productIds: ['PRD-1'] },
+          },
+          { status: 422, headers: { 'content-type': 'application/problem+json' } },
+        ),
+      ),
+    );
+    const error = await catchError(client.request('/orders', { method: 'POST', body: {} }));
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).details).toEqual({ productIds: ['PRD-1'] });
+  });
+
   it('returns the parsed body validated by the schema', async () => {
     server.use(http.get(`${BASE}/products/1`, () => HttpResponse.json({ id: 'PRD-1' })));
     const result = await client.request('/products/1', {
