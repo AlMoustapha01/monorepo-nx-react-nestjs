@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 import { cva } from 'class-variance-authority';
 
 import { cn } from '../utils/cn';
@@ -16,15 +16,26 @@ const text = cva('', {
   defaultVariants: { size: 'base', tone: 'default', weight: 'normal' },
 });
 
-export interface TextProps {
+export interface TextProps extends Omit<ComponentProps<'p'>, 'className'> {
   as?: 'p' | 'span' | 'div';
   size?: 'sm' | 'base' | 'lg';
   tone?: 'default' | 'muted' | 'destructive';
   weight?: 'normal' | 'medium' | 'semibold';
   className?: string;
-  children?: ReactNode;
 }
 
-export function Text({ as: Tag = 'p', size, tone, weight, className, children }: TextProps) {
-  return <Tag className={cn(text({ size, tone, weight }), className)}>{children}</Tag>;
+export function Text({
+  as: Tag = 'p',
+  size,
+  tone,
+  weight,
+  className,
+  children,
+  ...props
+}: TextProps) {
+  return (
+    <Tag {...props} className={cn(text({ size, tone, weight }), className)}>
+      {children}
+    </Tag>
+  );
 }

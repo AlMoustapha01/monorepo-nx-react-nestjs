@@ -33,6 +33,7 @@
           "error",
           {
             "ignoreNames": [
+              "as",
               "className",
               "key",
               "id",

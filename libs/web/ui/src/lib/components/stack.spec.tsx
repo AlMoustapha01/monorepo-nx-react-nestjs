@@ -21,4 +21,15 @@ describe('Stack', () => {
     expect(el).toHaveClass('flex', 'flex-row', 'gap-2');
     expect(el).not.toHaveClass('flex-col');
   });
+
+  it('transmet role et aria-* à l’élément rendu', () => {
+    const { container } = render(
+      <Stack role="alert" aria-label="x">
+        contenu
+      </Stack>,
+    );
+    const el = container.firstElementChild;
+    expect(el?.getAttribute('role')).toBe('alert');
+    expect(el?.getAttribute('aria-label')).toBe('x');
+  });
 });

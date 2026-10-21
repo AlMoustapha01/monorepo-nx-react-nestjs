@@ -54,6 +54,7 @@ describe('app', () => {
     renderAt('/');
     const heading = await screen.findByRole('heading', { level: 1 });
     expect(heading.textContent).toBe('Boilerplate web');
+    expect(screen.getByRole('main')).toBeTruthy();
   });
 
   it('renders the 404 page inside the layout for an unknown URL', async () => {
@@ -99,6 +100,7 @@ describe('app', () => {
     renderRouter(router, queryClient);
 
     const retry = await screen.findByRole('button', { name: 'Réessayer' });
+    expect(screen.getByRole('alert')).toBeTruthy();
     expect(spy.mock.calls.some((c) => c[0] === '[reportError]')).toBe(true);
 
     await userEvent.click(retry);

@@ -20,7 +20,9 @@ function RootLayout() {
       <header className="flex justify-end p-4">
         <LocaleSwitcher />
       </header>
-      <Outlet />
+      <Stack as="main">
+        <Outlet />
+      </Stack>
       <Toaster />
     </>
   );
@@ -30,7 +32,7 @@ function GlobalError({ error }: { error: unknown }) {
   const router = useRouter();
   useEffect(() => reportError(error), [error]);
   return (
-    <Stack>
+    <Stack role="alert">
       <Heading level={1}>
         <Trans>Une erreur est survenue</Trans>
       </Heading>

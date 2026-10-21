@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 import { cva } from 'class-variance-authority';
 
 import { cn } from '../utils/cn';
@@ -24,7 +24,7 @@ const stack = cva('flex', {
   defaultVariants: { direction: 'column', gap: 4, wrap: false },
 });
 
-export interface StackProps {
+export interface StackProps extends Omit<ComponentProps<'div'>, 'className'> {
   as?: 'div' | 'section' | 'main' | 'header' | 'footer' | 'nav' | 'ul' | 'ol';
   direction?: 'row' | 'column';
   gap?: 0 | 1 | 2 | 3 | 4 | 6 | 8;
@@ -32,7 +32,6 @@ export interface StackProps {
   justify?: 'start' | 'center' | 'end' | 'between';
   wrap?: boolean;
   className?: string;
-  children?: ReactNode;
 }
 
 export function Stack({
@@ -44,8 +43,16 @@ export function Stack({
   wrap,
   className,
   children,
+  ...props
 }: StackProps) {
+  // Les balises proposées partagent les props d'une div : le cast évite l'union de props.
+  const Component = Tag as 'div';
   return (
-    <Tag className={cn(stack({ direction, gap, align, justify, wrap }), className)}>{children}</Tag>
+    <Component
+      {...props}
+      className={cn(stack({ direction, gap, align, justify, wrap }), className)}
+    >
+      {children}
+    </Component>
   );
 }
