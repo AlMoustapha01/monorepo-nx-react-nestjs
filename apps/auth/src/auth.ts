@@ -6,6 +6,9 @@ import { apiClaims } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
 
+/** En-tête interne : toute valeur envoyée par le client est remplacée par le serveur. */
+export const CLIENT_IP_HEADER = 'x-auth-client-ip';
+
 /** Schéma Postgres du service : aucune table partagée avec l'API. */
 export const AUTH_SCHEMA = 'auth';
 
@@ -64,6 +67,9 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     advanced: {
       // L'API attend des UUID pour `sub` et `tenant_id`.
       database: { generateId: 'uuid' },
+      // Posé par le serveur (server.ts) à partir du socket : sans lui, tous les clients partagent
+      // le même compteur anti-brute-force.
+      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
     },
     emailAndPassword: {
       enabled: true,

@@ -53,7 +53,13 @@ describe('Service d’authentification', () => {
     });
     server.on(
       'request',
-      createRequestListener({ auth, pool, corsOrigins: [APP_URL], isShuttingDown: () => false }),
+      createRequestListener({
+        auth,
+        pool,
+        corsOrigins: [APP_URL],
+        trustProxyHops: 0,
+        isShuttingDown: () => false,
+      }),
     );
   });
 

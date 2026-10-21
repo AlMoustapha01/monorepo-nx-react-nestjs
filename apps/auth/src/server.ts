@@ -1,12 +1,13 @@
 import type { IncomingMessage, RequestListener, ServerResponse } from 'node:http';
 import { toNodeHandler } from 'better-auth/node';
 import type { Pool } from 'pg';
-import type { Auth } from './auth';
+import { type Auth, CLIENT_IP_HEADER } from './auth';
 
 interface ServerDependencies {
   auth: Auth;
   pool: Pool;
   corsOrigins: readonly string[];
+  trustProxyHops: number;
   /** Vrai pendant l'arrêt : `/ready` répond 503 pour que le load balancer retire l'instance. */
   isShuttingDown: () => boolean;
 }
@@ -16,6 +17,7 @@ export function createRequestListener({
   auth,
   pool,
   corsOrigins,
+  trustProxyHops,
   isShuttingDown,
 }: ServerDependencies): RequestListener {
   const handleAuth = toNodeHandler(auth);
@@ -37,8 +39,28 @@ export function createRequestListener({
     if (!applyCors(request, response, corsOrigins)) {
       return;
     }
+    const ip = clientIp(request, trustProxyHops);
+    if (ip) {
+      request.headers[CLIENT_IP_HEADER] = ip;
+    } else {
+      delete request.headers[CLIENT_IP_HEADER];
+    }
     void handleAuth(request, response);
   };
+}
+
+/**
+ * IP du client, comme Express avec `trust proxy` : chaque proxy de confiance ajoute à
+ * X-Forwarded-For l'adresse qu'il voit ; au-delà de `trustedHops`, l'en-tête vient du client et
+ * ne vaut rien.
+ */
+export function clientIp(request: IncomingMessage, trustedHops: number): string | undefined {
+  const forwarded = String(request.headers['x-forwarded-for'] ?? '')
+    .split(',')
+    .map((address) => address.trim())
+    .filter(Boolean);
+  const chain = [...forwarded, request.socket.remoteAddress];
+  return chain[Math.max(0, chain.length - 1 - trustedHops)];
 }
 
 /** Le front appelle le service avec ses cookies : origine explicite, jamais `*`. Renvoie false si la requête est traitée. */

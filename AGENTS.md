@@ -69,6 +69,7 @@ Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de 
 - **Fournisseur** : `apps/auth`, Better Auth dans un service à part, tables dans le schéma Postgres `auth`. Email et mot de passe avec vérification de l'email ; une **organisation** Better Auth est un tenant ; `owner` et `admin` donnent le rôle `staff`, `member` aucun (`apps/auth/src/claims.ts`). Le front obtient un token de 15 min par `GET /api/auth/token` (cookie de session) et l'envoie en `Authorization: Bearer`.
 - **Contenu du token** : `tenant_id` = organisation active de la session, et seulement si l'utilisateur en est encore membre ; à la connexion, la première organisation de l'utilisateur devient active. `email` seulement s'il est vérifié. Rien d'autre.
 - **Dev et tests** : `AUTH_JWT_SECRET` (HS256) remplace le JWKS, pour `dev:token`, `signTestToken` et les e2e ; refusé en production. Pour tester avec le vrai service en local : `AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks` et commenter `AUTH_JWT_SECRET` (l'un ou l'autre, jamais les deux).
+- **Anti-brute-force** : Better Auth limite les tentatives par IP (3 connexions par 10 s). Le serveur lui passe l'IP du socket, ou celle de `X-Forwarded-For` derrière `TRUST_PROXY_HOPS` proxys : sans ça, tous les clients partageraient un compteur, et un attaquant bloquerait la connexion de tout le monde.
 - **Fournisseur injoignable** : les clés déjà téléchargées restent en cache ; seul un token signé par une clé inconnue échoue (401, journalisé en `warn`).
 
 ## Autorisations

@@ -21,6 +21,8 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   /** URL du front, pour les liens d'invitation. */
   AUTH_APP_URL: z.url(),
+  /** Proxys devant le service (load balancer : 1) : l'IP du client est lue dans X-Forwarded-For. */
+  TRUST_PROXY_HOPS: z.coerce.number().int().nonnegative().default(0),
   /** Origines du front autorisées à appeler le service (CORS, protection CSRF). */
   CORS_ORIGINS: csv,
 

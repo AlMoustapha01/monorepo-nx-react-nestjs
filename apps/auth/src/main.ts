@@ -28,6 +28,7 @@ function main() {
       auth,
       pool,
       corsOrigins: env.CORS_ORIGINS,
+      trustProxyHops: env.TRUST_PROXY_HOPS,
       isShuttingDown: () => shuttingDown,
     }),
   );
