@@ -2,6 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "apps/api/src/{main,worker,migrate}.ts",
+    "apps/auth/src/{main,migrate}.ts",
     "apps/api/drizzle.config.ts",
     "libs/*/*/src/index.ts",
     "libs/api/core/src/testing.ts",
@@ -15,7 +16,13 @@
     "libs/web/*/src/**/*.stories.tsx",
     "libs/web/*/.storybook/main.ts"
   ],
-  "project": ["apps/api/**/*.ts", "apps/web/**/*.{ts,tsx}", "libs/**/*.{ts,tsx}", "tools/**/*.mts"],
+  "project": [
+    "apps/api/**/*.ts",
+    "apps/auth/**/*.ts",
+    "apps/web/**/*.{ts,tsx}",
+    "libs/**/*.{ts,tsx}",
+    "tools/**/*.mts"
+  ],
   "ignore": ["apps/web/src/routeTree.gen.ts"],
   "ignoreDependencies": [
     "pino-pretty",

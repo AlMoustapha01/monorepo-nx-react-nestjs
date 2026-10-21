@@ -88,14 +88,17 @@ function busyPortHint(stderr: string): string {
   return `Le port ${port} est déjà utilisé sur cette machine. Dans .env, changez ${binding.portVar}${url}, puis relancez.`;
 }
 
-const migrate = await run('pnpm', ['nx', 'run', 'api:db-migrate']);
-if (migrate.code !== 0) {
-  process.exit(migrate.code);
+for (const target of ['api:db-migrate', 'auth:db-migrate']) {
+  const migrate = await run('pnpm', ['nx', 'run', target]);
+  if (migrate.code !== 0) {
+    process.exit(migrate.code);
+  }
 }
 
 console.log(`
 Prêt.
   API      pnpm nx serve api → http://localhost:${process.env['PORT'] ?? '3000'}/api/v1
+  Auth     pnpm nx serve auth → http://localhost:${process.env['AUTH_PORT'] ?? '3100'}/api/auth
   Données  pnpm dev:seed (API démarrée)
   Token    pnpm -s dev:token
   Emails   http://localhost:${process.env['MAILPIT_UI_PORT'] ?? '8025'}`);

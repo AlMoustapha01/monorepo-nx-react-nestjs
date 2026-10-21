@@ -53,7 +53,7 @@ jobs:
       - name: Code mort et dépendances inutilisées
         run: pnpm knip
 
-  # L'image de production se construit : Dockerfile, build webpack et dépendances runtime.
+  # Les images de production se construisent : Dockerfile, build webpack et dépendances runtime.
   image:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -64,3 +64,6 @@ jobs:
 
       - name: Image de l'API
         run: docker build --tag api:ci .
+
+      - name: Image du service d'auth
+        run: docker build --build-arg APP=auth --tag auth:ci .

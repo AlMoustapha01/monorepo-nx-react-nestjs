@@ -1,0 +1,49 @@
+{
+  "name": "auth",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/auth/src",
+  "projectType": "application",
+  "tags": ["scope:auth", "type:app"],
+  "targets": {
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "auth:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "auth:build:development"
+        },
+        "production": {
+          "buildTarget": "auth:build:production"
+        }
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["tsc --noEmit -p tsconfig.app.json", "tsc --noEmit -p tsconfig.spec.json"],
+        "parallel": false
+      }
+    },
+    "db-migrate": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node dist/apps/auth/migrate.js"
+      }
+    }
+  }
+}

@@ -1,17 +1,22 @@
 # Topologie de production, à lancer en local pour la vérifier (ce n'est pas un déploiement) :
-#   AUTH_JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build
-# Même image pour les trois rôles. Ordre : Postgres prêt → migrate (une fois) → api et worker.
+#   AUTH_JWT_SECRET=$(openssl rand -hex 32) BETTER_AUTH_SECRET=$(openssl rand -hex 32) \
+#     docker compose -f docker-compose.prod.yml up --build
+# Deux images : l'API (api, worker, migrate) et le service d'identité (auth, auth-migrate).
+# Ordre : Postgres prêt → migrations (une fois chacune) → auth, api et worker.
 name: nx-react-nestjs-prod
 
+x-auth-contract: &auth-contract
+  AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-https://auth.local}
+  AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-api}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+
 x-api-env: &api-env
+  <<: *auth-contract
   NODE_ENV: production
   DATABASE_URL: postgres://app:app@postgres:5432/app
   REDIS_URL: redis://redis:6379
   SMTP_URL: smtp://mailpit:1025
   AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET est requis (32 caractères minimum)}
-  AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-https://auth.local}
-  AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-api}
-  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
   # Vide : OpenTelemetry inactif. Sinon l'URL OTLP/HTTP du collecteur (ex. http://otel-collector:4318).
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
   SENTRY_DSN: ${SENTRY_DSN:-}
@@ -67,6 +72,42 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_started }
+
+  auth-migrate:
+    build: { context: ., args: { APP: auth } }
+    image: nx-react-nestjs-auth
+    command: ['node', 'migrate.js']
+    environment: &auth-env
+      <<: *auth-contract
+      NODE_ENV: production
+      DATABASE_URL: postgres://app:app@postgres:5432/app
+      SMTP_URL: smtp://mailpit:1025
+      # URL vue par le navigateur : liens des emails, cookies.
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3100}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET est requis (32 caractères minimum)}
+      AUTH_APP_URL: ${AUTH_APP_URL:-http://localhost:4200}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  auth:
+    image: nx-react-nestjs-auth
+    # Construite par le service auth-migrate : rien à télécharger.
+    pull_policy: never
+    environment: *auth-env
+    ports:
+      - '${AUTH_PORT:-3100}:3100'
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3100/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      auth-migrate: { condition: service_completed_successfully }
 
   postgres:
     image: postgres:17-alpine
