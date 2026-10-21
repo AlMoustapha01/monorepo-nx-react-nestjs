@@ -50,6 +50,3 @@ vitest.config.*.timestamp*
 
 .env*
 !.env.example
-
-# Brainstorming mockups (superpowers)
-.superpowers/

@@ -29,6 +29,8 @@
     "@opentelemetry/instrumentation-pg": "^0.75.0",
     "@opentelemetry/instrumentation-pino": "^0.69.0",
     "@opentelemetry/sdk-node": "^0.223.0",
+    "@sentry/core": "^11.4.0",
+    "@sentry/node": "^11.4.0",
     "@tanstack/react-query": "^5.104.5",
     "@tanstack/react-router": "^1.170.45",
     "bullmq": "^6.3.19",

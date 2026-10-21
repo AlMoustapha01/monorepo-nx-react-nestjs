@@ -9,6 +9,7 @@ import { HealthCheck, HealthCheckService, HealthIndicatorService } from '@nestjs
 import { SkipThrottle } from '@nestjs/throttler';
 import { sql } from 'drizzle-orm';
 import { Public } from '../auth/public.decorator';
+import { AppConfig } from '../config/app-config';
 import { ShutdownState } from '../lifecycle/graceful-shutdown';
 import { type Database, InjectDatabase } from '../database/database.tokens';
 import type { Queue } from 'bullmq';
@@ -71,6 +72,7 @@ export class HealthController {
     private readonly database: DatabaseHealthIndicator,
     private readonly redis: RedisHealthIndicator,
     private readonly shutdown: ShutdownState,
+    private readonly config: AppConfig,
   ) {}
 
   @Get('health')
@@ -88,7 +90,9 @@ export class HealthController {
     }
     return this.health.check([
       () => this.database.check('database'),
-      () => this.redis.check('redis'),
+      // Sans jobs (API en prod), Redis ne sert pas à répondre : une panne Redis ne doit pas
+      // retirer toutes les instances du load balancer. Le worker, lui, en dépend.
+      ...(this.config.get('JOBS_ENABLED') ? [() => this.redis.check('redis')] : []),
     ]);
   }
 }
