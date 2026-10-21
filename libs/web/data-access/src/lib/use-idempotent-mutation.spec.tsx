@@ -45,6 +45,22 @@ describe('useIdempotentMutation', () => {
     expect(mutationFn.mock.calls[0]?.[1]).not.toBe(mutationFn.mock.calls[1]?.[1]);
   });
 
+  it('uses the key supplied by idempotencyKey', async () => {
+    const mutationFn = vi
+      .fn<(input: string, key: string) => Promise<string>>()
+      .mockResolvedValue('ok');
+    const { result } = renderHook(
+      () => useIdempotentMutation({ mutationFn, idempotencyKey: (input) => `key-${input}` }),
+      { wrapper },
+    );
+
+    await act(() => result.current.mutateAsync('a'));
+    act(() => result.current.mutate('a'));
+    await waitFor(() => expect(mutationFn).toHaveBeenCalledTimes(2));
+
+    expect(mutationFn.mock.calls.map(([, key]) => key)).toEqual(['key-a', 'key-a']);
+  });
+
   it('does not retry a 409', async () => {
     const mutationFn = vi
       .fn<(input: string, key: string) => Promise<string>>()

@@ -17,6 +17,11 @@ export type UseIdempotentMutationOptions<TData, TInput> = Omit<
   'mutationFn'
 > & {
   mutationFn: (input: TInput, idempotencyKey: string) => Promise<TData>;
+  /**
+   * Clé de chaque `mutate` (défaut : un UUID neuf). La fournir permet de la réutiliser
+   * d'un clic à l'autre, après un échec ou un rechargement, tant que la requête est la même.
+   */
+  idempotencyKey?: (input: TInput) => string;
 };
 
 export type UseIdempotentMutationResult<TData, TInput> = Omit<
@@ -44,13 +49,13 @@ function isRetryable(error: unknown): boolean {
 }
 
 /**
- * Mutation dont chaque `mutate` génère une `Idempotency-Key` ; les retries
- * réutilisent les mêmes variables, donc la même clé.
+ * Mutation dont chaque `mutate` génère une `Idempotency-Key` (ou la demande à
+ * `idempotencyKey`) ; les retries réutilisent les mêmes variables, donc la même clé.
  */
 export function useIdempotentMutation<TData, TInput>(
   options: UseIdempotentMutationOptions<TData, TInput>,
 ): UseIdempotentMutationResult<TData, TInput> {
-  const { mutationFn, ...rest } = options;
+  const { mutationFn, idempotencyKey = () => crypto.randomUUID(), ...rest } = options;
   const mutation = useMutation<TData, unknown, IdempotentVariables<TInput>>({
     retry: (failureCount, error) => failureCount < MAX_MUTATION_RETRIES && isRetryable(error),
     ...rest,
@@ -60,7 +65,8 @@ export function useIdempotentMutation<TData, TInput>(
 
   return {
     ...state,
-    mutate: (input, opts) => mutate({ input, idempotencyKey: crypto.randomUUID() }, opts),
-    mutateAsync: (input, opts) => mutateAsync({ input, idempotencyKey: crypto.randomUUID() }, opts),
+    mutate: (input, opts) => mutate({ input, idempotencyKey: idempotencyKey(input) }, opts),
+    mutateAsync: (input, opts) =>
+      mutateAsync({ input, idempotencyKey: idempotencyKey(input) }, opts),
   };
 }

@@ -1,9 +1,10 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createApiClient } from '@nx-react-nestjs/web-data-access';
 
+import { PENDING_ORDER_STORAGE_KEY } from '../hooks/use-place-order';
 import { CART_STORAGE_KEY } from '../states/cart';
 import { renderWithProviders } from '../../test-utils';
 import { CartPage } from './cart-page';
@@ -17,6 +18,7 @@ afterAll(() => server.close());
 afterEach(() => server.resetHandlers());
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   window.dispatchEvent(new StorageEvent('storage', { key: CART_STORAGE_KEY }));
 });
 
@@ -182,6 +184,58 @@ describe('CartPage', () => {
       expect(JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? '{"lines":[]}').lines).toEqual(
         [],
       );
+    });
+
+    it('reuses the idempotency key when the order is retried after a failure', async () => {
+      seedCart([{ productId: ID_A, name: 'Casquette', quantity: 1 }]);
+      serveProduct(ID_A, product(ID_A, 'Casquette', 1500));
+      const keys: Array<string | null> = [];
+      server.use(
+        http.post(`${API}/orders`, ({ request }) => {
+          keys.push(request.headers.get('idempotency-key'));
+          return HttpResponse.json({}, { status: 503 });
+        }),
+      );
+      await renderWithProviders(<CartPage api={api} />, { routes: ['/commandes/$orderId'] });
+      await screen.findByText('Casquette');
+      await userEvent.click(orderButton());
+      // Une tentative et deux retries automatiques, tous en échec.
+      await waitFor(() => expect(orderButton().disabled).toBe(false), { timeout: 5000 });
+      expect(keys).toHaveLength(3);
+      expect(sessionStorage.getItem(PENDING_ORDER_STORAGE_KEY)).toContain(keys[0]);
+      server.use(
+        http.post(`${API}/orders`, ({ request }) => {
+          keys.push(request.headers.get('idempotency-key'));
+          return HttpResponse.json(order, { status: 201 });
+        }),
+      );
+      await userEvent.click(orderButton());
+      expect(await screen.findByText('/commandes/$orderId')).toBeTruthy();
+      expect(keys).toHaveLength(4);
+      expect(new Set(keys).size).toBe(1);
+      expect(sessionStorage.getItem(PENDING_ORDER_STORAGE_KEY)).toBeNull();
+    }, 10_000);
+
+    it('uses a new idempotency key once the cart has changed', async () => {
+      seedCart([{ productId: ID_A, name: 'Casquette', quantity: 1 }]);
+      serveProduct(ID_A, product(ID_A, 'Casquette', 1500));
+      const keys: Array<string | null> = [];
+      server.use(
+        http.post(`${API}/orders`, ({ request }) => {
+          keys.push(request.headers.get('idempotency-key'));
+          return HttpResponse.json({}, { status: 409 });
+        }),
+      );
+      await renderWithProviders(<CartPage api={api} />);
+      await screen.findByText('Casquette');
+      await userEvent.click(orderButton());
+      await waitFor(() => expect(keys).toHaveLength(1));
+      await waitFor(() => expect(orderButton().disabled).toBe(false));
+      await userEvent.click(screen.getByRole('button', { name: 'Augmenter la quantité' }));
+      await userEvent.click(orderButton());
+      await waitFor(() => expect(keys).toHaveLength(2));
+      expect(keys[1]).toBeTruthy();
+      expect(keys[1]).not.toBe(keys[0]);
     });
 
     it('sends a single order on double click', async () => {
