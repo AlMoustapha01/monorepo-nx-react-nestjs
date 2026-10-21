@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
@@ -18,7 +19,7 @@ export default defineConfig(() => ({
     port: 4300,
     host: 'localhost',
   },
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
+  plugins: [tailwindcss(), react(), babel({ presets: [reactCompilerPreset()] })],
   // Uncomment this if you are using workers.
   // worker: {
   //    plugins: () => [ tsconfigPaths() ],

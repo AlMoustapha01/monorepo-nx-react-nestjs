@@ -1,0 +1,36 @@
+{
+  "name": "web-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/web/ui/src",
+  "projectType": "library",
+  "tags": ["scope:web", "type:ui"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["tsc --noEmit -p tsconfig.lib.json", "tsc --noEmit -p tsconfig.spec.json"],
+        "parallel": false
+      }
+    },
+    "storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "storybook dev -p 6006 -c .storybook"
+      }
+    },
+    "build-storybook": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "outputs": ["{workspaceRoot}/dist/storybook/web-ui"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "storybook build -c .storybook -o ../../../dist/storybook/web-ui"
+      }
+    }
+  }
+}

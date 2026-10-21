@@ -1,3 +1,5 @@
+import { Heading } from '@nx-react-nestjs/web-ui';
+
 export default function App() {
-  return <h1>Boilerplate web</h1>;
+  return <Heading level={1}>Boilerplate web</Heading>;
 }

@@ -10,9 +10,18 @@
     "tools/dev/{setup,token,seed}.mts",
     "apps/web/src/main.tsx",
     "apps/web/src/routes/**/*.tsx",
-    "libs/web/*/src/**/*.stories.tsx"
+    "libs/web/*/src/**/*.stories.tsx",
+    "libs/web/*/.storybook/main.ts"
   ],
   "project": ["apps/api/**/*.ts", "apps/web/**/*.{ts,tsx}", "libs/**/*.{ts,tsx}", "tools/**/*.mts"],
   "ignore": ["apps/web/src/routeTree.gen.ts"],
-  "ignoreDependencies": ["pino-pretty", "@nestjs/schematics", "@nx/.*", "@swc/helpers", "ts-node"]
+  "ignoreDependencies": [
+    "pino-pretty",
+    "@nestjs/schematics",
+    "@nx/.*",
+    "@swc/helpers",
+    "ts-node",
+    "tw-animate-css",
+    "tailwindcss"
+  ]
 }
