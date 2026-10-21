@@ -17,6 +17,11 @@ import { activateLocale } from './i18n/i18n';
 import { createAppRouter } from './router';
 import { Route as appRoot, type RouterContext } from './routes/__root';
 
+vi.mock('./i18n/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./i18n/i18n')>();
+  return { ...actual, activateLocale: vi.fn(actual.activateLocale) };
+});
+
 const api = createApiClient({ baseUrl: 'http://localhost:3000/api/v1' });
 
 function renderRouter(
@@ -74,6 +79,19 @@ describe('app', () => {
     expect(screen.getByRole('button', { name: 'en' }).getAttribute('aria-pressed')).toBe('true');
     expect(localStorage.getItem('app.locale')).toBe('en');
     expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('keeps the previous locale, reports and toasts when the catalog fails to load', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(activateLocale).mockRejectedValueOnce(new Error('chunk 404'));
+    renderAt('/');
+    await screen.findByRole('heading', { level: 1 });
+    await userEvent.click(screen.getByRole('button', { name: 'en' }));
+    expect(await screen.findByText('Impossible de changer de langue.')).toBeTruthy();
+    expect(spy.mock.calls.some((c) => c[0] === '[reportError]')).toBe(true);
+    expect(screen.getByRole('button', { name: 'fr' }).getAttribute('aria-pressed')).toBe('true');
+    expect(localStorage.getItem('app.locale')).toBeNull();
+    expect(document.documentElement.lang).toBe('fr');
   });
 
   it('shows the global error page, reports the error and recovers on retry', async () => {

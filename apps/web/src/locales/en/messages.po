@@ -20,6 +20,10 @@ msgid "Cette page n'existe pas."
 msgstr "This page does not exist."
 
 #: src/components/locale-switcher.tsx
+msgid "Impossible de changer de langue."
+msgstr "Unable to change the language."
+
+#: src/components/locale-switcher.tsx
 msgid "Langue"
 msgstr "Language"
 

@@ -1,15 +1,24 @@
 import { useLingui } from '@lingui/react/macro';
+import { toast } from 'sonner';
 import { Button } from '@nx-react-nestjs/web-ui';
 
 import { activateLocale } from '../i18n/i18n';
+import { reportError } from '../report-error';
 import { LOCALES, storeLocale, type Locale } from '../i18n/locale';
 
 export function LocaleSwitcher() {
   const { t, i18n } = useLingui();
 
-  const select = (locale: Locale) => {
+  const select = async (locale: Locale) => {
+    try {
+      await activateLocale(locale);
+    } catch (error) {
+      // Catalogue indisponible : on garde la langue courante et on ne mémorise rien.
+      reportError(error);
+      toast.error(t`Impossible de changer de langue.`);
+      return;
+    }
     storeLocale(locale);
-    void activateLocale(locale);
   };
 
   return (
@@ -20,7 +29,7 @@ export function LocaleSwitcher() {
           size="sm"
           variant={i18n.locale === locale ? 'default' : 'outline'}
           aria-pressed={i18n.locale === locale}
-          onClick={() => select(locale)}
+          onClick={() => void select(locale)}
         >
           {locale}
         </Button>

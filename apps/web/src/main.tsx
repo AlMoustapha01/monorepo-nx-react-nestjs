@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { createQueryClient } from '@nx-react-nestjs/web-data-access';
 
 import { api } from './api';
-import { activateLocale } from './i18n/i18n';
+import { activateInitialLocale } from './i18n/i18n';
 import { readStoredLocale, resolveLocale } from './i18n/locale';
 import { createAppRouter } from './router';
 
@@ -18,7 +18,7 @@ const queryClient = createQueryClient({
 });
 const router = createAppRouter(queryClient, api);
 
-await activateLocale(resolveLocale(readStoredLocale(), navigator.languages));
+await activateInitialLocale(resolveLocale(readStoredLocale(), navigator.languages));
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
