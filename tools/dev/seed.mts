@@ -1,7 +1,16 @@
 /**
  * Remplit le tenant de dev avec quelques produits, en passant par l'API (règles métier comprises).
  * Idempotent : un SKU déjà présent est ignoré. Nécessite l'API démarrée (`pnpm nx serve api`).
+ * Avec le service d'auth (AUTH_JWKS_URL dans .env, `pnpm nx serve auth`) : crée aussi les comptes
+ * et l'organisation de démo, qui devient le tenant.
  */
+import {
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
+  demoToken,
+  ensureDemoOrganization,
+  usesAuthService,
+} from './auth-service.mts';
 import { apiBaseUrl, DEV_EMAIL, DEV_TENANT_ID, DEV_USER_ID, signDevToken } from './dev-env.mts';
 
 interface SeedProduct {
@@ -25,13 +34,17 @@ const PRODUCTS: SeedProduct[] = [
 ];
 
 const base = apiBaseUrl();
+const withAuthService = usesAuthService();
+const tenantId = withAuthService ? await ensureDemoOrganization() : DEV_TENANT_ID;
 // Créer et publier des produits est réservé au staff.
-const token = await signDevToken({
-  tenantId: DEV_TENANT_ID,
-  userId: DEV_USER_ID,
-  email: DEV_EMAIL,
-  roles: ['staff'],
-});
+const token = withAuthService
+  ? await demoToken('staff')
+  : await signDevToken({
+      tenantId: DEV_TENANT_ID,
+      userId: DEV_USER_ID,
+      email: DEV_EMAIL,
+      roles: ['staff'],
+    });
 
 async function call(method: string, path: string, body?: unknown): Promise<Response> {
   return fetch(`${base}${path}`, {
@@ -73,5 +86,10 @@ for (const product of PRODUCTS) {
 }
 
 console.log(
-  `\nTenant de dev ${DEV_TENANT_ID} prêt. Tokens : pnpm -s dev:token (client), --staff (gestion).`,
+  `\nTenant de dev ${tenantId} prêt. Tokens : pnpm -s dev:token (client), --staff (gestion).`,
 );
+if (withAuthService) {
+  console.log(
+    `Comptes (mot de passe ${DEMO_PASSWORD}) : ${DEMO_ACCOUNTS.staff.email} (staff), ${DEMO_ACCOUNTS.client.email} (client).`,
+  );
+}
