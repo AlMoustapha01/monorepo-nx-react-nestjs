@@ -49,6 +49,8 @@ function QuantityStepper({ line }: { line: CartLineView }) {
 function CartLineRow({ line }: { line: CartLineView }) {
   const { i18n } = useLingui();
   const { product } = line;
+  // Le prix en cache d'un produit indisponible n'a plus de sens.
+  const price = line.unavailable ? undefined : product?.price;
   return (
     <li className="list-none">
       <Card className={line.unavailable ? 'opacity-60' : undefined}>
@@ -56,9 +58,9 @@ function CartLineRow({ line }: { line: CartLineView }) {
           <Stack direction="row" gap={4} align="center" justify="between" wrap>
             <Stack gap={1}>
               <Text weight="semibold">{product?.name ?? line.name}</Text>
-              {product && (
+              {price && (
                 <Text size="sm" tone="muted">
-                  {formatMoney(product.price, i18n.locale)}
+                  {formatMoney(price, i18n.locale)}
                 </Text>
               )}
               {line.unavailable && (
@@ -79,13 +81,10 @@ function CartLineRow({ line }: { line: CartLineView }) {
             </Stack>
             <Stack direction="row" gap={4} align="center">
               {!line.unavailable && <QuantityStepper line={line} />}
-              {product && (
+              {price && (
                 <Text weight="semibold">
                   {formatMoney(
-                    {
-                      amountMinor: product.price.amountMinor * line.quantity,
-                      currency: product.price.currency,
-                    },
+                    { amountMinor: price.amountMinor * line.quantity, currency: price.currency },
                     i18n.locale,
                   )}
                 </Text>

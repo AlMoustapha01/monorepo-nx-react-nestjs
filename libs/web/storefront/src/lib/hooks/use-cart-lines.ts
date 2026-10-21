@@ -42,7 +42,8 @@ export function useCartLines(api: ApiClient): CartLines {
     };
   });
 
-  const priced = lines.filter((line) => line.product);
+  // Une ligne indisponible garde son produit en cache mais ne sera pas commandée.
+  const priced = lines.filter((line) => line.product && !line.unavailable);
   const currencies = new Set(priced.map((line) => line.product?.price.currency));
   const mixedCurrencies = currencies.size > 1;
   const currency = [...currencies][0];

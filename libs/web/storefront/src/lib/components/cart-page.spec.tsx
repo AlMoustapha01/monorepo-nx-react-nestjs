@@ -141,6 +141,28 @@ describe('CartPage', () => {
     expect(orderButton().disabled).toBe(true);
   });
 
+  it('leaves a product that became unavailable out of the total and the currency check', async () => {
+    seedCart([
+      { productId: ID_A, name: 'Boubou', quantity: 1 },
+      { productId: ID_B, name: 'Casquette', quantity: 2 },
+    ]);
+    serveProduct(ID_A, product(ID_A, 'Boubou', 25000, 'XOF'));
+    serveProduct(ID_B, product(ID_B, 'Casquette', 1500, 'EUR'));
+    const { queryClient } = await renderWithProviders(<CartPage api={api} />);
+    await screen.findByText(
+      'Votre panier mélange plusieurs devises : retirez des produits pour pouvoir commander.',
+    );
+    expect(screen.getAllByText(/25\s000/).length).toBe(2);
+
+    // Le produit disparaît du catalogue ; ses données restent en cache.
+    serveProduct(ID_A, null);
+    await queryClient.invalidateQueries();
+    await screen.findByText("Ce produit n'est plus disponible");
+    expect(screen.queryByText(/plusieurs devises/)).toBeNull();
+    expect(screen.queryByText(/25\s000/)).toBeNull();
+    expect(screen.getByText(/Total : 30,00/)).toBeTruthy();
+  });
+
   it('shows the empty state with a link to the catalog', async () => {
     await renderWithProviders(<CartPage api={api} />, { routes: ['/'] });
     expect(await screen.findByText('Votre panier est vide')).toBeTruthy();
