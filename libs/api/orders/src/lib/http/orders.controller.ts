@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Idempotent } from '@nx-react-nestjs/api-core';
+import { Idempotent, RequireFeature } from '@nx-react-nestjs/api-core';
 import {
   type CursorPage,
   cursorPageQuerySchema,
@@ -58,6 +58,7 @@ export class OrdersController {
   }
 
   @Post(':id/cancel')
+  @RequireFeature('orders.cancellation')
   @HttpCode(200)
   @ZodSerializerDto(OrderDto)
   async cancel(@Param() { id }: OrderIdParamsDto): Promise<OrderResponse> {

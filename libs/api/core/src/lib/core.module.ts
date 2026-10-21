@@ -14,6 +14,9 @@ import { RequestContext } from './context/request-context';
 import { DatabaseModule } from './database/database.module';
 import { MessagingModule } from './events/messaging.module';
 import { ProblemDetailsFilter } from './errors/problem-details.filter';
+import { ConfiguredFeatureFlags, FeatureFlags } from './feature-flags/feature-flags';
+import { FeatureFlagsController } from './feature-flags/feature-flags.controller';
+import { FeatureFlagsGuard } from './feature-flags/feature-flags.guard';
 import {
   DatabaseHealthIndicator,
   HealthController,
@@ -63,20 +66,22 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     DatabaseModule,
     MessagingModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, FeatureFlagsController],
   providers: [
     RequestContext,
     JwtVerifier,
     DatabaseHealthIndicator,
     RedisHealthIndicator,
-    // L'ordre compte : rate limiting, puis authentification, puis rôles.
+    { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },
+    // L'ordre compte : rate limiting, authentification, flag (404 avant tout 403), puis rôles.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: FeatureFlagsGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
   ],
-  exports: [RequestContext],
+  exports: [RequestContext, FeatureFlags],
 })
 export class CoreModule {}

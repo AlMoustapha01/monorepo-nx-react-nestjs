@@ -1,4 +1,5 @@
 export * from './lib/domain-id';
+export * from './lib/feature-flags';
 export * from './lib/integration-event';
 export * from './lib/pagination';
 export * from './lib/catalog/product';

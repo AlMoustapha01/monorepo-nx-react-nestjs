@@ -5,9 +5,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type {
-  IntegrationEventDefinition,
-  IntegrationEventPayload,
+import {
+  FEATURE_FLAGS,
+  type FeatureFlag,
+  type IntegrationEventDefinition,
+  type IntegrationEventPayload,
 } from '@nx-react-nestjs/contracts';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
@@ -20,6 +22,7 @@ import { type Principal, RequestContext } from './lib/context/request-context';
 import { TransactionManager } from './lib/database/database-session';
 import type { Database } from './lib/database/database.tokens';
 import { Outbox } from './lib/events/outbox';
+import { FeatureFlags } from './lib/feature-flags/feature-flags';
 
 export const TEST_AUTH = {
   secret: 'test-secret-that-is-at-least-32-characters',
@@ -128,6 +131,24 @@ export class RecordingOutbox extends Outbox {
     return this.published
       .filter((event) => event.type === definition.type)
       .map((event) => event.payload as IntegrationEventPayload<TDefinition>);
+  }
+}
+
+/** Valeurs par défaut du catalogue, modifiables par test (`overrideProvider(FeatureFlags)` en e2e). */
+export class StaticFeatureFlags extends FeatureFlags {
+  private readonly values = new Map<FeatureFlag, boolean>();
+
+  set(flag: FeatureFlag, enabled: boolean): this {
+    this.values.set(flag, enabled);
+    return this;
+  }
+
+  reset(): void {
+    this.values.clear();
+  }
+
+  async isEnabled(flag: FeatureFlag): Promise<boolean> {
+    return this.values.get(flag) ?? FEATURE_FLAGS[flag].default;
   }
 }
 

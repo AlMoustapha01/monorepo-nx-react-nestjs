@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  FeatureFlags,
   type IntegrationEvent,
   type IntegrationEventHandler,
   OnIntegrationEvent,
@@ -18,9 +19,17 @@ import { Mailer } from './mailer.port';
 export class SendOrderConfirmation implements IntegrationEventHandler<typeof OrderPlaced> {
   private readonly logger = new Logger(SendOrderConfirmation.name);
 
-  constructor(private readonly mailer: Mailer) {}
+  constructor(
+    private readonly mailer: Mailer,
+    private readonly flags: FeatureFlags,
+  ) {}
 
   async handle({ id, payload }: IntegrationEvent<typeof OrderPlaced>): Promise<void> {
+    // Coupe-circuit : l'événement est marqué traité, l'email n'est pas envoyé plus tard.
+    if (!(await this.flags.isEnabled('notifications.order-confirmation-email'))) {
+      this.logger.warn({ orderId: payload.orderId }, 'Confirmation emails disabled: skipped');
+      return;
+    }
     if (!payload.customerEmail) {
       this.logger.warn({ orderId: payload.orderId }, 'No customer email: confirmation skipped');
       return;

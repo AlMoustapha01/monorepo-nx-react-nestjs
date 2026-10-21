@@ -32,6 +32,8 @@ export abstract class AppError<TCode extends string = string> extends Error {
 const CORE_ERROR_KINDS = {
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   FORBIDDEN: 'FORBIDDEN',
+  /** Route derrière un flag désactivé : on ne révèle pas qu'elle existe. */
+  FEATURE_DISABLED: 'NOT_FOUND',
   INVALID_CURSOR: 'VALIDATION',
   TENANT_CONTEXT_MISSING: 'INTERNAL',
   OUTBOX_REQUIRES_TRANSACTION: 'INTERNAL',

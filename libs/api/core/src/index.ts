@@ -6,6 +6,7 @@ export type { ProblemDetails } from './lib/errors/problem-details.filter';
 export { RequestContext, type Principal } from './lib/context/request-context';
 export { Public } from './lib/auth/public.decorator';
 export { RequireRole, type Role } from './lib/auth/roles';
+export { FeatureFlags, RequireFeature } from './lib/feature-flags/feature-flags';
 export { type Database, InjectDatabase } from './lib/database/database.tokens';
 export { DatabaseSession, TransactionManager } from './lib/database/database-session';
 export { isUniqueViolation } from './lib/database/pg-errors';

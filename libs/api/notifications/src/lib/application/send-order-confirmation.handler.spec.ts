@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { IntegrationEvent } from '@nx-react-nestjs/api-core';
+import { StaticFeatureFlags } from '@nx-react-nestjs/api-core/testing';
 import type { OrderPlaced } from '@nx-react-nestjs/contracts';
 import { SendOrderConfirmation } from './send-order-confirmation.handler';
 import { RecordingMailer } from './testing/recording-mailer';
@@ -32,7 +33,9 @@ const event = (customerEmail: string | null): IntegrationEvent<typeof OrderPlace
 describe('SendOrderConfirmation', () => {
   it('envoie la confirmation au client, avec l’ID de l’événement comme clé d’idempotence', async () => {
     const mailer = new RecordingMailer();
-    await new SendOrderConfirmation(mailer).handle(event('ada@example.com'));
+    await new SendOrderConfirmation(mailer, new StaticFeatureFlags()).handle(
+      event('ada@example.com'),
+    );
 
     expect(mailer.sent).toEqual([
       expect.objectContaining({
@@ -45,7 +48,14 @@ describe('SendOrderConfirmation', () => {
 
   it('n’envoie rien quand l’email du client est inconnu', async () => {
     const mailer = new RecordingMailer();
-    await new SendOrderConfirmation(mailer).handle(event(null));
+    await new SendOrderConfirmation(mailer, new StaticFeatureFlags()).handle(event(null));
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it('n’envoie rien quand le coupe-circuit est activé', async () => {
+    const mailer = new RecordingMailer();
+    const flags = new StaticFeatureFlags().set('notifications.order-confirmation-email', false);
+    await new SendOrderConfirmation(mailer, flags).handle(event('ada@example.com'));
     expect(mailer.sent).toEqual([]);
   });
 });

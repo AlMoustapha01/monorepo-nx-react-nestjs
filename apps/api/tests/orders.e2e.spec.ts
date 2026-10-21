@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { configureApp } from '@nx-react-nestjs/api-core';
+import { configureApp, FeatureFlags } from '@nx-react-nestjs/api-core';
 import {
   eventually,
   signTestToken,
   startTestDatabase,
+  StaticFeatureFlags,
   startTestRedis,
   type TestDatabase,
   testEnv,
@@ -22,12 +23,16 @@ describe('API commandes (e2e)', () => {
   const staff = { userId: randomUUID(), tenantId: customer.tenantId, roles: ['staff' as const] };
   let token: string;
   let staffToken: string;
+  const flags = new StaticFeatureFlags();
 
   beforeAll(async () => {
     [database, redis] = await Promise.all([startTestDatabase(), startTestRedis()]);
     Object.assign(process.env, testEnv({ databaseUrl: database.url, redisUrl: redis.url }));
 
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(FeatureFlags)
+      .useValue(flags)
+      .compile();
     app = moduleRef.createNestApplication({ bufferLogs: true });
     configureApp(app);
     await app.init();
@@ -40,6 +45,8 @@ describe('API commandes (e2e)', () => {
     await app?.close();
     await Promise.all([database?.stop(), redis?.stop()]);
   });
+
+  afterEach(() => flags.reset());
 
   const api = () => request(app.getHttpServer());
 
@@ -305,5 +312,34 @@ describe('API commandes (e2e)', () => {
     await eventually(async () => expect(await soldCount()).toBe(3));
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(await soldCount()).toBe(3);
+  });
+
+  describe('feature flags', () => {
+    it('expose au front les flags client, pas les flags internes', async () => {
+      flags.set('orders.cancellation', false);
+      const { body } = await api()
+        .get('/api/v1/feature-flags')
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      expect(body).toEqual({ flags: { 'orders.cancellation': false } });
+    });
+
+    it('masque l’annulation quand son flag est désactivé, même pour le staff', async () => {
+      const tee = await catalogProduct('ORD-FLAG', 1000);
+      const { body: order } = await placeOrder([{ productId: tee, quantity: 1 }]).expect(201);
+
+      flags.set('orders.cancellation', false);
+      const { body } = await api()
+        .post(`/api/v1/orders/${order.id}/cancel`)
+        .auth(staffToken, { type: 'bearer' })
+        .expect(404);
+      expect(body).toMatchObject({ code: 'FEATURE_DISABLED' });
+
+      flags.reset();
+      await api()
+        .post(`/api/v1/orders/${order.id}/cancel`)
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+    });
   });
 });
