@@ -7,3 +7,7 @@ allowBuilds:
   esbuild: true
   '@parcel/watcher': true
   unrs-resolver: true
+overrides:
+  # @sentry/node n'en a besoin que pour ses plugins de bundler, inutilisés ici : sans cette ligne,
+  # l'image de production embarque webpack, esbuild et swc (~100 Mo).
+  '@sentry/bundler-plugins': '-'

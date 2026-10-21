@@ -4,11 +4,14 @@ import {
   Logger,
   type OnApplicationBootstrap,
 } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
+import { type BatchObservableCallback, metrics, type ObservableGauge } from '@opentelemetry/api';
 import { type Job, type Queue, UnrecoverableError, Worker } from 'bullmq';
 import { and, eq, lt } from 'drizzle-orm';
 import { AppConfig } from '../config/app-config';
 import { RequestContext } from '../context/request-context';
 import { DatabaseSession } from '../database/database-session';
+import { reportError } from '../errors/error-reporter';
 import type { IntegrationEvent } from './integration-event';
 import { IntegrationEventRegistry } from './integration-event.registry';
 import {
@@ -20,8 +23,10 @@ import {
 } from './integration-event.queue';
 import { idempotencyKeys } from '../http/idempotency/idempotency.schema';
 import { outbox, processedEvents } from './messaging.schema';
+import { inHandlerSpan } from './trace-context';
 
 const DAY_MS = 24 * 3600 * 1000;
+const QUEUE_STATES = ['waiting', 'active', 'delayed', 'failed'] as const;
 const OUTBOX_RETENTION_MS = 7 * DAY_MS;
 /** Bien au-delà de la fenêtre de retries : un doublon tardif reste détecté. */
 const PROCESSED_RETENTION_MS = 30 * DAY_MS;
@@ -31,6 +36,26 @@ const PROCESSED_RETENTION_MS = 30 * DAY_MS;
 export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApplicationShutdown {
   private readonly logger = new Logger(IntegrationEventWorker.name);
   private worker?: Worker<IntegrationEventJob>;
+
+  // Créés à la construction du provider, donc après le démarrage du SDK (instrumentation.ts).
+  private readonly meter = metrics.getMeter('api-core.messaging');
+  private readonly handlerDuration = this.meter.createHistogram(
+    'integration_events.handler.duration',
+    { unit: 's', description: 'Durée d’exécution d’un handler, par handler et par issue' },
+  );
+  private readonly jobsExhausted = this.meter.createCounter('integration_events.jobs.exhausted', {
+    description: 'Jobs abandonnés (retries épuisés ou erreur définitive) : à surveiller',
+  });
+  private readonly queueJobs: ObservableGauge = this.meter.createObservableGauge(
+    'integration_events.queue.jobs',
+    { description: 'Jobs dans la file BullMQ, par état' },
+  );
+  private readonly observeQueue: BatchObservableCallback = async (result) => {
+    const counts = await this.queue.getJobCounts(...QUEUE_STATES);
+    for (const state of QUEUE_STATES) {
+      result.observe(this.queueJobs, counts[state] ?? 0, { state });
+    }
+  };
 
   constructor(
     private readonly registry: IntegrationEventRegistry,
@@ -57,21 +82,52 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
         concurrency: this.config.get('JOBS_CONCURRENCY'),
       },
     );
-    this.worker.on('failed', (job, error) =>
-      this.logger.warn(
-        { jobId: job?.id, attempt: job?.attemptsMade, err: error },
-        'Integration event job failed',
-      ),
-    );
+    this.worker.on('failed', (job, error) => this.onFailed(job, error));
+    this.meter.addBatchObservableCallback(this.observeQueue, [this.queueJobs]);
+  }
+
+  private onFailed(job: Job<IntegrationEventJob> | undefined, error: Error): void {
+    const exhausted =
+      error instanceof UnrecoverableError || (job?.attemptsMade ?? 0) >= (job?.opts.attempts ?? 1);
+    const details = { jobId: job?.id, attempt: job?.attemptsMade, err: error };
+    if (!exhausted) {
+      this.logger.warn(details, 'Integration event job failed, will retry');
+      return;
+    }
+    const handler = job?.data.handler ?? job?.name ?? 'unknown';
+    this.jobsExhausted.add(1, { 'app.event.handler': handler });
+    this.logger.error(details, 'Integration event job abandoned');
+    // Un échec suivi d'un retry réussi n'est pas un incident : seuls les abandons vont à Sentry.
+    reportError(error, {
+      tags: { handler, event_id: job?.data.event?.id, tenant_id: job?.data.event?.tenantId },
+      userId: job?.data.event?.actorId,
+    });
   }
 
   async beforeApplicationShutdown(): Promise<void> {
+    this.meter.removeBatchObservableCallback(this.observeQueue, [this.queueJobs]);
     // Laisse finir les jobs en cours avant de fermer la base.
     await this.worker?.close();
   }
 
   process(job: Pick<Job<IntegrationEventJob>, 'name' | 'data'>): Promise<void> {
-    return job.name === MESSAGING_CLEANUP_JOB ? this.cleanup() : this.dispatch(job.data);
+    return job.name === MESSAGING_CLEANUP_JOB ? this.cleanup() : this.handle(job.data);
+  }
+
+  private async handle(job: IntegrationEventJob): Promise<void> {
+    const started = performance.now();
+    let outcome = 'success';
+    try {
+      await inHandlerSpan(job, () => this.dispatch(job));
+    } catch (error) {
+      outcome = 'error';
+      throw error;
+    } finally {
+      this.handlerDuration.record((performance.now() - started) / 1000, {
+        'app.event.handler': job.handler,
+        outcome,
+      });
+    }
   }
 
   private async dispatch({ handler: name, event }: IntegrationEventJob): Promise<void> {

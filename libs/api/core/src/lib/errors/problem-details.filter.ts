@@ -10,7 +10,9 @@ import { STATUS_CODES } from 'node:http';
 import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { z } from 'zod';
+import { RequestContext } from '../context/request-context';
 import { AppError, type ErrorKind } from './app-error';
+import { reportError } from './error-reporter';
 
 /** Corps de réponse RFC 9457 (application/problem+json), enrichi d'un `code` stable. */
 export interface ProblemDetails {
@@ -47,6 +49,8 @@ const INTERNAL_DETAIL = 'An unexpected error occurred.';
 export class ProblemDetailsFilter implements ExceptionFilter {
   private readonly logger = new Logger(ProblemDetailsFilter.name);
 
+  constructor(private readonly context: RequestContext) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
     const request = http.getRequest<Request>();
@@ -56,6 +60,15 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     // Une HttpException 5xx est levée exprès (ex. 503 de /ready pendant un arrêt) : pas un bug.
     if (problem.status >= 500 && !(exception instanceof HttpException)) {
       this.logger.error(exception);
+      reportError(exception, {
+        tags: {
+          request_id: this.context.requestId,
+          tenant_id: this.context.principal?.tenantId,
+          // Gabarit de la route (`/api/v1/orders/:id`) : regroupe les erreurs d'un même endpoint.
+          route: `${request.method} ${(request.route as { path?: string } | undefined)?.path ?? request.path}`,
+        },
+        userId: this.context.principal?.userId,
+      });
     }
 
     response

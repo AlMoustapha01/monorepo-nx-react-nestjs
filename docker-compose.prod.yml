@@ -12,6 +12,10 @@ x-api-env: &api-env
   AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-https://auth.local}
   AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-api}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+  # Vide : OpenTelemetry inactif. Sinon l'URL OTLP/HTTP du collecteur (ex. http://otel-collector:4318).
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
 
 services:
   migrate:
@@ -25,10 +29,13 @@ services:
 
   api:
     image: nx-react-nestjs-api
+    # Construite par le service migrate : rien à télécharger.
+    pull_policy: never
     environment:
       <<: *api-env
       # Les jobs tournent dans le worker : l'API se met à l'échelle selon le trafic HTTP.
       JOBS_ENABLED: 'false'
+      OTEL_SERVICE_NAME: api
       # /ready passe en 503 au SIGTERM ; le load balancer a 5 s pour retirer l'instance.
       SHUTDOWN_DRAIN_MS: '5000'
     ports:
@@ -50,8 +57,12 @@ services:
 
   worker:
     image: nx-react-nestjs-api
+    # Construite par le service migrate : rien à télécharger.
+    pull_policy: never
     command: ['node', 'worker.js']
-    environment: *api-env
+    environment:
+      <<: *api-env
+      OTEL_SERVICE_NAME: api-worker
     stop_grace_period: 30s
     depends_on:
       migrate: { condition: service_completed_successfully }

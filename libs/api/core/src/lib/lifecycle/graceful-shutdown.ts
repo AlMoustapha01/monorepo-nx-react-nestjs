@@ -21,7 +21,11 @@ export class ShutdownState {
  * load balancer le voie), puis fermeture : requêtes HTTP en cours, relais, jobs, Redis, Postgres.
  * Au-delà de `SHUTDOWN_TIMEOUT_MS`, le process sort en erreur plutôt que de rester bloqué.
  */
-export function closeOnSignal(app: INestApplicationContext): void {
+export function closeOnSignal(
+  app: INestApplicationContext,
+  /** Après la fermeture de l'app : vider les buffers (télémétrie…). */
+  afterClose: () => Promise<void> = async () => undefined,
+): void {
   const config = app.get(AppConfig);
   const state = app.get(ShutdownState);
   const logger = new Logger('Shutdown');
@@ -40,6 +44,7 @@ export function closeOnSignal(app: INestApplicationContext): void {
     try {
       await sleep(config.get('SHUTDOWN_DRAIN_MS'));
       await app.close();
+      await afterClose();
       logger.log('Shutdown complete');
       process.exit(0);
     } catch (error) {

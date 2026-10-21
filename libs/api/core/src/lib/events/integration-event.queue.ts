@@ -12,6 +12,8 @@ export const MESSAGING_CLEANUP_JOB = 'messaging.cleanup';
 export interface IntegrationEventJob {
   handler: string;
   event: IntegrationEvent;
+  /** Absent sans OpenTelemetry. */
+  traceContext?: Record<string, string>;
 }
 
 export const DEFAULT_JOB_OPTIONS: DefaultJobOptions = {

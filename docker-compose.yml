@@ -29,5 +29,15 @@ services:
       - '${MAILPIT_SMTP_PORT:-1025}:1025'
       - '${MAILPIT_UI_PORT:-8025}:8025'
 
+  # Traces et métriques (Grafana + Tempo + Prometheus), optionnel : image lourde (~900 Mo).
+  #   docker compose --profile observability up -d, puis OTEL_EXPORTER_OTLP_ENDPOINT dans .env.
+  # Grafana : http://localhost:3001 (OBSERVABILITY_UI_PORT), menu Explore → Tempo.
+  observability:
+    image: grafana/otel-lgtm:0.35.0
+    profiles: [observability]
+    ports:
+      - '${OTLP_PORT:-4318}:4318'
+      - '${OBSERVABILITY_UI_PORT:-3001}:3000'
+
 volumes:
   postgres-data:

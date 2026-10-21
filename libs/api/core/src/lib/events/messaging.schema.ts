@@ -29,6 +29,8 @@ export const outbox = messaging.table(
     payload: jsonb('payload').notNull(),
     occurredAt: timestamp('occurred_at', { withTimezone: true, precision: 3 }).notNull(),
     publishedAt: timestamp('published_at', { withTimezone: true, precision: 3 }),
+    /** Contexte W3C de la requête qui a publié l'événement : le handler continue sa trace. */
+    traceContext: jsonb('trace_context').$type<Record<string, string>>(),
   },
   (table) => [
     index('outbox_unpublished_idx')
