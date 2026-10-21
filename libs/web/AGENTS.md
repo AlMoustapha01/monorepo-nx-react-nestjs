@@ -16,7 +16,7 @@ Libs front React. App qui les assemble : [`apps/web/AGENTS.md`](../../apps/web/A
 - Les alias TypeScript sont limités à `index.ts` : pas d'imports profonds.
 - `strict` et `noUncheckedIndexedAccess` sont activés partout.
 - Règles de lint web (ban de `fetch`, `window.fetch` et `globalThis.fetch`, `lingui/no-unlocalized-strings`) : `libs/web/.oxlintrc.web.json`. `web-ui` ajoute le ban de `@tanstack/*`. `web-data-access` étend seulement la config racine (il est le seul à appeler `fetch`).
-- Nouvelle lib feature : son `.oxlintrc.json` contient `{ "extends": ["../.oxlintrc.web.json"] }`, et son `vitest.config.mts` reprend ceux de `apps/web`/`web-ui` : plugin babel de la macro Lingui + `lingui()`, sinon les tests qui rendent `<Trans>` échouent.
+- Nouvelle lib feature : son `.oxlintrc.json` contient `{ "extends": ["../.oxlintrc.web.json"] }`, et son `vitest.config.mts` reprend les plugins de `apps/web/vite.config.mts` (`@rolldown/plugin-babel` avec `@lingui/babel-plugin-lingui-macro`, plus `lingui()` de `@lingui/vite-plugin`), sinon les tests qui rendent `<Trans>` échouent.
 
 ## Design system (`web-ui`)
 
