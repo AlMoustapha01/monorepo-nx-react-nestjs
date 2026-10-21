@@ -1,0 +1,122 @@
+import { problemDetailsSchema } from '@nx-react-nestjs/contracts';
+import type { z } from 'zod';
+import { ApiError } from './api-error';
+
+export interface ApiClientOptions {
+  baseUrl: string;
+  getToken?: () => string | undefined;
+  /** Délai maximal d'une requête, 10 000 ms par défaut. */
+  timeoutMs?: number;
+}
+
+export interface ApiRequest<T> {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  query?: Record<string, string | number | undefined>;
+  body?: unknown;
+  schema?: z.ZodType<T>;
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+}
+
+export interface ApiClient {
+  request<T>(path: string, init?: ApiRequest<T>): Promise<T>;
+}
+
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+export function createApiClient(options: ApiClientOptions): ApiClient {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+  async function request<T>(path: string, init: ApiRequest<T> = {}): Promise<T> {
+    const requestId = crypto.randomUUID();
+    const headers = new Headers({
+      accept: 'application/json, application/problem+json',
+      'x-request-id': requestId,
+    });
+    const token = options.getToken?.();
+    if (token) headers.set('authorization', `Bearer ${token}`);
+    if (init.idempotencyKey) headers.set('idempotency-key', init.idempotencyKey);
+    if (init.body !== undefined) headers.set('content-type', 'application/json');
+
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+
+    let response: Response;
+    try {
+      response = await fetch(buildUrl(options.baseUrl, path, init.query), {
+        method: init.method ?? 'GET',
+        headers,
+        signal,
+        ...(init.body !== undefined && { body: JSON.stringify(init.body) }),
+      });
+    } catch (error) {
+      // Annulation par l'appelant : on remonte l'erreur d'origine, sans la convertir.
+      if (init.signal?.aborted) throw error;
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        throw new ApiError({
+          status: 0,
+          code: 'TIMEOUT',
+          title: 'Timeout',
+          detail: `No response within ${timeoutMs} ms.`,
+          requestId,
+          cause: error,
+        });
+      }
+      throw new ApiError({
+        status: 0,
+        code: 'NETWORK_ERROR',
+        title: 'Network error',
+        detail: 'The server could not be reached.',
+        requestId,
+        cause: error,
+      });
+    }
+
+    const effectiveRequestId = response.headers.get('x-request-id') ?? requestId;
+
+    if (!response.ok) throw await toApiError(response, effectiveRequestId);
+    if (response.status === 204) return undefined as T;
+
+    const payload: unknown = await response.json().catch(() => undefined);
+    if (!init.schema) return payload as T;
+    const parsed = init.schema.safeParse(payload);
+    if (!parsed.success) {
+      throw new ApiError({
+        status: response.status,
+        code: 'INVALID_RESPONSE',
+        title: 'Invalid response',
+        detail: 'The response does not match the expected schema.',
+        requestId: effectiveRequestId,
+        cause: parsed.error,
+      });
+    }
+    return parsed.data;
+  }
+
+  return { request };
+}
+
+function buildUrl(baseUrl: string, path: string, query: ApiRequest<unknown>['query']): string {
+  const url = new URL(`${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`);
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value !== undefined) url.searchParams.set(key, String(value));
+  }
+  return url.toString();
+}
+
+/** Corps vide ou non JSON (502 d'un proxy…) : repli sur HTTP_ERROR avec le status reçu. */
+async function toApiError(response: Response, requestId: string): Promise<ApiError> {
+  const body: unknown = await response.json().catch(() => undefined);
+  const problem = problemDetailsSchema.safeParse(body);
+  if (problem.success) {
+    const { code, title, detail, errors } = problem.data;
+    return new ApiError({ status: response.status, code, title, detail, requestId, errors });
+  }
+  return new ApiError({
+    status: response.status,
+    code: 'HTTP_ERROR',
+    title: response.statusText || 'HTTP error',
+    detail: `The server answered with status ${response.status}.`,
+    requestId,
+  });
+}
