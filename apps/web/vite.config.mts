@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
@@ -19,7 +20,12 @@ export default defineConfig(() => ({
     port: 4300,
     host: 'localhost',
   },
-  plugins: [tailwindcss(), react(), babel({ presets: [reactCompilerPreset()] })],
+  plugins: [
+    tailwindcss(),
+    tanstackRouter({ target: 'react', autoCodeSplitting: true }),
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+  ],
   // Uncomment this if you are using workers.
   // worker: {
   //    plugins: () => [ tsconfigPaths() ],
