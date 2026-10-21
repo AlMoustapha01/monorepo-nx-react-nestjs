@@ -4,14 +4,14 @@ App React (Vite) qui assemble les libs `libs/web/*`. Conventions des libs : [`li
 
 ## Commandes
 
-| Besoin                                             | Commande                                                                        |
-| -------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Lancer le front                                    | `pnpm nx serve web` → http://localhost:4200                                     |
-| Appeler l'API avec un token de dev                 | `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`                         |
-| Extraire les chaînes vers les catalogues           | `cd apps/web && pnpm exec lingui extract --clean`                               |
-| Vérifier que les catalogues sont à jour (comme CI) | `pnpm nx run web:i18n-check`                                                    |
-| Vérifier le budget de poids du bundle              | `pnpm nx run web:size` (build d'abord, limite dans `apps/web/.size-limit.json`) |
-| Lint, types, tests                                 | `pnpm nx run-many -t lint typecheck test -p web`                                |
+| Besoin                                             | Commande                                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Lancer le front                                    | `pnpm nx serve web` → http://localhost:4200                                    |
+| Appeler l'API avec un token de dev                 | `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`                        |
+| Extraire les chaînes vers les catalogues           | `cd apps/web && pnpm exec lingui extract --clean`                              |
+| Vérifier que les catalogues sont à jour (comme CI) | `pnpm nx run web:i18n-check`                                                   |
+| Vérifier le budget de poids du bundle              | `pnpm nx run web:size` (build d'abord, limite dans `apps/web/.size-limit.mts`) |
+| Lint, types, tests                                 | `pnpm nx run-many -t lint typecheck test -p web`                               |
 
 `web:i18n-check` lance `lingui extract --clean` (il réécrit les catalogues en local), pose `git add --intent-to-add` sur `src/locales`, puis échoue si `git diff` n'est pas vide : committer les catalogues mis à jour.
 
@@ -37,7 +37,7 @@ Assemblage uniquement : routeur, providers, layout. La logique métier et l'UI r
 - Erreurs : une zone qui peut échouer s'enveloppe dans `ErrorZone` (`src/components/error-zone.tsx`) ; toute erreur capturée passe par `reportError` (`src/report-error.ts`). C'est le point d'accroche d'un futur outil de suivi (Sentry n'est pas installé).
 - Notifications : toasts via sonner. Les échecs de mutation sont déjà notifiés par le hook `onMutationError` de `createQueryClient`.
 - L'app peut dépendre de feature, ui, data-access et contracts (tags Nx), jamais l'inverse.
-- Budget : `web:size` limite le JS initial (gzip). Une hausse se justifie en revue ; préférer `lazy`/routes séparées avant de relever la limite.
+- Budget : `web:size` limite le JS initial (gzip) : script d'entrée et `modulepreload` de `index.html`, sans les chunks des routes chargées à la demande. Les libs sont déclarées sans effet de bord à l'import (`vite.config.mts`) : importer une façade au démarrage n'y entraîne que ce qui est utilisé. Une hausse se justifie en revue ; préférer `lazy`/routes séparées avant de relever la limite.
 
 ## Feature flags
 

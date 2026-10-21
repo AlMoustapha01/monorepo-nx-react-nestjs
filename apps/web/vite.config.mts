@@ -42,6 +42,16 @@ export default defineConfig(() => ({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    rolldownOptions: {
+      treeshake: {
+        // Nos libs n'ont pas d'effet de bord à l'import (équivalent de `"sideEffects": false`).
+        // Sans cela, importer une façade (`index.ts`) depuis le code de démarrage rend tous ses
+        // modules « atteignables » au démarrage : le bundler les place dans un chunk initial au
+        // lieu des chunks des routes chargées à la demande.
+        moduleSideEffects: (id: string) =>
+          /\/libs\/(web|shared)\/[^/]+\/src\/.*\.tsx?$/.test(id) ? false : undefined,
+      },
+    },
   },
   test: {
     name: 'web',
