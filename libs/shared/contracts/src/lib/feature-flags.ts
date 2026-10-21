@@ -23,6 +23,11 @@ export const FEATURE_FLAGS = {
     default: true,
     client: false,
   },
+  storefront: {
+    description: 'Boutique client : catalogue, panier, commandes.',
+    default: false,
+    client: true,
+  },
 } as const satisfies Record<string, FeatureFlagDefinition>;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
