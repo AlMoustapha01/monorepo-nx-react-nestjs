@@ -73,14 +73,13 @@ function onStorage(event: StorageEvent): void {
   notify();
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', onStorage);
-}
-
+/** L'écoute des autres onglets commence au premier abonné et s'arrête au dernier (pas d'effet à l'import). */
 function subscribe(listener: () => void): () => void {
+  if (listeners.size === 0) window.addEventListener('storage', onStorage);
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
+    if (listeners.size === 0) window.removeEventListener('storage', onStorage);
   };
 }
 

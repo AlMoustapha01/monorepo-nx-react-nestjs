@@ -11,9 +11,13 @@ import {
   useCart,
 } from './cart';
 
+// Le store n'écoute `storage` que s'il a un abonné : le hook monté le temps de l'événement
+// fait oublier le repli en mémoire laissé par un test précédent.
 const resetStore = () => {
   localStorage.clear();
+  const { unmount } = renderHook(() => useCart());
   window.dispatchEvent(new StorageEvent('storage', { key: CART_STORAGE_KEY }));
+  unmount();
 };
 
 const product = (n: number) => ({ id: `PRD-${n}`, name: `Product ${n}` });
@@ -103,6 +107,24 @@ describe('cart', () => {
       window.dispatchEvent(new StorageEvent('storage', { key: CART_STORAGE_KEY }));
     });
     expect(result.current).toEqual(lines);
+  });
+
+  it('listens to storage only while subscribed, not at import', async () => {
+    vi.resetModules();
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const fresh = await import('./cart');
+    const storageCalls = (spy: typeof add) =>
+      spy.mock.calls.filter(([type]) => type === 'storage').length;
+    expect(storageCalls(add)).toBe(0);
+
+    const first = renderHook(() => fresh.useCart());
+    const second = renderHook(() => fresh.useCart());
+    expect(storageCalls(add)).toBe(1);
+    first.unmount();
+    expect(storageCalls(remove)).toBe(0);
+    second.unmount();
+    expect(storageCalls(remove)).toBe(1);
   });
 
   it('clearCart empties the cart', () => {
