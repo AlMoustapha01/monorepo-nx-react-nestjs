@@ -50,34 +50,32 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         ...(init.body !== undefined && { body: JSON.stringify(init.body) }),
       });
     } catch (error) {
-      // Annulation par l'appelant : on remonte l'erreur d'origine, sans la convertir.
-      if (init.signal?.aborted) throw error;
-      if (error instanceof Error && error.name === 'TimeoutError') {
-        throw new ApiError({
-          status: 0,
-          code: 'TIMEOUT',
-          title: 'Timeout',
-          detail: `No response within ${timeoutMs} ms.`,
-          requestId,
-          cause: error,
-        });
-      }
-      throw new ApiError({
-        status: 0,
-        code: 'NETWORK_ERROR',
-        title: 'Network error',
-        detail: 'The server could not be reached.',
-        requestId,
-        cause: error,
-      });
+      throw mapTransportFailure(error, init.signal, timeoutMs, requestId);
     }
 
     const effectiveRequestId = response.headers.get('x-request-id') ?? requestId;
 
-    if (!response.ok) throw await toApiError(response, effectiveRequestId);
+    if (!response.ok) {
+      throw await toApiError(response, effectiveRequestId, init.signal, timeoutMs);
+    }
     if (response.status === 204) return undefined as T;
 
-    const payload: unknown = await response.json().catch(() => undefined);
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      if (isAbortOrTimeout(error, init.signal)) {
+        throw mapTransportFailure(error, init.signal, timeoutMs, effectiveRequestId);
+      }
+      throw new ApiError({
+        status: response.status,
+        code: 'INVALID_RESPONSE',
+        title: 'Invalid response',
+        detail: 'The response body is not valid JSON.',
+        requestId: effectiveRequestId,
+        cause: error,
+      });
+    }
     if (!init.schema) return payload as T;
     const parsed = init.schema.safeParse(payload);
     if (!parsed.success) {
@@ -105,8 +103,20 @@ function buildUrl(baseUrl: string, path: string, query: ApiRequest<unknown>['que
 }
 
 /** Corps vide ou non JSON (502 d'un proxy…) : repli sur HTTP_ERROR avec le status reçu. */
-async function toApiError(response: Response, requestId: string): Promise<ApiError> {
-  const body: unknown = await response.json().catch(() => undefined);
+async function toApiError(
+  response: Response,
+  requestId: string,
+  callerSignal: AbortSignal | undefined,
+  timeoutMs: number,
+): Promise<ApiError> {
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (error) {
+    if (isAbortOrTimeout(error, callerSignal)) {
+      throw mapTransportFailure(error, callerSignal, timeoutMs, requestId);
+    }
+  }
   const problem = problemDetailsSchema.safeParse(body);
   if (problem.success) {
     const { code, title, detail, errors } = problem.data;
@@ -118,5 +128,44 @@ async function toApiError(response: Response, requestId: string): Promise<ApiErr
     title: response.statusText || 'HTTP error',
     detail: `The server answered with status ${response.status}.`,
     requestId,
+  });
+}
+
+function isTimeout(error: unknown): boolean {
+  return error instanceof Error && error.name === 'TimeoutError';
+}
+
+function isAbortOrTimeout(error: unknown, callerSignal: AbortSignal | undefined): boolean {
+  return callerSignal?.aborted === true || isTimeout(error);
+}
+
+/**
+ * Mapping unique des échecs de transport (envoi ou lecture du corps) : l'annulation de l'appelant
+ * est rethrow telle quelle, le timeout devient TIMEOUT, le reste NETWORK_ERROR.
+ */
+function mapTransportFailure(
+  error: unknown,
+  callerSignal: AbortSignal | undefined,
+  timeoutMs: number,
+  requestId: string,
+): unknown {
+  if (callerSignal?.aborted) return error;
+  if (isTimeout(error)) {
+    return new ApiError({
+      status: 0,
+      code: 'TIMEOUT',
+      title: 'Timeout',
+      detail: `No response within ${timeoutMs} ms.`,
+      requestId,
+      cause: error,
+    });
+  }
+  return new ApiError({
+    status: 0,
+    code: 'NETWORK_ERROR',
+    title: 'Network error',
+    detail: 'The server could not be reached.',
+    requestId,
+    cause: error,
   });
 }

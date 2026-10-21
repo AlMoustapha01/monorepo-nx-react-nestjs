@@ -8,8 +8,30 @@ const BASE = 'http://api.test/api/v1';
 const server = setupServer();
 
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  vi.unstubAllGlobals();
+});
 afterAll(() => server.close());
+
+/**
+ * Remplace `fetch` par une réponse dont le corps démarre mais ne se termine jamais, et qui
+ * échoue avec la raison du signal à son annulation (comme le fait undici). MSW n'est pas utilisé
+ * ici : une coupure en plein corps déclenche une assertion interne d'undici via l'intercepteur.
+ */
+const stubStalledBody = (status = 200) => {
+  vi.stubGlobal('fetch', (_url: unknown, init?: RequestInit) => {
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"a":'));
+        init?.signal?.addEventListener('abort', () => controller.error(init.signal?.reason));
+      },
+    });
+    return Promise.resolve(
+      new Response(body, { status, headers: { 'content-type': 'application/json' } }),
+    );
+  });
+};
 
 const client = createApiClient({ baseUrl: BASE });
 const catchError = async (promise: Promise<unknown>): Promise<unknown> => {
@@ -209,6 +231,57 @@ describe('createApiClient', () => {
     const error = await pending;
     expect(error).not.toBeInstanceOf(ApiError);
     expect((error as Error).name).toBe('AbortError');
+  });
+
+  it('rethrows an already aborted caller signal untouched', async () => {
+    server.use(http.get(`${BASE}/x`, () => HttpResponse.json({})));
+    const controller = new AbortController();
+    controller.abort();
+    const error = await catchError(client.request('/x', { signal: controller.signal }));
+    expect(error).not.toBeInstanceOf(ApiError);
+    expect((error as Error).name).toBe('AbortError');
+  });
+
+  it('rethrows a custom abort reason untouched', async () => {
+    server.use(http.get(`${BASE}/x`, () => HttpResponse.json({})));
+    const reason = new Error('route changed');
+    const controller = new AbortController();
+    controller.abort(reason);
+    const error = await catchError(client.request('/x', { signal: controller.signal }));
+    expect(error).toBe(reason);
+  });
+
+  it('rethrows the caller AbortError when aborted during the body read', async () => {
+    stubStalledBody();
+    const controller = new AbortController();
+    const pending = catchError(client.request('/stall', { signal: controller.signal }));
+    setTimeout(() => controller.abort(), 30);
+    const error = await pending;
+    expect(error).not.toBeInstanceOf(ApiError);
+    expect((error as Error).name).toBe('AbortError');
+  });
+
+  it('throws TIMEOUT when the body read exceeds timeoutMs', async () => {
+    stubStalledBody();
+    const fast = createApiClient({ baseUrl: BASE, timeoutMs: 50 });
+    const error = (await catchError(fast.request('/stall'))) as ApiError;
+    expect(error).toMatchObject({ code: 'TIMEOUT', status: 0 });
+  });
+
+  it('surfaces the caller AbortError when aborted while reading an error body', async () => {
+    stubStalledBody(500);
+    const controller = new AbortController();
+    const pending = catchError(client.request('/stall', { signal: controller.signal }));
+    setTimeout(() => controller.abort(), 30);
+    const error = await pending;
+    expect(error).not.toBeInstanceOf(ApiError);
+    expect((error as Error).name).toBe('AbortError');
+  });
+
+  it('throws INVALID_RESPONSE on a 200 with a non-JSON body', async () => {
+    server.use(http.get(`${BASE}/x`, () => new HttpResponse('not json', { status: 200 })));
+    const error = (await catchError(client.request('/x'))) as ApiError;
+    expect(error).toMatchObject({ code: 'INVALID_RESPONSE', status: 200 });
   });
 
   it('maps a network failure to NETWORK_ERROR', async () => {
