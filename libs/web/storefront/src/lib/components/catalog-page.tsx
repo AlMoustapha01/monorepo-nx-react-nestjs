@@ -77,7 +77,7 @@ export function CatalogPage({ api }: { api: ApiClient }) {
       ) : (
         <>
           {cartFull && (
-            <Text role="status" tone="muted">
+            <Text tone="muted" aria-live="polite">
               <Trans>Votre panier contient déjà {MAX_ORDER_LINES} produits différents.</Trans>
             </Text>
           )}
