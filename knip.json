@@ -9,6 +9,7 @@
     "libs/api/core/src/lib/**/*.schema.ts",
     "tools/dev/{setup,token,seed}.mts",
     "apps/web/src/main.tsx",
+    "apps/web/lingui.config.ts",
     "apps/web/src/routes/**/*.tsx",
     "libs/web/*/src/**/*.stories.tsx",
     "libs/web/*/.storybook/main.ts"
@@ -22,6 +23,7 @@
     "@swc/helpers",
     "ts-node",
     "tw-animate-css",
-    "tailwindcss"
+    "tailwindcss",
+    "eslint-plugin-lingui"
   ]
 }

@@ -10,5 +10,44 @@
         "message": "Passer par @nx-react-nestjs/web-data-access."
       }
     ]
-  }
+  },
+  "jsPlugins": ["eslint-plugin-lingui"],
+  "overrides": [
+    {
+      "files": ["src/**/*.tsx"],
+      "rules": {
+        "lingui/no-unlocalized-strings": [
+          "error",
+          {
+            "ignoreNames": [
+              "className",
+              "key",
+              "id",
+              "type",
+              "role",
+              "variant",
+              "size",
+              "to",
+              "href",
+              "target",
+              "rel",
+              "data-slot",
+              "htmlFor",
+              "name",
+              "aria-pressed",
+              "aria-hidden",
+              "defaultPreload"
+            ],
+            "ignoreFunctions": ["document.getElementById"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.spec.tsx", "**/*.stories.tsx", "**/routeTree.gen.ts"],
+      "rules": {
+        "lingui/no-unlocalized-strings": "off"
+      }
+    }
+  ]
 }

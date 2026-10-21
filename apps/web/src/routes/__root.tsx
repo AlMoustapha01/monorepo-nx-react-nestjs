@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
+import { Trans } from '@lingui/react/macro';
 import { Link, Outlet, createRootRouteWithContext, useRouter } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
 import type { ApiClient } from '@nx-react-nestjs/web-data-access';
 import { Button, Heading, Stack, Text, buttonVariants } from '@nx-react-nestjs/web-ui';
 
+import { LocaleSwitcher } from '../components/locale-switcher';
 import { reportError } from '../report-error';
 
 export interface RouterContext {
@@ -15,6 +17,9 @@ export interface RouterContext {
 function RootLayout() {
   return (
     <>
+      <header className="flex justify-end p-4">
+        <LocaleSwitcher />
+      </header>
       <Outlet />
       <Toaster />
     </>
@@ -26,9 +31,15 @@ function GlobalError({ error }: { error: unknown }) {
   useEffect(() => reportError(error), [error]);
   return (
     <Stack>
-      <Heading level={1}>Une erreur est survenue</Heading>
-      <Text>Quelque chose s'est mal passé. Vous pouvez réessayer.</Text>
-      <Button onClick={() => void router.invalidate()}>Réessayer</Button>
+      <Heading level={1}>
+        <Trans>Une erreur est survenue</Trans>
+      </Heading>
+      <Text>
+        <Trans>Quelque chose s'est mal passé. Vous pouvez réessayer.</Trans>
+      </Text>
+      <Button onClick={() => void router.invalidate()}>
+        <Trans>Réessayer</Trans>
+      </Button>
     </Stack>
   );
 }
@@ -36,10 +47,14 @@ function GlobalError({ error }: { error: unknown }) {
 function NotFound() {
   return (
     <Stack>
-      <Heading level={1}>404 : page introuvable</Heading>
-      <Text>Cette page n'existe pas.</Text>
+      <Heading level={1}>
+        <Trans>404 : page introuvable</Trans>
+      </Heading>
+      <Text>
+        <Trans>Cette page n'existe pas.</Trans>
+      </Text>
       <Link to="/" className={buttonVariants()}>
-        Retour à l'accueil
+        <Trans>Retour à l'accueil</Trans>
       </Link>
     </Stack>
   );

@@ -1,0 +1,45 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-21 10:20+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+
+#: src/routes/__root.tsx
+msgid "404 : page introuvable"
+msgstr "404 : page introuvable"
+
+#: src/routes/index.tsx
+msgid "Boilerplate web"
+msgstr "Boilerplate web"
+
+#: src/routes/__root.tsx
+msgid "Cette page n'existe pas."
+msgstr "Cette page n'existe pas."
+
+#: src/components/locale-switcher.tsx
+msgid "Langue"
+msgstr "Langue"
+
+#: src/routes/__root.tsx
+msgid "Quelque chose s'est mal passé. Vous pouvez réessayer."
+msgstr "Quelque chose s'est mal passé. Vous pouvez réessayer."
+
+#: src/routes/__root.tsx
+msgid "Réessayer"
+msgstr "Réessayer"
+
+#: src/routes/__root.tsx
+msgid "Retour à l'accueil"
+msgstr "Retour à l'accueil"
+
+#: src/routes/__root.tsx
+msgid "Une erreur est survenue"
+msgstr "Une erreur est survenue"
+
+#: src/components/error-zone.tsx
+#: src/main.tsx
+msgid "Une erreur est survenue."
+msgstr "Une erreur est survenue."

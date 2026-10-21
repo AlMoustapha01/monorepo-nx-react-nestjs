@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
+import { lingui } from '@lingui/vite-plugin';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 
 export default defineConfig(() => ({
@@ -24,7 +25,11 @@ export default defineConfig(() => ({
     tailwindcss(),
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
-    babel({ presets: [reactCompilerPreset()] }),
+    babel({
+      plugins: ['@lingui/babel-plugin-lingui-macro'],
+      presets: [reactCompilerPreset()],
+    }),
+    lingui({ cwd: import.meta.dirname }),
   ],
   // Uncomment this if you are using workers.
   // worker: {
