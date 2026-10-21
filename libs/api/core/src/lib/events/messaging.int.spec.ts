@@ -8,7 +8,7 @@ import {
   eventually,
   startTestDatabase,
   startTestRedis,
-  startTestTracing,
+  startTestTelemetry,
   type TestDatabase,
   testEnv,
   type TestRedis,
@@ -21,7 +21,9 @@ import {
   type IntegrationEventHandler,
   OnIntegrationEvent,
 } from './integration-event';
+import { INTEGRATION_EVENTS_QUEUE, type IntegrationEventJob } from './integration-event.queue';
 import { IntegrationEventWorker } from './integration-event.worker';
+import type { Queue } from 'bullmq';
 import { Outbox } from './outbox';
 
 const Pinged = defineIntegrationEvent('test.pinged.v1', z.object({ n: z.number().int() }));
@@ -99,7 +101,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
   let transactions: TransactionManager;
   let outbox: Outbox;
   let recorder: RecordPing;
-  const tracing = startTestTracing();
+  const telemetry = startTestTelemetry();
 
   beforeAll(async () => {
     [database, redis] = await Promise.all([startTestDatabase(), startTestRedis()]);
@@ -114,7 +116,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
 
   afterAll(async () => {
     await app?.close();
-    await Promise.all([database?.stop(), redis?.stop(), tracing.stop()]);
+    await Promise.all([database?.stop(), redis?.stop(), telemetry.stop()]);
   });
 
   const publish = (n: number) =>
@@ -210,6 +212,53 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     await worker.process(job);
 
     expect(recorder.numbers().filter((n) => n === 7)).toHaveLength(1);
+  });
+
+  describe('métriques', () => {
+    const pointsOf = async (name: string) => (await telemetry.collectMetrics())[name] ?? [];
+
+    it('mesure la durée des handlers, l’outbox et la file', async () => {
+      await publish(30);
+      await eventually(() => expect(recorder.numbers()).toContain(30));
+
+      expect(await pointsOf('integration_events.handler.duration')).toContainEqual(
+        expect.objectContaining({
+          attributes: { 'app.event.handler': 'test.record-ping', outcome: 'success' },
+        }),
+      );
+      await eventually(async () =>
+        expect(await pointsOf('outbox.pending_events')).toEqual([
+          expect.objectContaining({ value: 0 }),
+        ]),
+      );
+      expect((await pointsOf('integration_events.queue.jobs')).map((p) => p.attributes)).toEqual(
+        expect.arrayContaining([{ state: 'waiting' }, { state: 'failed' }]),
+      );
+    });
+
+    it('compte un job abandonné, sans retry pour un payload invalide', async () => {
+      const queue = app.get<Queue<IntegrationEventJob>>(INTEGRATION_EVENTS_QUEUE);
+      await queue.add('test.record-ping', {
+        handler: 'test.record-ping',
+        event: {
+          id: 'EVT-01jb4x7k2m9qwfzp3hdb',
+          type: 'test.pinged.v1',
+          tenantId: principal.tenantId,
+          actorId: principal.userId,
+          occurredAt: new Date().toISOString(),
+          payload: { n: 'pas un nombre' },
+        },
+      });
+
+      await eventually(async () =>
+        expect(await pointsOf('integration_events.jobs.exhausted')).toContainEqual(
+          expect.objectContaining({
+            attributes: { 'app.event.handler': 'test.record-ping' },
+            value: 1,
+          }),
+        ),
+      );
+    });
   });
 
   describe('handler non transactionnel', () => {

@@ -11,7 +11,7 @@ import {
   type IntegrationEventDefinition,
   type IntegrationEventPayload,
 } from '@nx-react-nestjs/contracts';
-import { NodeSDK, tracing } from '@opentelemetry/sdk-node';
+import { metrics, NodeSDK, tracing } from '@opentelemetry/sdk-node';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -153,17 +153,47 @@ export class StaticFeatureFlags extends FeatureFlags {
   }
 }
 
-/** Un vrai SDK OpenTelemetry, global, qui garde les spans en mémoire. */
-export function startTestTracing(): { spans: tracing.InMemorySpanExporter; stop(): Promise<void> } {
+/** Lecteur à la demande : `collect()` renvoie les métriques au moment de l'appel. */
+class OnDemandMetricReader extends metrics.MetricReader {
+  protected async onForceFlush(): Promise<void> {}
+  protected async onShutdown(): Promise<void> {}
+}
+
+export interface TestTelemetry {
+  spans: tracing.InMemorySpanExporter;
+  /** Points de données par nom de métrique. */
+  collectMetrics(): Promise<Record<string, metrics.DataPoint<unknown>[]>>;
+  stop(): Promise<void>;
+}
+
+/**
+ * Un vrai SDK OpenTelemetry, global, qui garde spans et métriques en mémoire. À démarrer avant de
+ * créer les providers Nest : les instruments de mesure sont créés à leur construction.
+ */
+export function startTestTelemetry(): TestTelemetry {
   const spans = new tracing.InMemorySpanExporter();
+  const reader = new OnDemandMetricReader();
   const sdk = new NodeSDK({
     spanProcessors: [new tracing.SimpleSpanProcessor(spans)],
+    metricReaders: [reader],
+    logRecordProcessors: [],
     instrumentations: [],
     // Détection asynchrone (hôte, process…) : elle retarderait l'export des spans.
     autoDetectResources: false,
   });
   sdk.start();
-  return { spans, stop: () => sdk.shutdown() };
+  return {
+    spans,
+    async collectMetrics() {
+      const { resourceMetrics } = await reader.collect();
+      return Object.fromEntries(
+        resourceMetrics.scopeMetrics
+          .flatMap((scope) => scope.metrics)
+          .map((metric) => [metric.descriptor.name, metric.dataPoints]),
+      );
+    },
+    stop: () => sdk.shutdown(),
+  };
 }
 
 /** Attend qu'une condition asynchrone devienne vraie (traitement par un worker, par exemple). */

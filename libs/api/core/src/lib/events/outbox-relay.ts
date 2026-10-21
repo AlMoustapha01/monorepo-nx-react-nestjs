@@ -4,8 +4,9 @@ import {
   Logger,
   type OnApplicationBootstrap,
 } from '@nestjs/common';
+import { type BatchObservableCallback, metrics } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
-import { asc, inArray, isNull } from 'drizzle-orm';
+import { asc, count, inArray, isNull, min } from 'drizzle-orm';
 import { AppConfig } from '../config/app-config';
 import { DatabaseSession } from '../database/database-session';
 import { IntegrationEventRegistry } from './integration-event.registry';
@@ -30,6 +31,29 @@ export class OutboxRelay implements OnApplicationBootstrap, BeforeApplicationShu
   private running?: Promise<void>;
   private stopped = false;
 
+  private readonly meter = metrics.getMeter('api-core.messaging');
+  private readonly pendingEvents = this.meter.createObservableGauge('outbox.pending_events', {
+    description: 'Événements pas encore relayés vers BullMQ',
+  });
+  private readonly oldestPendingAge = this.meter.createObservableGauge(
+    'outbox.oldest_pending_age',
+    {
+      unit: 's',
+      description: 'Âge du plus ancien événement non relayé : le retard du relais',
+    },
+  );
+  private readonly observeOutbox: BatchObservableCallback = async (result) => {
+    const [row] = await this.session.db
+      .select({ pending: count(), oldest: min(outbox.occurredAt) })
+      .from(outbox)
+      .where(isNull(outbox.publishedAt));
+    result.observe(this.pendingEvents, row?.pending ?? 0);
+    result.observe(
+      this.oldestPendingAge,
+      row?.oldest ? Math.max(0, (Date.now() - row.oldest.getTime()) / 1000) : 0,
+    );
+  };
+
   constructor(
     private readonly session: DatabaseSession,
     private readonly registry: IntegrationEventRegistry,
@@ -40,11 +64,19 @@ export class OutboxRelay implements OnApplicationBootstrap, BeforeApplicationShu
   onApplicationBootstrap(): void {
     if (this.config.get('JOBS_ENABLED')) {
       this.schedule(0);
+      this.meter.addBatchObservableCallback(this.observeOutbox, [
+        this.pendingEvents,
+        this.oldestPendingAge,
+      ]);
     }
   }
 
   async beforeApplicationShutdown(): Promise<void> {
     this.stopped = true;
+    this.meter.removeBatchObservableCallback(this.observeOutbox, [
+      this.pendingEvents,
+      this.oldestPendingAge,
+    ]);
     clearTimeout(this.timer);
     await this.running;
   }

@@ -88,9 +88,10 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 
 - **Traces** : OpenTelemetry, activé par `OTEL_EXPORTER_OTLP_ENDPOINT` (OTLP/HTTP) et configuré par les variables standard (`OTEL_SERVICE_NAME`, `OTEL_TRACES_SAMPLER`…). `apps/api/src/instrumentation.ts` est le premier import de `main.ts` et `worker.ts` : HTTP, Express, Nest et Postgres sont instrumentés. `/health` et `/ready` ne sont pas tracés ; une requête SQL hors span (sondage du relais) non plus.
 - **Événements** : l'outbox stocke le contexte W3C de la requête (`trace_context`) ; le worker exécute chaque handler dans un span `process <handler>` enfant de cette requête. Une seule trace va de la requête HTTP jusqu'aux handlers, dans le service `api-worker`.
+- **Métriques** (OTLP, toutes les 60 s ; `OTEL_METRIC_EXPORT_INTERVAL`) : durée des requêtes HTTP par route, et pour la messagerie `outbox.pending_events`, `outbox.oldest_pending_age` (retard du relais), `integration_events.handler.duration` (par handler et issue), `integration_events.queue.jobs` (par état) et `integration_events.jobs.exhausted` (jobs abandonnés). Alertes conseillées : retard de l'outbox au-delà d'une minute, tout job abandonné. Les jauges sont lues par le process qui a `JOBS_ENABLED=true`.
 - **Logs** : chaque ligne émise pendant un span porte `trace_id` et `span_id` (instrumentation pino).
 - **Code métier** : rien à faire. Pour un span sur mesure, `trace.getTracer('<domaine>')` de `@opentelemetry/api`, sans dépendre du SDK.
-- **Tests** : `startTestTracing()` (`api-core/testing`) enregistre un vrai SDK qui garde les spans en mémoire.
+- **Tests** : `startTestTelemetry()` (`api-core/testing`) enregistre un vrai SDK qui garde spans et métriques en mémoire.
 - `@opentelemetry/api` reste en `~1.9` tant que le SDK est en 2.x (la 1.10 n'est acceptée que par le SDK 3).
 
 ## Principes non négociables

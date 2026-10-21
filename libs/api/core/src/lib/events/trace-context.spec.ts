@@ -1,5 +1,5 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
-import { startTestTracing } from '../../testing';
+import { startTestTelemetry } from '../../testing';
 import type { IntegrationEventJob } from './integration-event.queue';
 import { captureTraceContext, inHandlerSpan } from './trace-context';
 
@@ -17,7 +17,7 @@ const job = (traceContext?: Record<string, string>): IntegrationEventJob => ({
 });
 
 describe('contexte de trace des événements', () => {
-  const tracing = startTestTracing();
+  const tracing = startTestTelemetry();
   const tracer = trace.getTracer('test');
   afterEach(() => tracing.spans.reset());
   afterAll(() => tracing.stop());
