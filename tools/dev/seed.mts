@@ -1,18 +1,31 @@
 /**
- * Remplit le tenant de dev avec quelques produits, en passant par l'API (règles métier comprises).
- * Idempotent : un SKU déjà présent est ignoré. Nécessite l'API démarrée (`pnpm nx serve api`).
- * Avec le service d'auth (AUTH_JWKS_URL dans .env, `pnpm nx serve auth`) : crée aussi les comptes
- * et l'organisation de démo, qui devient le tenant.
+ * Prépare le tenant de dev. Avec le service d'auth (AUTH_JWKS_URL dans .env, `pnpm nx serve auth`) :
+ * crée les comptes et l'organisation de démo, qui devient le tenant. Les données de démo passent par
+ * l'API (règles métier comprises), qui doit être démarrée (`pnpm nx serve api`). Idempotent.
  */
 import {
   DEMO_ACCOUNTS,
   DEMO_PASSWORD,
+  // example:start
   demoToken,
+  // example:end
   ensureDemoOrganization,
   usesAuthService,
 } from './auth-service.mts';
-import { apiBaseUrl, DEV_EMAIL, DEV_TENANT_ID, DEV_USER_ID, signDevToken } from './dev-env.mts';
+import {
+  DEV_TENANT_ID,
+  // example:start
+  apiBaseUrl,
+  DEV_EMAIL,
+  DEV_USER_ID,
+  signDevToken,
+  // example:end
+} from './dev-env.mts';
 
+const withAuthService = usesAuthService();
+const tenantId = withAuthService ? await ensureDemoOrganization() : DEV_TENANT_ID;
+
+// example:start
 interface SeedProduct {
   sku: string;
   name: string;
@@ -34,8 +47,6 @@ const PRODUCTS: SeedProduct[] = [
 ];
 
 const base = apiBaseUrl();
-const withAuthService = usesAuthService();
-const tenantId = withAuthService ? await ensureDemoOrganization() : DEV_TENANT_ID;
 // Créer et publier des produits est réservé au staff.
 const token = withAuthService
   ? await demoToken('staff')
@@ -84,6 +95,7 @@ for (const product of PRODUCTS) {
   }
   console.log(`+ ${product.sku} ${id}${product.publish ? '' : ' (brouillon)'}`);
 }
+// example:end
 
 console.log(
   `\nTenant de dev ${tenantId} prêt. Tokens : pnpm -s dev:token (client), --staff (gestion).`,

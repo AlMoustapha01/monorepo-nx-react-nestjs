@@ -11,7 +11,7 @@ const csv = z
       .filter(Boolean),
   );
 
-/** `orders.cancellation=false,autre.flag=true` : un nom inconnu ou une valeur invalide bloque le démarrage. */
+/** `mon.flag=false,autre.flag=true` : un nom inconnu ou une valeur invalide bloque le démarrage. */
 const featureFlagOverrides = csv.pipe(
   z
     .array(

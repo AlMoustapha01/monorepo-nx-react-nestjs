@@ -25,106 +25,21 @@ Rien d'autre à changer : ni le lockfile, ni les noms de projets Nx (`api`, `web
 
 ## 2. Retirer les exemples
 
-> Avant de commencer : retirez `FEATURE_FLAGS=storefront=true` de votre `.env`. Un flag inconnu empêche l'API de démarrer.
-
-### Supprimer
+Une fois votre premier domaine écrit, et avant le premier déploiement, sur un arbre git propre :
 
 ```sh
-rm -r libs/api/catalog libs/api/orders libs/api/notifications \
-  libs/web/storefront \
-  libs/shared/contracts/src/lib/catalog libs/shared/contracts/src/lib/orders \
-  apps/api/tests/{catalog,orders,notifications}.e2e.spec.ts \
-  apps/web/src/routes/_authenticated/{panier.tsx,commandes.index.tsx,'commandes.$orderId.tsx'} \
-  apps/api/migrations
+pnpm strip:examples
+git diff && pnpm check
 ```
 
-### Modifier
+Le script :
 
-**API et contrats**
+- supprime les fichiers propres aux exemples (liste `EXAMPLE_PATHS` de `tools/dev/strip-examples-core.mts` : domaines, contrats, tests, lib et routes de la boutique) et, dans les fichiers partagés, les lignes entre `example:start` et `example:end` (modules de l'API, exports des contrats, flags d'exemple, produits du seed, navigation du front, doc). Un marqueur mal formé arrête tout avant le moindre changement. Il retire aussi de `tsconfig.base.json` les alias devenus sans cible ;
+- repart d'une migration unique, `0000_init.sql` (tables de core et de vos domaines), régénère `routeTree.gen.ts` (build du front) et les catalogues Lingui, reformate et vide le cache de Nx ;
+- liste les mentions des exemples qui restent : des règles générales illustrées par eux (`orders` → `ProductCatalog` → `CatalogFacade`, préfixes `PRD-`/`ORD-` dans `AGENTS.md`), des données de test. À relire et à remplacer par vos propres domaines.
 
-- `tsconfig.base.json` : retirer les alias `api-catalog`, `api-orders`, `api-notifications` et `web-storefront`.
-- `libs/shared/contracts/src/index.ts` : retirer les exports de `catalog/product`, `orders/order` et `orders/order.events`.
-- `apps/api/src/app/app.module.ts` : `imports: [CoreModule]`.
+Il refuse un second passage. Ensuite : retirer `FEATURE_FLAGS=storefront=true` de votre `.env` (un flag inconnu empêche l'API de démarrer), puis `docker compose down -v && pnpm dev:setup` pour une base locale neuve.
 
-**Feature flags** : vider le catalogue, qui ne contient que des flags d'exemple. Le cœur et les tests du mécanisme ne dépendent pas de son contenu.
+**Projet déjà déployé** : `pnpm strip:examples --keep-migrations`. Ne jamais supprimer ni réécrire une migration appliquée : retirer le code, déployer, puis générer une migration qui supprime les tables (`pnpm nx run api:db-generate --name=drop-examples`). drizzle-kit ne génère pas le `DROP SCHEMA` d'un `pgSchema` disparu : relire le SQL produit.
 
-```ts
-// libs/shared/contracts/src/lib/feature-flags.ts
-export const FEATURE_FLAGS = {} as const satisfies Record<string, FeatureFlagDefinition>;
-```
-
-**Front**
-
-- `apps/web/src/components/app-navigation.tsx` : retirer `StorefrontNav`, `useFeatureFlag('storefront')` et leurs imports.
-- `apps/web/src/routes/_authenticated/index.tsx` : une page d'accueil provisoire.
-
-  ```tsx
-  import { Trans } from '@lingui/react/macro';
-  import { createFileRoute } from '@tanstack/react-router';
-  import { Heading } from '@acme/web-ui';
-
-  function Home() {
-    return (
-      <Heading level={1}>
-        <Trans>Accueil</Trans>
-      </Heading>
-    );
-  }
-
-  export const Route = createFileRoute('/_authenticated/')({ component: Home });
-  ```
-
-- `apps/web/src/app.spec.tsx` : retirer les tests de la boutique, des commandes et du panier ; le titre attendu devient `Accueil` (`Home` en anglais) ; le test de redirection après connexion vise `/?onglet=2`. Le test « recharge les données du nouveau tenant » n'a plus rien à observer : le remettre avec le premier écran métier.
-
-**Parcours navigateur** (`apps/web-e2e/src`)
-
-- `stack.ts` : retirer `FEATURE_FLAGS: 'storefront=true'` (sinon l'API ne démarre pas).
-- `support.ts` : retirer `publishProduct`.
-- `sign-in.spec.ts`, `sign-up.spec.ts`, `invitation.spec.ts`, `password-reset.spec.ts`, `accessibility.spec.ts` : attendre le titre `Accueil` sur `/` au lieu des pages de la boutique.
-
-**Outillage**
-
-- `tools/dev/seed.mts` : retirer les produits ; le script ne crée plus que l'organisation et les comptes de démo (avec le service d'auth). Y ajouter ensuite les données de démo du projet, par l'API.
-- `tools/dev/dev-env.mts` : supprimer `apiBaseUrl()`, devenu inutilisé (knip).
-- `libs/api/core/src/lib/http/idempotency/idempotency.interceptor.ts` : `IdempotentOptions` n'est plus importée ailleurs, retirer son `export` (knip).
-- `.env.example` et `libs/api/core/src/lib/config/env.ts` : remplacer l'exemple `orders.cancellation=false` de `FEATURE_FLAGS`.
-
-**Fichiers générés**
-
-```sh
-pnpm nx run web:build                               # régénère routeTree.gen.ts
-(cd apps/web && pnpm exec lingui extract --clean)   # retire les chaînes de la boutique
-```
-
-Puis traduire `Accueil` dans `apps/web/src/locales/en/messages.po` (`msgstr "Home"`).
-
-### Régénérer les migrations
-
-Un projet jamais déployé repart d'une migration unique :
-
-```sh
-pnpm nx run api:db-generate --name=init   # sans base de données
-docker compose down -v && pnpm dev:setup  # base locale neuve
-```
-
-`0000_init.sql` contient les tables de core (`messaging.outbox`, `messaging.processed_events`, `idempotency.keys`) et celles de vos domaines. Aucun code ne dépend des noms de migrations.
-
-**Projet déjà déployé** : ne jamais supprimer ni réécrire une migration appliquée. Retirer d'abord le code qui utilise les tables, déployer, puis générer une migration qui les supprime. drizzle-kit ne génère pas le `DROP SCHEMA` d'un `pgSchema` disparu : relire le SQL produit.
-
-### Mettre la doc à jour
-
-Ces passages citent les exemples et deviennent faux :
-
-- `AGENTS.md` : « Domaines d'exemple à copier », l'exemple `orders` → `ProductCatalog` → `CatalogFacade`, « Règles actuelles » (Autorisations), « le catalogue écoute les commandes » (Événements), la mention du code existant sans spec (Spec Kit), les préfixes `PRD-`/`ORD-` et l'exemple `orders.cancellation` (Conventions) ;
-- `apps/web/AGENTS.md` : `FEATURE_FLAGS=storefront=true` et `publishProduct` ;
-- `libs/web/AGENTS.md` : l'exemple `web-storefront` ;
-- les commentaires d'en-tête de `tools/dev/token.mts` et `tools/dev/dev-env.mts`.
-
-### Vérifier
-
-```sh
-pnpm format && pnpm check
-pnpm nx run-many -t build
-pnpm nx run web:i18n-check
-pnpm nx run web-e2e:e2e
-```
+**Nouvel exemple** : dans ses propres fichiers, ajoutés à `EXAMPLE_PATHS`, ou entre des marqueurs sur des lignes entières : `// example:start` et `// example:end` (`{/* example:start */}` en JSX), `# example:start` (`.env.example`, YAML), `<!-- example:start -->` (Markdown). Le job `strip-examples` de la CI lance le script puis `pnpm check`.

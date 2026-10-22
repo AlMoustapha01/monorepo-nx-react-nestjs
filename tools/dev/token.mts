@@ -1,7 +1,7 @@
 /**
  * Génère un JWT de dev, signé avec le secret de .env.
- *   pnpm -s dev:token                      → client de dev (voit le catalogue publié, ses commandes)
- *   pnpm -s dev:token --staff              → staff de dev (gère le catalogue, voit tout le tenant)
+ *   pnpm -s dev:token                      → client de dev (aucun rôle)
+ *   pnpm -s dev:token --staff              → staff de dev (rôle staff : gestion du tenant)
  *   pnpm -s dev:token --tenant <uuid> --user <uuid> --email a@b.c --expires 1h
  *   TOKEN=$(pnpm -s dev:token) && curl -H "authorization: Bearer $TOKEN" …
  * Avec le service d'auth (AUTH_JWKS_URL dans .env) : un vrai token de 15 min, celui d'un compte de

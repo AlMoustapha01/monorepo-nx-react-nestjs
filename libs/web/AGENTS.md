@@ -8,7 +8,7 @@ Libs front React. App qui les assemble : [`apps/web/AGENTS.md`](../../apps/web/A
 | ------------------------------------------------------ | ------------------ | ----------------------------------------------------------------------------------- | ---------------------------------- |
 | `web-ui` (`@nx-react-nestjs/web-ui`)                   | `type:ui`          | design system : thème Tailwind 4, `cn`, `Stack`/`Text`/`Heading`, composants shadcn | `type:ui` seulement                |
 | `web-data-access` (`@nx-react-nestjs/web-data-access`) | `type:data-access` | `createApiClient`, `ApiError`, `createQueryClient`, `useIdempotentMutation`         | `type:contract`                    |
-| `web-storefront`, `web-auth`, `libs/web/<feature>`     | `type:feature`     | un écran ou parcours métier                                                         | feature, ui, data-access, contract |
+| `web-auth`, `libs/web/<feature>`                       | `type:feature`     | un écran ou parcours métier                                                         | feature, ui, data-access, contract |
 
 - `web-ui` n'importe ni `@tanstack/*`, ni `@nx-react-nestjs/contracts`, ni aucune autre lib.
 - `fetch` n'apparaît que dans `web-data-access`.

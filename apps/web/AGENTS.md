@@ -22,14 +22,19 @@ Variables (voir `.env.example` à la racine) : `VITE_API_URL` (défaut `http://l
 Assemblage uniquement : routeur, providers, layout. La logique métier et l'UI réutilisable vivent dans `libs/web/*`.
 
 - Une route = un fichier dans `src/routes/` (TanStack Router, routes par fichiers ; `routeTree.gen.ts` est généré, ne pas l'éditer).
-- `/` est la page d'accueil de base (`routes/_authenticated/index.tsx`), sans rien de l'exemple. La boutique d'exemple (lib `web-storefront`) vit dans le groupe de routes `routes/_authenticated/(boutique)/` (les parenthèses ne changent pas les URL) : catalogue sur `/boutique`, puis `/panier`, `/commandes`, `/commandes/$orderId`.
-- Le code propre aux exemples est soit dans ses propres fichiers, soit entre `// example:start` et `// example:end` (`{/* example:start */}` dans le JSX, lignes entières) : supprimer les exemples ne réécrit pas le code de base. Ses tests : `src/storefront.spec.tsx` (banc commun : `src/testing/app-harness.tsx`) et `apps/web-e2e/src/storefront*.ts`.
+- `/` est la page d'accueil de base (`routes/_authenticated/index.tsx`).
 - `src/routes/__root.tsx` : layout (navigation et compte une fois connecté, sélecteur de langue, `Toaster` sonner), page d'erreur globale avec « Réessayer », page 404.
 - `src/router.tsx` : `createAppRouter({ queryClient, api, session }, history?)` ; le contexte du routeur donne aux `beforeLoad` et `loader` le client API, le cache et la session (`src/session.ts`).
 - `src/api.ts` : instances uniques du client API et du client d'auth, et choix du mode (token de dev ou service d'auth).
 - `src/i18n/` : Lingui. `resolveLocale` (langue du navigateur ramenée à sa base, `fr` par défaut), `activateLocale`, préférence en `localStorage` sous la clé `app.locale` (lecture et écriture protégées par try/catch). Pas de préfixe d'URL.
 - Catalogues : `src/locales/{fr,en}/messages.po`. `fr` est la langue source.
 - React Compiler est actif (plugin Babel de `@rolldown/plugin-babel`) : pas de `useMemo`/`useCallback` par réflexe.
+
+<!-- example:start -->
+
+Boutique d'exemple (lib `web-storefront`) : groupe de routes `routes/_authenticated/(boutique)/` (les parenthèses ne changent pas les URL) : catalogue sur `/boutique`, puis `/panier`, `/commandes`, `/commandes/$orderId`. Son code est dans ses propres fichiers ou entre `// example:start` et `// example:end` (`{/* example:start */}` dans le JSX, lignes entières) : `pnpm strip:examples` le retire sans réécrire le code de base. Ses tests : `src/storefront.spec.tsx` (banc commun : `src/testing/app-harness.tsx`) et `apps/web-e2e/src/storefront*.ts` (`publishProduct`, pages de la boutique pour l'accessibilité). En local : `FEATURE_FLAGS=storefront=true pnpm nx serve api`.
+
+<!-- example:end -->
 
 ## Règles
 
@@ -65,7 +70,7 @@ Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés d
 - Garder une route : `beforeLoad: requireFeature('<flag>')` (`src/feature-flags.ts`) ; flag coupé = 404.
 - Lire un flag dans un composant de l'app : `useFeatureFlag('<flag>')`. Les libs `libs/web/*` ne lisent aucun flag : elles reçoivent des booléens en props.
 - Repli « tout coupé » : si l'appel échoue, les flags sont tous faux et l'erreur passe par `reportError` ; la page s'affiche quand même.
-- En local : `FEATURE_FLAGS=storefront=true pnpm nx serve api`.
+- En local : `FEATURE_FLAGS=<flag>=true pnpm nx serve api`.
 
 ## Différé volontairement
 
@@ -77,6 +82,6 @@ Playwright contre la vraie stack, démarrée une fois par exécution (`src/stack
 
 - Lancer : `pnpm nx run web-e2e:e2e` (Docker requis ; `pnpm exec playwright install chromium` la première fois). Rapport, traces, captures et journaux des services : `dist/.playwright/apps/web-e2e`.
 - Un parcours couvre ce qu'un test unitaire ne voit pas : redirections entre services, emails (lus dans Mailpit, `linkFromEmail`), cookies, tokens, plusieurs tenants. Le reste se teste en Vitest.
-- Chaque test crée ses propres comptes (`uniqueEmail`) : ils tournent en parallèle sur la même base. Préparer les données par l'API (`createAccount`, `createOrganization`, `invite` dans `support.ts` ; `publishProduct`, propre à la boutique, dans `storefront-support.ts`), et ne passer par l'interface que pour ce qui est testé.
-- Accessibilité : `@axe-core/playwright`, WCAG 2.1 A et AA, sur les pages publiques et l'app connectée. Une page nouvelle s'ajoute à `accessibility.spec.ts` (celles de la boutique à `storefront.spec.ts`).
+- Chaque test crée ses propres comptes (`uniqueEmail`) : ils tournent en parallèle sur la même base. Préparer les données par l'API (`createAccount`, `createOrganization`, `invite` dans `support.ts`), et ne passer par l'interface que pour ce qui est testé.
+- Accessibilité : `@axe-core/playwright`, WCAG 2.1 A et AA, sur les pages publiques et l'app connectée. Une page nouvelle s'ajoute à `accessibility.spec.ts`.
 - Le projet ne dépend d'aucune lib (`scope:e2e`) : il teste l'app de l'extérieur.

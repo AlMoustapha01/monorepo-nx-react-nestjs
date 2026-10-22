@@ -20,7 +20,12 @@ Boilerplate de produit SaaS multi-tenant : une API NestJS découpée en domaines
 - **Front** (`apps/web`, `libs/web/*`) : TanStack Router et Query, design system Tailwind 4 + shadcn avec Storybook, i18n Lingui, budget de poids du bundle.
 - **Exploitation** : une image Docker par service, migrations en étape séparée, sondes, arrêt propre, OpenTelemetry (traces, métriques, logs corrélés), Sentry.
 - **Qualité** : tests unitaires, d'intégration (Testcontainers), e2e API et parcours navigateur Playwright ; CI sur les projets affectés ; audit des dépendances et Renovate.
-- **Exemples à copier** : `catalog`, `orders` et `notifications` côté API, une boutique (`libs/web/storefront`) côté front.
+
+<!-- example:start -->
+
+- **Exemples à copier** : `catalog`, `orders` et `notifications` côté API, une boutique (`libs/web/storefront`, `/boutique`, avec `FEATURE_FLAGS=storefront=true` dans `.env`) côté front. `pnpm strip:examples` les retire ([Démarrer un projet](docs/guides/demarrer-un-projet.md)).
+
+<!-- example:end -->
 
 Stack : Node 24, TypeScript, Nx, NestJS 11, Drizzle + Postgres 17, Redis 7 + BullMQ, Better Auth, React 19, Vite, Tailwind 4, zod, Vitest, Playwright, oxlint et oxfmt, knip.
 
@@ -31,11 +36,11 @@ Prérequis : Node 24 (`nvm use`), pnpm via corepack, Docker.
 ```sh
 pnpm install && pnpm dev:setup                          # .env, Postgres, Redis, Mailpit, migrations
 pnpm nx serve api                                       # http://localhost:3000/api/v1, Swagger sur /api/docs
-pnpm dev:seed                                           # autre terminal : produits de démo
+pnpm dev:seed                                           # autre terminal : données de démo
 VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web   # http://localhost:4200
 ```
 
-Ce mode n'utilise pas le service d'identité : le front envoie un token de dev à l'API. Pour la boutique d'exemple (`/boutique`), ajouter `FEATURE_FLAGS=storefront=true` dans `.env` puis relancer l'API. Pour se connecter avec de vrais comptes : [Authentification en local](docs/guides/auth-en-local.md).
+Ce mode n'utilise pas le service d'identité : le front envoie un token de dev à l'API. Pour se connecter avec de vrais comptes : [Authentification en local](docs/guides/auth-en-local.md).
 
 `pnpm check` lance toutes les vérifications de la CI.
 
