@@ -310,6 +310,71 @@ describe('authentification', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
   });
 
+  it('recharge les données du nouveau tenant au changement d’organisation', async () => {
+    const product = (id: string, name: string) => ({
+      id,
+      sku: `SKU-${id.slice(-3)}`,
+      name,
+      description: null,
+      price: { amountMinor: 1990, currency: 'EUR' },
+      status: 'active',
+      soldCount: 0,
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    // Comme la vraie API : le catalogue dépend du tenant inscrit dans le token.
+    const catalogs: Record<string, ReturnType<typeof product>[]> = {
+      o1: [product('PRD-00000000000000000001', 'Tablier en lin')],
+      o2: [product('PRD-00000000000000000002', 'Mug émaillé')],
+    };
+    let active = 'o1';
+    current = { user, session: { activeOrganizationId: active } };
+    const exp = Math.floor(Date.now() / 1000) + 900;
+    server.use(
+      http.get(`${AUTH}/organization/list`, () =>
+        HttpResponse.json([
+          { id: 'o1', name: 'Atelier', slug: 'atelier' },
+          { id: 'o2', name: 'Boutique', slug: 'boutique' },
+        ]),
+      ),
+      http.post(`${AUTH}/organization/set-active`, async ({ request }) => {
+        ({ organizationId: active } = (await request.json()) as { organizationId: string });
+        current = { user, session: { activeOrganizationId: active } };
+        return HttpResponse.json({});
+      }),
+      http.get(`${AUTH}/token`, () =>
+        HttpResponse.json({ token: `h.${btoa(JSON.stringify({ exp, tenant: active }))}.s` }),
+      ),
+      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
+      http.get(`${API}/catalog/products`, ({ request }) => {
+        const token = request.headers.get('authorization')?.split('.')[1] ?? '';
+        const { tenant } = JSON.parse(atob(token)) as { tenant: string };
+        return HttpResponse.json({ items: catalogs[tenant] ?? [], nextCursor: null });
+      }),
+    );
+    const queryClient = createQueryClient();
+    const session = sessionContext(false);
+    renderRouter(
+      createAppRouter(
+        {
+          queryClient,
+          api: createApiClient({ baseUrl: API, getToken: session.tokens.getToken }),
+          session,
+        },
+        createMemoryHistory({ initialEntries: ['/'] }),
+      ),
+      queryClient,
+    );
+    expect(await screen.findByText('Tablier en lin')).toBeTruthy();
+
+    await userEvent
+      .setup()
+      .selectOptions(await screen.findByRole('combobox', { name: 'Organisation' }), 'Boutique');
+    expect(await screen.findByText('Mug émaillé')).toBeTruthy();
+    expect(screen.queryByText('Tablier en lin')).toBeNull();
+  });
+
   it('envoie à l’API le token du service d’auth', async () => {
     current = { user, session: { activeOrganizationId: 'o1' } };
     const seen: (string | null)[] = [];

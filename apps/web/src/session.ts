@@ -32,12 +32,22 @@ export async function requireSession(context: Context, returnTo: string) {
 }
 
 /**
- * Connexion, déconnexion, changement d'organisation : le token et toutes les données en cache
- * appartiennent à l'ancien utilisateur ou à l'ancien tenant.
+ * Connexion, déconnexion, organisation créée ou rejointe : le token et toutes les données en cache
+ * appartiennent à l'ancien utilisateur ou à l'ancien tenant. À appeler avant de quitter la page.
  */
 export function resetSession({ queryClient, session }: Context): void {
   session.tokens.clear();
   queryClient.clear();
+}
+
+/**
+ * Changement d'organisation sans quitter la page : `clear()` laisserait les composants affichés
+ * avec les données de l'ancien tenant. `resetQueries()` les vide toutes et recharge celles qui
+ * sont affichées, avec un token du nouveau tenant.
+ */
+export async function reloadForNewTenant({ queryClient, session }: Context): Promise<void> {
+  session.tokens.clear();
+  await queryClient.resetQueries();
 }
 
 /** URL absolue d'une page de l'app, pour les liens des emails (confirmation, mot de passe). */
