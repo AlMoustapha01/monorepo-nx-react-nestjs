@@ -6,8 +6,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  FEATURE_FLAGS,
   type FeatureFlag,
+  featureFlagDefinition,
   type IntegrationEventDefinition,
   type IntegrationEventPayload,
 } from '@nx-react-nestjs/contracts';
@@ -149,7 +149,7 @@ export class StaticFeatureFlags extends FeatureFlags {
   }
 
   async isEnabled(flag: FeatureFlag): Promise<boolean> {
-    return this.values.get(flag) ?? FEATURE_FLAGS[flag].default;
+    return this.values.get(flag) ?? featureFlagDefinition(flag).default;
   }
 }
 

@@ -1,5 +1,5 @@
 import { Injectable, SetMetadata } from '@nestjs/common';
-import { FEATURE_FLAGS, type FeatureFlag } from '@nx-react-nestjs/contracts';
+import { type FeatureFlag, featureFlagDefinition } from '@nx-react-nestjs/contracts';
 import { AppConfig } from '../config/app-config';
 
 /**
@@ -23,7 +23,7 @@ export class ConfiguredFeatureFlags extends FeatureFlags {
   }
 
   async isEnabled(flag: FeatureFlag): Promise<boolean> {
-    return this.overrides[flag] ?? FEATURE_FLAGS[flag].default;
+    return this.overrides[flag] ?? featureFlagDefinition(flag).default;
   }
 }
 

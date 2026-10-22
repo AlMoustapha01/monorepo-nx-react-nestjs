@@ -1,5 +1,6 @@
 import { http, HttpResponse, delay } from 'msw';
 import { setupServer } from 'msw/node';
+import type { FeatureFlag } from '@nx-react-nestjs/contracts';
 import { ApiError } from './api-error';
 import { createApiClient } from './api-client';
 import { featureFlagsQueryOptions, isFeatureEnabled } from './feature-flags';
@@ -13,20 +14,22 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const api = createApiClient({ baseUrl: BASE });
+// Nom quelconque : le mécanisme ne dépend pas du catalogue du projet (qui peut être vide).
+const FLAG = 'demo' as unknown as FeatureFlag;
 
 describe('featureFlagsQueryOptions', () => {
   it('returns the flags from the API', async () => {
     server.use(
-      http.get(`${BASE}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
+      http.get(`${BASE}/feature-flags`, () => HttpResponse.json({ flags: { [FLAG]: true } })),
     );
     const data = await createQueryClient().fetchQuery(featureFlagsQueryOptions(api));
-    expect(isFeatureEnabled(data, 'storefront')).toBe(true);
+    expect(isFeatureEnabled(data, FLAG)).toBe(true);
   });
 
   it('treats a missing flag as disabled', async () => {
     server.use(http.get(`${BASE}/feature-flags`, () => HttpResponse.json({ flags: {} })));
     const data = await createQueryClient().fetchQuery(featureFlagsQueryOptions(api));
-    expect(isFeatureEnabled(data, 'orders.cancellation')).toBe(false);
+    expect(isFeatureEnabled(data, FLAG)).toBe(false);
   });
 
   it('falls back to all flags off and reports when the call fails', async () => {

@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   FEATURE_FLAGS,
   type FeatureFlag,
+  featureFlagDefinition,
   type FeatureFlagsResponse,
   featureFlagsResponseSchema,
 } from '@nx-react-nestjs/contracts';
@@ -12,7 +13,7 @@ import { FeatureFlags } from './feature-flags';
 class FeatureFlagsDto extends createZodDto(featureFlagsResponseSchema) {}
 
 const CLIENT_FLAGS = (Object.keys(FEATURE_FLAGS) as FeatureFlag[]).filter(
-  (flag) => FEATURE_FLAGS[flag].client,
+  (flag) => featureFlagDefinition(flag).client,
 );
 
 /** Le front adapte son interface ; l'API reste seule juge (@RequireFeature, cas d'usage). */

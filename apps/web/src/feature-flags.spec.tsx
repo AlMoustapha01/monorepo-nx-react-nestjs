@@ -9,6 +9,7 @@ import {
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import type { FeatureFlag } from '@nx-react-nestjs/contracts';
 import { createApiClient, createQueryClient } from '@nx-react-nestjs/web-data-access';
 
 import { requireFeature, useFeatureFlag } from './feature-flags';
@@ -25,20 +26,21 @@ afterEach(() => {
 afterAll(() => server.close());
 
 const api = createApiClient({ baseUrl: API });
+// Nom quelconque : le mécanisme ne dépend pas du catalogue du projet (qui peut être vide).
+const FLAG = 'demo' as unknown as FeatureFlag;
 const flagsAre = (flags: Record<string, boolean>) =>
   server.use(http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags })));
 
 describe('requireFeature', () => {
-  const guard = () =>
-    requireFeature('storefront')({ context: { queryClient: createQueryClient(), api } });
+  const guard = () => requireFeature(FLAG)({ context: { queryClient: createQueryClient(), api } });
 
   it('resolves when the flag is on', async () => {
-    flagsAre({ storefront: true });
+    flagsAre({ [FLAG]: true });
     await expect(guard()).resolves.toBeUndefined();
   });
 
   it('throws notFound when the flag is off', async () => {
-    flagsAre({ storefront: false });
+    flagsAre({ [FLAG]: false });
     await expect(guard()).rejects.toSatisfy(isNotFound);
   });
 
@@ -51,7 +53,7 @@ describe('requireFeature', () => {
 
 describe('useFeatureFlag', () => {
   function Probe() {
-    return <p>{useFeatureFlag('storefront') ? 'on' : 'off'}</p>;
+    return <p>{useFeatureFlag(FLAG) ? 'on' : 'off'}</p>;
   }
 
   function renderProbe() {
@@ -70,7 +72,7 @@ describe('useFeatureFlag', () => {
   }
 
   it('returns true when the flag is on', async () => {
-    flagsAre({ storefront: true });
+    flagsAre({ [FLAG]: true });
     renderProbe();
     expect(await screen.findByText('on')).toBeTruthy();
   });

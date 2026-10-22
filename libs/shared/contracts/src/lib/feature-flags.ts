@@ -32,6 +32,14 @@ export const FEATURE_FLAGS = {
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
 
+/**
+ * Définition d'un flag. À utiliser plutôt que `FEATURE_FLAGS[flag]` : le catalogue peut être vide
+ * (projet sans flag), `FeatureFlag` vaut alors `never` et l'accès direct ne compile plus.
+ */
+export function featureFlagDefinition(flag: FeatureFlag): FeatureFlagDefinition {
+  return FEATURE_FLAGS[flag];
+}
+
 export const featureFlagSchema = z.enum(
   Object.keys(FEATURE_FLAGS) as [FeatureFlag, ...FeatureFlag[]],
 );

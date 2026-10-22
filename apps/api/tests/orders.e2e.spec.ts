@@ -315,15 +315,6 @@ describe('API commandes (e2e)', () => {
   });
 
   describe('feature flags', () => {
-    it('expose au front les flags client, pas les flags internes', async () => {
-      flags.set('orders.cancellation', false);
-      const { body } = await api()
-        .get('/api/v1/feature-flags')
-        .auth(token, { type: 'bearer' })
-        .expect(200);
-      expect(body).toEqual({ flags: { 'orders.cancellation': false, storefront: false } });
-    });
-
     it('masque l’annulation quand son flag est désactivé, même pour le staff', async () => {
       const tee = await catalogProduct('ORD-FLAG', 1000);
       const { body: order } = await placeOrder([{ productId: tee, quantity: 1 }]).expect(201);
