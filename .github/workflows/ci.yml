@@ -50,6 +50,12 @@ jobs:
       - name: Scripts de dev
         run: pnpm typecheck:tools && pnpm test:tools
 
+      # Échoue si un scénario d'une spec Implemented ou Shipped n'a pas de test, ou si un test
+      # cite un scénario absent ou retiré. Avertit (sans échouer) quand des tests qui citent
+      # une feature changent sans son spec.md. NX_BASE vient de nx-set-shas.
+      - name: Specs à jour
+        run: pnpm -s spec:trace --base "$NX_BASE"
+
       - name: Code mort et dépendances inutilisées
         run: pnpm knip
 

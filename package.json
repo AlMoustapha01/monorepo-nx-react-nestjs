@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "check": "oxfmt --check . && nx run-many -t lint typecheck test && tsc -p tools/dev/tsconfig.json && pnpm test:tools && knip",
+    "check": "oxfmt --check . && nx run-many -t lint typecheck test && tsc -p tools/dev/tsconfig.json && pnpm test:tools && pnpm -s spec:trace && knip",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "knip": "knip",
