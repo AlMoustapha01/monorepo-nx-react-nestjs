@@ -53,3 +53,6 @@ vitest.config.*.timestamp*
 
 # Brainstorming mockups (superpowers)
 .superpowers/
+
+# Spec Kit extension catalog cache
+.specify/extensions/.cache/

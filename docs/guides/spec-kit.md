@@ -31,6 +31,16 @@ Une fois mergée, `spec.md` décrit le comportement actuel ; `plan.md` et `tasks
 
 `pnpm -s spec:trace specs/<NNN-nom>` limite le contrôle à une spec, en mode strict. En CI, `--base` ajoute un avertissement (annotation de PR, sans échec) quand des tests qui citent une feature changent sans son `spec.md` : un renommage ne change pas le comportement, la revue tranche.
 
+## Branche de la fonctionnalité
+
+`/speckit-specify` commence par créer la branche de la fonctionnalité et s'y placer : c'est le hook `before_specify` de l'extension `git` de Spec Kit (`.specify/extensions.yml`, skill `/speckit-git-feature`). Les règles ajoutées par le preset (`tools/spec-kit/preset/commands/speckit.specify.md`) :
+
+- l'agent s'arrête si l'arbre a des modifications non commitées, et demande avant de partir d'une autre branche que `main` ;
+- la branche se nomme `NNN-<nom>`, numérotée après les dossiers de `specs/` et toutes les branches locales et distantes : deux fonctionnalités en cours n'ont jamais le même numéro ;
+- le dossier de la spec porte le même nom (`specs/NNN-<nom>`).
+
+Seul ce hook est branché. L'extension en propose d'autres (initialisation du repo, commits automatiques après chaque commande) : `specify extension update git` les remet dans `.specify/extensions.yml`, il faut alors les retirer. Le format du nom (préfixe, auteur) se règle dans `.specify/extensions/git/git-config.yml`.
+
 ## Personnaliser les templates ou les règles TDD
 
 La source est `tools/spec-kit/preset/`. Après une modification :

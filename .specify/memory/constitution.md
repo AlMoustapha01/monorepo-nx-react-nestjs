@@ -24,9 +24,9 @@ Every Redis key has a TTL; every external call has a timeout, and goes through a
 
 Migrations are generated (`pnpm nx run api:db-generate --name=<topic>`), never edited by hand, and backward compatible (expand/contract), because old instances keep running while they apply. See `AGENTS.md` § "Principes non négociables", point 5, and § "Déploiement".
 
-### VI. Small, Flagged Increments
+### VI. Flagged Increments
 
-Every new feature ships behind a feature flag, disabled by default. A pull request stays under 500 changed lines. See `AGENTS.md` § "Principes non négociables", point 6, and § "Conventions" (feature flags).
+Every new feature ships behind a feature flag, disabled by default. Each user story is delivered in its own pull request. See `AGENTS.md` § "Principes non négociables", point 6, and § "Conventions" (feature flags).
 
 ### VII. Domain Boundaries
 
@@ -47,7 +47,8 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 ## Development Workflow
 
 - A feature lives in `specs/NNN-<name>/` (`spec.md`, `plan.md`, `tasks.md` and their companions), written in English.
-- One user story per pull request; split a story that would exceed 500 lines.
+- A feature is developed on its own branch, `NNN-<name>`, which `/speckit-specify` creates (`before_specify` hook of the git extension) and whose name is also the spec directory's.
+- One user story per pull request.
 - `/speckit-implement` and `/speckit-converge` run until converge reports **Converged**, which requires a test for every acceptance scenario.
 - Once merged, `spec.md` describes the current behavior and stays current: a pull request that changes a specified behavior updates its spec; a scenario is retired, never deleted or renumbered; the spec's status (`Draft`, `Implemented`, `Shipped`, `Retired`) follows the feature's lifecycle. `plan.md` and `tasks.md` are history and are not updated. `pnpm -s spec:trace` enforces it in CI.
 
@@ -55,4 +56,4 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 
 `AGENTS.md` is changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 2.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
