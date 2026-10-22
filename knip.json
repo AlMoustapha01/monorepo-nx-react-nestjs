@@ -3,6 +3,9 @@
   "entry": [
     "apps/api/src/{main,worker,migrate}.ts",
     "apps/auth/src/{main,migrate}.ts",
+    "apps/web-e2e/playwright.config.ts",
+    "apps/web-e2e/src/global-setup.ts",
+    "apps/web-e2e/src/**/*.spec.ts",
     "apps/api/drizzle.config.ts",
     "libs/*/*/src/index.ts",
     "libs/api/core/src/testing.ts",
@@ -19,6 +22,7 @@
   "project": [
     "apps/api/**/*.ts",
     "apps/auth/**/*.ts",
+    "apps/web-e2e/**/*.ts",
     "apps/web/**/*.{ts,tsx}",
     "libs/**/*.{ts,tsx}",
     "tools/**/*.mts"

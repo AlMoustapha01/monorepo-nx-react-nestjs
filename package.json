@@ -63,6 +63,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@babel/core": "^7.29.7",
     "@lingui/babel-plugin-lingui-macro": "^6.10.0",
     "@lingui/cli": "^6.10.0",
@@ -81,6 +82,7 @@
     "@nx/web": "23.3.0",
     "@nx/webpack": "23.3.0",
     "@nx/workspace": "23.3.0",
+    "@playwright/test": "~1.64.1",
     "@rolldown/plugin-babel": "^0.2.4",
     "@size-limit/file": "^14.2.0",
     "@storybook/react-vite": "^10.6.3",

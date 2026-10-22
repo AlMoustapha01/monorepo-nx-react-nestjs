@@ -67,4 +67,14 @@ Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés d
 
 ## Différé volontairement
 
-Jotai, Sentry, Playwright + axe.
+Jotai, Sentry.
+
+## Parcours navigateur (`apps/web-e2e`)
+
+Playwright contre la vraie stack, démarrée une fois par exécution (`src/stack.ts`) : Postgres, Redis et Mailpit via Testcontainers, les vraies migrations (`migrate.js`), le service d'auth et l'API compilés (JWKS), le front construit et servi par `vite preview` (ports 4310, 3310, 3110). Les process tournent dans un dossier vide : un `.env` local ne s'en mêle pas.
+
+- Lancer : `pnpm nx run web-e2e:e2e` (Docker requis ; `pnpm exec playwright install chromium` la première fois). Rapport, traces, captures et journaux des services : `dist/.playwright/apps/web-e2e`.
+- Un parcours couvre ce qu'un test unitaire ne voit pas : redirections entre services, emails (lus dans Mailpit, `linkFromEmail`), cookies, tokens, plusieurs tenants. Le reste se teste en Vitest.
+- Chaque test crée ses propres comptes (`uniqueEmail`) : ils tournent en parallèle sur la même base. Préparer les données par l'API (`createAccount`, `createOrganization`, `invite`, `publishProduct`), et ne passer par l'interface que pour ce qui est testé.
+- Accessibilité : `@axe-core/playwright`, WCAG 2.1 A et AA, sur les pages publiques et l'app connectée. Une page nouvelle s'ajoute à `accessibility.spec.ts`.
+- Le projet ne dépend d'aucune lib (`scope:e2e`) : il teste l'app de l'extérieur.
