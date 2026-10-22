@@ -1,50 +1,56 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Nx React NestJS Boilerplate Constitution
+
+`AGENTS.md` at the repository root is the detailed reference for every rule below, and it prevails whenever the two differ. This constitution names the principles that every spec, plan and task is checked against; it does not restate `AGENTS.md`.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Tenant Isolation
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Every business table has a `tenant_id` column, and no repository reads or writes without filtering on it. The tenant comes from `RequestContext`, never from a request parameter. See `AGENTS.md` § "Principes non négociables", point 1.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Typed Business Errors
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Every business error is a subclass of `AppError` with a stable code from a literal union. `throw new Error()` is forbidden outside `infra/` and bootstrap code. Conversion to HTTP (RFC 9457) happens only in `ProblemDetailsFilter`. See `AGENTS.md` § "Principes non négociables", point 2.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Secure by Default
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Every route is authenticated by default; `@Public()` is the only explicit exception. Every route that changes data shared by the tenant declares its role (`@RequireRole`). Access to a resource is a business rule enforced in the use case, and a resource the caller may not see answers 404. See `AGENTS.md` § "Principes non négociables", point 3, and § "Autorisations".
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Bounded External Calls
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Every Redis key has a TTL; every external call has a timeout, and goes through a queue when it is slow. See `AGENTS.md` § "Principes non négociables", point 4.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Generated, Backward-Compatible Migrations
+
+Migrations are generated (`pnpm nx run api:db-generate --name=<topic>`), never edited by hand, and backward compatible (expand/contract), because old instances keep running while they apply. See `AGENTS.md` § "Principes non négociables", point 5, and § "Déploiement".
+
+### VI. Small, Flagged Increments
+
+Every new feature ships behind a feature flag, disabled by default. A pull request stays under 500 changed lines. See `AGENTS.md` § "Principes non négociables", point 6, and § "Conventions" (feature flags).
+
+### VII. Domain Boundaries
+
+Each business domain is an Nx library under `libs/api/<domain>` and exposes only its facade from `src/index.ts`. A domain consumes another one through a port in `application/` and an adapter in `infra/` that delegates to the other facade. Each domain owns its Postgres schema, with no join or foreign key into another domain's tables. Asynchronous reactions go through versioned integration events (outbox), never through a synchronous call. `domain/` imports neither NestJS, Drizzle nor `pg`. See `AGENTS.md` § "Règles de frontières" and § "Événements d'intégration".
+
+### VIII. Test-First (NON-NEGOTIABLE)
+
+No production code is written without a test that failed first, for the expected reason. Every change follows red → green → refactor. Every acceptance scenario of a spec is covered by an automated test. Test levels:
+
+- unit tests on `domain/` and `application/`, with in-memory fakes and no ORM mocks;
+- integration tests (`*.int.spec.ts`) against a real Postgres (Testcontainers);
+- API end-to-end tests (`apps/api/tests/*.e2e.spec.ts`) through `configureApp` and supertest;
+- browser journeys (`apps/web-e2e`, Playwright) for user-facing flows.
+
+See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGENTS.md` for the front end.
+
+## Development Workflow
+
+- A feature lives in `specs/NNN-<name>/` (`spec.md`, `plan.md`, `tasks.md` and their companions), written in English.
+- One user story per pull request; split a story that would exceed 500 lines.
+- `/speckit-implement` and `/speckit-converge` run until converge reports **Converged**, which requires a test for every acceptance scenario.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+`AGENTS.md` is changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
