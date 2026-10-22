@@ -114,7 +114,7 @@ export function CartPage({ api }: { api: ApiClient }) {
         <Text tone="muted">
           <Trans>Votre panier est vide</Trans>
         </Text>
-        <Link to="/" className={buttonVariants({ variant: 'outline' })}>
+        <Link to="/boutique" className={buttonVariants({ variant: 'outline' })}>
           <Trans>Voir le catalogue</Trans>
         </Link>
       </Stack>

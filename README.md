@@ -35,7 +35,7 @@ pnpm dev:seed                                           # autre terminal : produ
 VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web   # http://localhost:4200
 ```
 
-Ce mode n'utilise pas le service d'identité : le front envoie un token de dev à l'API. Pour la boutique d'exemple, ajouter `FEATURE_FLAGS=storefront=true` dans `.env` puis relancer l'API. Pour se connecter avec de vrais comptes : [Authentification en local](docs/guides/auth-en-local.md).
+Ce mode n'utilise pas le service d'identité : le front envoie un token de dev à l'API. Pour la boutique d'exemple (`/boutique`), ajouter `FEATURE_FLAGS=storefront=true` dans `.env` puis relancer l'API. Pour se connecter avec de vrais comptes : [Authentification en local](docs/guides/auth-en-local.md).
 
 `pnpm check` lance toutes les vérifications de la CI.
 

@@ -23,12 +23,12 @@ test('un formulaire en erreur reste accessible', async ({ page }) => {
   expect(violations).toEqual([]);
 });
 
-test('le catalogue et l’en-tête d’un utilisateur connecté sont accessibles', async ({ page }) => {
+test('l’accueil et l’en-tête d’un utilisateur connecté sont accessibles', async ({ page }) => {
   const account = await createAccount('a11y');
   await createOrganization(account, 'Boutique');
   await page.goto('/connexion');
   await signIn(page, account.email);
-  await expect(page.getByRole('heading', { name: 'Catalogue' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(violations).toEqual([]);
 });

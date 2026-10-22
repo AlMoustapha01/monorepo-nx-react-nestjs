@@ -71,7 +71,9 @@ export async function startStack(): Promise<Stack> {
       PORT: String(E2E_PORTS.api),
       REDIS_URL: redis.getConnectionUrl(),
       AUTH_JWKS_URL: `${authUrl}/api/auth/jwks`,
+      // example:start
       FEATURE_FLAGS: 'storefront=true',
+      // example:end
       RATE_LIMIT_MAX: '10000',
     };
     const authEnv = {

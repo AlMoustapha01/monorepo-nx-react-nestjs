@@ -5,11 +5,11 @@ import { PASSWORD, linkFromEmail, uniqueEmail } from './support';
 test('inscription, confirmation de l’email, puis création de l’organisation', async ({ page }) => {
   const email = uniqueEmail('signup');
 
-  await page.goto('/commandes');
-  await expect(page).toHaveURL('/connexion?redirect=%2Fcommandes');
+  await page.goto('/');
+  await expect(page).toHaveURL('/connexion?redirect=%2F');
 
   await page.getByRole('link', { name: 'Créer un compte' }).click();
-  await expect(page).toHaveURL('/inscription?redirect=%2Fcommandes');
+  await expect(page).toHaveURL('/inscription?redirect=%2F');
   await page.getByLabel('Nom').fill('Ada');
   await page.getByLabel('Adresse email').fill(email);
   await page.getByLabel('Mot de passe').fill(PASSWORD);
@@ -23,8 +23,7 @@ test('inscription, confirmation de l’email, puis création de l’organisation
 
   await page.getByLabel("Nom de l'organisation").fill('Atelier Ada');
   await page.getByRole('button', { name: 'Créer' }).click();
-  await expect(page.getByRole('heading', { name: 'Catalogue' })).toBeVisible();
-  await expect(page.getByText('Aucun produit pour le moment')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
   await expect(page.getByText('Atelier Ada')).toBeVisible();
 });
