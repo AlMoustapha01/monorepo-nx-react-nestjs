@@ -46,7 +46,7 @@
       }
     },
     {
-      "files": ["**/*.spec.tsx", "**/*.stories.tsx", "**/routeTree.gen.ts"],
+      "files": ["**/*.spec.tsx", "**/*.stories.tsx", "**/routeTree.gen.ts", "src/testing/**"],
       "rules": {
         "lingui/no-unlocalized-strings": "off"
       }
