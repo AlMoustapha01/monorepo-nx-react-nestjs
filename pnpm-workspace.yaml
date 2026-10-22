@@ -23,3 +23,7 @@ auditConfig:
     # braces (via @lingui/cli > micromatch) : aucune version corrigée. Outil de dev, qui ne lit que
     # les motifs de la config du repo, jamais une entrée d'utilisateur.
     - GHSA-vfj7-8cjw-p6xm
+    # esbuild <= 0.24 (via better-auth > drizzle-kit, peer optionnel) : la faille touche son serveur
+    # de dev (esbuild --serve), jamais lancé ici, et les images s'installent sans dépendances
+    # optionnelles (Dockerfile). Compté en prod par l'audit à cause du chemin via better-auth.
+    - GHSA-67mh-4wv8-2f99
