@@ -9,6 +9,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Première installation : `.env`, Postgres, Redis, Mailpit, migrations  | `pnpm install && pnpm dev:setup`                                                                                     |
 | Lancer l'API                                                          | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
 | Nouveau projet : renommer le scope `@nx-react-nestjs`                 | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
+| Retirer le code d'exemple, avant le premier déploiement               | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                      |
 | Données de démo (API démarrée)                                        | `pnpm dev:seed`                                                                                                      |
 | Token pour appeler l'API (Swagger, curl)                              | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
 | Lancer le service d'identité (Better Auth)                            | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
@@ -56,7 +57,11 @@ tools/dev/spec-trace.mts    matrice scénario → tests (`pnpm -s spec:trace`)
 
 Conventions du front : [`apps/web/AGENTS.md`](apps/web/AGENTS.md) et [`libs/web/AGENTS.md`](libs/web/AGENTS.md).
 
-Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de ventes alimenté par événements), `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade, publication d'événements) et `libs/api/notifications` (domaine purement réactif : aucun controller, seulement des handlers).
+<!-- example:start -->
+
+Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de ventes alimenté par événements), `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade, publication d'événements) et `libs/api/notifications` (domaine purement réactif : aucun controller, seulement des handlers). Le code propre aux exemples est dans ses propres fichiers ou entre des lignes `example:start` et `example:end` : `pnpm strip:examples` les retire, et la CI vérifie qu'un projet sans exemples passe `pnpm check`. Un nouvel exemple suit la même règle.
+
+<!-- example:end -->
 
 ## Règles de frontières
 
@@ -81,8 +86,13 @@ Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de 
 - Tout utilisateur authentifié est un **client**. Un rôle ajoute des droits ; il vient de la claim `roles` du JWT (`staff` aujourd'hui, liste `ROLES` dans api-core). Un rôle inconnu est ignoré.
 - **Rôle requis par une route** : `@RequireRole('staff')` sur la méthode ou le controller ; le `RolesGuard` global renvoie 403 `FORBIDDEN`.
 - **Accès à une ressource** (propriété, visibilité) : c'est une règle métier, appliquée dans le cas d'usage avec `RequestContext` (`userId`, `hasRole`), jamais dans le controller. Une ressource qu'on n'a pas le droit de voir répond **404**, comme si elle n'existait pas : on ne révèle pas son existence.
-- Règles actuelles : un client ne voit que les produits publiés et que ses commandes ; le staff gère le catalogue et voit toutes les commandes du tenant.
 - Un handler d'événement s'exécute au nom de l'auteur de l'événement, sans rôle : il passe par les repositories, pas par les cas d'usage soumis à autorisation.
+
+<!-- example:start -->
+
+- Règles actuelles : un client ne voit que les produits publiés et que ses commandes ; le staff gère le catalogue et voit toutes les commandes du tenant.
+
+<!-- example:end -->
 
 ## Événements d'intégration (outbox + BullMQ)
 
@@ -121,7 +131,13 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 
 ## Développer une fonctionnalité (Spec Kit)
 
-Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spec Kit](https://github.com/github/spec-kit) (1.2.2), installé et configuré dans le repo pour Claude Code. Le code existant (`catalog`, `orders`, `notifications`, front) n'a pas de spec : ce sont des exemples.
+Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spec Kit](https://github.com/github/spec-kit) (1.2.2), installé et configuré dans le repo pour Claude Code.
+
+<!-- example:start -->
+
+Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a pas de spec.
+
+<!-- example:end -->
 
 - **Cycle**, dans Claude Code :
   1. `/speckit-specify <description>` : le quoi et le pourquoi, dans `specs/NNN-<nom>/spec.md`, sans technique ;
@@ -152,7 +168,7 @@ Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spe
 - Identifiants métier : `<PRÉFIXE>-<suffixe>` (`PRD-…`, `ORD-…`), générés par `domainIdGenerator` (api-core) et validés par `domainIdSchema` (contracts). Le suffixe commence par l'horodatage, donc les IDs se trient par création. Préfixe déclaré une fois dans les contrats du domaine (`ORDER_ID_PREFIX`). En base : `text COLLATE "C"`. `tenantId` et les IDs d'utilisateur restent des UUID : ils viennent du fournisseur d'identité.
 - Idempotence : toute route qui crée une ressource à effet métier (commande, paiement…) porte `@Idempotent({ required: true })`. Le client envoie `Idempotency-Key` (UUID) et peut réessayer : même clé et même requête → réponse rejouée (`Idempotent-Replayed: true`), même clé et requête différente → 422. La clé est écrite dans la même transaction que l'effet ; une erreur ne la consomme pas.
 - Verrou optimiste : tout agrégat modifiable a une colonne `version`. Le repository n'écrit que si la version n'a pas bougé (sinon `<AGRÉGAT>_VERSION_CONFLICT`, 409) puis appelle `markPersisted()`. Si des clients éditent la ressource, exposer `version` et `ETag` (`etagFor`), lire `If-Match` (`@IfMatchVersion()`) et appeler `assertExpectedVersion` dans le cas d'usage (412). Une projection (ex. `soldCount`) n'avance pas la version.
-- Feature flags : déclarés dans `FEATURE_FLAGS` (contracts) avec une description, une valeur par défaut et `client` (exposé au front par `GET /api/v1/feature-flags`). Une route derrière un flag porte `@RequireFeature('<flag>')` (404 `FEATURE_DISABLED` quand il est coupé) ; ailleurs, injecter `FeatureFlags` et appeler `isEnabled`. La définition d'un flag se lit par `featureFlagDefinition(flag)`, pas `FEATURE_FLAGS[flag]` : le catalogue peut être vide. Valeurs surchargées par `FEATURE_FLAGS=orders.cancellation=false,...` (un nom inconnu bloque le démarrage). Tests : `StaticFeatureFlags` (`api-core/testing`), en e2e via `overrideProvider(FeatureFlags)` ; les tests du mécanisme (core, data-access, web) n'utilisent pas les flags du projet. Une fois la fonctionnalité déployée partout, supprimer le flag.
+- Feature flags : déclarés dans `FEATURE_FLAGS` (contracts) avec une description, une valeur par défaut et `client` (exposé au front par `GET /api/v1/feature-flags`). Une route derrière un flag porte `@RequireFeature('<flag>')` (404 `FEATURE_DISABLED` quand il est coupé) ; ailleurs, injecter `FeatureFlags` et appeler `isEnabled`. La définition d'un flag se lit par `featureFlagDefinition(flag)`, pas `FEATURE_FLAGS[flag]` : le catalogue peut être vide. Valeurs surchargées par `FEATURE_FLAGS=mon.flag=false,...` (un nom inconnu bloque le démarrage). Tests : `StaticFeatureFlags` (`api-core/testing`), en e2e via `overrideProvider(FeatureFlags)` ; les tests du mécanisme (core, data-access, web) n'utilisent pas les flags du projet. Une fois la fonctionnalité déployée partout, supprimer le flag.
 - Argent : entier en unités mineures (`amountMinor`) + devise ISO. Jamais de flottant.
 - Pagination : par curseur (`limit`, `cursor` → `items`, `nextCursor`), triée par `(created_at, id)` décroissants.
 - API versionnée par URI : `/api/v1/...`. `/health` et `/ready` restent hors préfixe.

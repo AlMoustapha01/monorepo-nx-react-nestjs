@@ -24,7 +24,7 @@ export interface DevPrincipal {
   tenantId: string;
   userId: string;
   email?: string;
-  /** `staff` pour gérer le catalogue et voir toutes les commandes du tenant. */
+  /** Rôles de la claim `roles` (`staff` : gestion du tenant). */
   roles?: string[];
 }
 
@@ -44,6 +44,8 @@ export function signDevToken(principal: DevPrincipal, expiresIn = '12h'): Promis
     .sign(new TextEncoder().encode(env('AUTH_JWT_SECRET')));
 }
 
+// example:start
 export function apiBaseUrl(): string {
   return `http://localhost:${process.env['PORT'] ?? '3000'}`;
 }
+// example:end

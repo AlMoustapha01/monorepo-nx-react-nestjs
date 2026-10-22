@@ -23,7 +23,7 @@ const IDEMPOTENT_KEY = 'http:idempotent';
 /** ASCII imprimable, 1 à 255 caractères (un UUID v4 généré par le client est l'usage courant). */
 const KEY_PATTERN = /^[\x21-\x7e]{1,255}$/;
 
-export interface IdempotentOptions {
+interface IdempotentOptions {
   /** true : une requête sans `Idempotency-Key` est refusée (400). */
   required?: boolean;
 }

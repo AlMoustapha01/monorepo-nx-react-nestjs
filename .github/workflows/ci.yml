@@ -101,6 +101,31 @@ jobs:
           path: dist/.playwright/apps/web-e2e
           retention-days: 7
 
+  # Sans les exemples, tout passe encore : le script et ses marqueurs ne se périment pas en silence.
+  strip-examples:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Retirer les exemples
+        run: pnpm strip:examples
+
+      # Tests d'intégration et e2e via Testcontainers, comme dans le job check.
+      - name: Vérifications
+        run: pnpm check
+
   # Les images de production se construisent : Dockerfile, build webpack et dépendances runtime.
   image:
     runs-on: ubuntu-24.04

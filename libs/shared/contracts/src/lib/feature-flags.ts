@@ -13,6 +13,7 @@ export interface FeatureFlagDefinition {
  * fonctionnalité déployée partout, on supprime le flag et les branches mortes.
  */
 export const FEATURE_FLAGS = {
+  // example:start
   'orders.cancellation': {
     description: 'Un client peut annuler sa commande.',
     default: true,
@@ -28,6 +29,7 @@ export const FEATURE_FLAGS = {
     default: false,
     client: true,
   },
+  // example:end
 } as const satisfies Record<string, FeatureFlagDefinition>;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

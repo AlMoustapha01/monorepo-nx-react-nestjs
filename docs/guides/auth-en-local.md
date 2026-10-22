@@ -18,8 +18,8 @@ L'API vérifie les tokens avec **l'un ou l'autre** de ces réglages du `.env`, j
 Aucune connexion : `pnpm -s dev:token` signe un token avec le secret, pour un utilisateur et un tenant de dev fixes.
 
 ```sh
-pnpm -s dev:token                    # client de dev : catalogue publié, ses commandes
-pnpm -s dev:token --staff            # staff de dev : gère le catalogue, voit tout le tenant
+pnpm -s dev:token                    # client de dev, sans rôle
+pnpm -s dev:token --staff            # staff de dev : gestion du tenant
 pnpm -s dev:token --new-tenant       # un autre tenant, vide
 pnpm -s dev:token --tenant <uuid> --user <uuid> --email a@b.c --expires 1h
 pnpm -s dev:token --no-email
@@ -39,7 +39,7 @@ Dans le front : `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`. Le toke
    pnpm nx serve api
    ```
 
-3. `pnpm dev:seed` crée l'organisation « Boutique de démo » (le tenant), ses produits et deux comptes, avec le mot de passe `demo-password-1234` :
+3. `pnpm dev:seed` crée l'organisation « Boutique de démo » (le tenant), deux comptes et les données de démo, avec le mot de passe `demo-password-1234` :
    - `staff@shop.local` : propriétaire de l'organisation, rôle `staff` ;
    - `dev@shop.local` : membre, client.
 4. Lancer le front **sans** `VITE_DEV_TOKEN` : `pnpm nx serve web`, puis se connecter sur http://localhost:4200/connexion.
