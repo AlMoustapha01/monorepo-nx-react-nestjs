@@ -10,7 +10,7 @@ Prérequis : le projet tourne en local ([README](../../README.md#démarrer)) et 
 
 | Étape          | Commande                                  | Produit (`specs/NNN-<nom>/`)                               | Vous relisez                                             |
 | -------------- | ----------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
-| 1. Spécifier   | `/speckit-specify <description>`          | `spec.md`                                                  | Chaque scénario se vérifie sans jugement humain          |
+| 1. Spécifier   | `/speckit-specify <description>`          | La branche `NNN-<nom>`, `spec.md`                          | Chaque scénario se vérifie sans jugement humain          |
 | 2. Clarifier   | `/speckit-clarify`                        | `spec.md` (section Clarifications)                         | Les réponses sont reportées dans les exigences           |
 | 3. Planifier   | `/speckit-plan`                           | `plan.md`, `research.md`, `data-model.md`, `contracts/`    | Chaque principe de la constitution, un test par scénario |
 | 4. Découper    | `/speckit-tasks`, puis `/speckit-analyze` | `tasks.md`                                                 | Les incohérences signalées, corrigées dans les documents |
@@ -19,23 +19,17 @@ Prérequis : le projet tourne en local ([README](../../README.md#démarrer)) et 
 
 Les specs, plans et tâches sont en anglais, même si vous décrivez la fonctionnalité en français.
 
-## 0. Créer la branche
-
-Spec Kit ne crée pas de branche : créez-la avant de commencer, avec le numéro et le nom que prendra la spec (`001` pour la première, puis la suite).
-
-```sh
-git switch -c 001-announcements
-```
-
-La fonctionnalité en cours est mémorisée dans `.specify/feature.json` (ignoré par git) : les commandes suivantes la retrouvent sans argument.
-
 ## 1. Spécifier : le quoi et le pourquoi
+
+Partez de `main` à jour, arbre propre :
 
 ```
 /speckit-specify Annonces : le staff d'une organisation publie des annonces courtes (titre, texte) ; tous les membres de l'organisation voient les annonces publiées sur la page d'accueil, la plus récente en premier. Le staff peut retirer une annonce.
 ```
 
-La commande crée `specs/001-announcements/spec.md` et une checklist de qualité. Elle peut déjà poser jusqu'à trois questions (`[NEEDS CLARIFICATION]`) quand un point bloque l'écriture ; ici, la longueur maximale du titre et du texte, et si une annonce retirée peut être restaurée.
+La commande crée d'abord la branche `001-announcements` et s'y place (hook de l'extension `git` de Spec Kit) : elle s'arrête si l'arbre a des modifications non commitées, et demande confirmation si vous n'êtes pas sur `main`. Le numéro suit les specs et les branches existantes, locales et distantes. Elle écrit ensuite `specs/001-announcements/spec.md`, du même nom que la branche, et une checklist de qualité. La fonctionnalité en cours est mémorisée dans `.specify/feature.json` (ignoré par git) : les commandes suivantes la retrouvent sans argument.
+
+Elle peut déjà poser jusqu'à trois questions (`[NEEDS CLARIFICATION]`) quand un point bloque l'écriture ; ici, la longueur maximale du titre et du texte, et si une annonce retirée peut être restaurée.
 
 La spec ne parle pas de technique : des user stories, chacune avec ses scénarios d'acceptation numérotés, des exigences et des critères de succès. En tête, le statut :
 
@@ -148,15 +142,9 @@ La section **Test Strategy** associe chaque scénario à un niveau de test et à
 
 `/speckit-analyze` ne modifie rien : il compare spec, plan et tâches. Prenez ses remarques au sérieux. Ici, il a trouvé une vraie contradiction : la spec disait qu'un second retrait simultané répond « n'existe plus », le plan prévoyait un 409. La correction se fait dans les documents (plan, tâches), puis on relance l'analyse.
 
-### Prévoir le découpage en PR
+### Une user story par PR
 
-Une PR fait moins de 500 lignes, et en principe une user story par PR. Une story qui crée un domaine API **et** une lib front ne tient pas : sur Annonces, la phase Foundational fait environ 800 lignes et US1 environ 840. Décidez le découpage dès maintenant et notez-le dans « Complexity Tracking », par exemple :
-
-1. contrats, entité, repository et migration ;
-2. l'API de US1 ;
-3. le front de US1.
-
-Le flag reste coupé tant que la dernière PR n'est pas mergée : chaque PR est déployable seule.
+Chaque user story part dans sa propre PR. La première embarque aussi la phase Foundational (contrats, entité, repository, migration) : sur Annonces, environ 1 600 lignes pour US1, tests compris. Le flag reste coupé tant que la dernière story n'est pas mergée : chaque PR est déployable seule.
 
 ## 5. Implémenter, en TDD
 
@@ -211,7 +199,7 @@ Après US1, la spec reste donc `Draft` : les scénarios de US2 n'ont pas encore 
 
 ## 7. Ouvrir la PR
 
-Avant d'ouvrir chaque PR :
+Avant d'ouvrir la PR :
 
 ```sh
 pnpm check
