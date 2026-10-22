@@ -8,6 +8,7 @@ Le comportement des fonctionnalités d'un projet n'est pas décrit ici, mais dan
 
 | …                                                                        | Lire                                                         |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| Démarrer un nouveau projet : renommer le scope, retirer les exemples     | [Démarrer un projet](guides/demarrer-un-projet.md)           |
 | Lancer le projet pour la première fois                                   | [README](../README.md#démarrer)                              |
 | Me connecter avec de vrais comptes, utiliser un autre fournisseur        | [Authentification en local](guides/auth-en-local.md)         |
 | Corriger une faille de dépendance, comprendre Renovate                   | [Dépendances et failles](guides/dependances.md)              |

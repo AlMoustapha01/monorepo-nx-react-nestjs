@@ -8,6 +8,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Première installation : `.env`, Postgres, Redis, Mailpit, migrations  | `pnpm install && pnpm dev:setup`                                                                                     |
 | Lancer l'API                                                          | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
+| Nouveau projet : renommer le scope `@nx-react-nestjs`                 | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
 | Données de démo (API démarrée)                                        | `pnpm dev:seed`                                                                                                      |
 | Token pour appeler l'API (Swagger, curl)                              | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
 | Lancer le service d'identité (Better Auth)                            | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
