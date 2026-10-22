@@ -48,7 +48,7 @@ jobs:
         run: pnpm nx affected -t lint typecheck test build i18n-check size --parallel=3
 
       - name: Scripts de dev
-        run: pnpm typecheck:tools
+        run: pnpm typecheck:tools && pnpm test:tools
 
       - name: Code mort et dépendances inutilisées
         run: pnpm knip
