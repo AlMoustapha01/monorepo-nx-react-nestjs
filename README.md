@@ -1,5 +1,7 @@
 # NxReactNestjs
 
+Les fonctionnalités se développent avec [Spec Kit](https://github.com/github/spec-kit), déjà configuré pour Claude Code : spec, plan, tâches, puis implémentation en TDD, en commençant par `/speckit-specify <description>`. Voir [`AGENTS.md`](AGENTS.md), section « Développer une fonctionnalité (Spec Kit) ».
+
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
 ✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
