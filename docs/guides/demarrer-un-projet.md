@@ -48,25 +48,13 @@ rm -r libs/api/catalog libs/api/orders libs/api/notifications \
 - `tsconfig.base.json` : retirer les alias `api-catalog`, `api-orders`, `api-notifications` et `web-storefront`.
 - `libs/shared/contracts/src/index.ts` : retirer les exports de `catalog/product`, `orders/order` et `orders/order.events`.
 - `apps/api/src/app/app.module.ts` : `imports: [CoreModule]`.
-- `apps/api/tests/rate-limit.e2e.spec.ts` : remplacer `/api/v1/catalog/products` par `/api/v1/feature-flags` (route authentifiée de core).
 
-**Feature flags.** Le catalogue `FEATURE_FLAGS` ne contient que des flags d'exemple et peut rester vide, mais `FeatureFlag` devient alors `never` et `FEATURE_FLAGS[flag].default` ne compile plus. Dans `libs/shared/contracts/src/lib/feature-flags.ts` :
+**Feature flags** : vider le catalogue, qui ne contient que des flags d'exemple. Le cœur et les tests du mécanisme ne dépendent pas de son contenu.
 
 ```ts
+// libs/shared/contracts/src/lib/feature-flags.ts
 export const FEATURE_FLAGS = {} as const satisfies Record<string, FeatureFlagDefinition>;
-
-export type FeatureFlag = keyof typeof FEATURE_FLAGS;
-
-/** Définition d'un flag. Typée explicitement : le catalogue peut être vide (`FeatureFlag` = `never`). */
-export function featureFlagDefinition(flag: FeatureFlag): FeatureFlagDefinition {
-  return FEATURE_FLAGS[flag];
-}
 ```
-
-Puis, dans api-core, remplacer `FEATURE_FLAGS[flag].default` par `featureFlagDefinition(flag).default` (`feature-flags.ts`, `testing.ts`) et `FEATURE_FLAGS[flag].client` par `featureFlagDefinition(flag).client` (`feature-flags.controller.ts`). Les tests qui citaient les flags d'exemple :
-
-- `libs/api/core/src/lib/feature-flags/feature-flags.spec.ts` : `vi.mock('@acme/contracts')` avec un catalogue de test (`test.on`, `test.off`) ;
-- `libs/web/data-access/src/lib/feature-flags.spec.ts` et `apps/web/src/feature-flags.spec.tsx` : `const FLAG = 'demo' as unknown as FeatureFlag`.
 
 **Front**
 
