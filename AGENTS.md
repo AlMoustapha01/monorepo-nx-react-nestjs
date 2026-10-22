@@ -21,13 +21,14 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Traces en local (Grafana sur http://localhost:3001)                   | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env` |
 | Vérifier la topologie de prod en local (images, migrations, services) | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                    |
 | Développer une fonctionnalité (Spec Kit, dans Claude Code)            | `/speckit-specify <description>`, puis la suite du cycle (voir [plus bas](#développer-une-fonctionnalité-spec-kit))  |
+| Matrice scénario → tests des specs                                    | `pnpm -s spec:trace` (toutes) ou `pnpm -s spec:trace specs/<NNN-nom>` ; code 1 si un scénario n'a pas de test        |
 | Mettre à jour Spec Kit (`uv` requis)                                  | voir « Mettre à jour Spec Kit » dans [Développer une fonctionnalité](#développer-une-fonctionnalité-spec-kit)        |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
 Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
 
-La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage des scripts de `tools/dev`, puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.
+La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage et tests des scripts de `tools/dev`, puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.
 
 Dépendances :
 
@@ -54,6 +55,7 @@ libs/web/data-access/       client API, TanStack Query, mutations idempotentes
 specs/NNN-<nom>/            une fonctionnalité Spec Kit : spec.md, plan.md, tasks.md (en anglais)
 .specify/                   Spec Kit : constitution (memory/), scripts, templates ; généré, sauf la constitution
 tools/spec-kit/preset/      source des personnalisations de Spec Kit (templates, règles TDD)
+tools/dev/spec-trace.mts    matrice scénario → tests (`pnpm -s spec:trace`)
 ```
 
 Conventions du front : [`apps/web/AGENTS.md`](apps/web/AGENTS.md) et [`libs/web/AGENTS.md`](libs/web/AGENTS.md).
@@ -133,6 +135,7 @@ Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spe
   5. `/speckit-implement`, puis `/speckit-converge`, à répéter jusqu'à « Converged ».
 - **Specs, plans et tâches en anglais.** Une user story par PR, sous 500 lignes.
 - **TDD** : les tests sont obligatoires dans les tâches, écrits avant le code et vus en échec. `/speckit-implement` ne coche une tâche de test qu'après l'échec du test, et une tâche de code qu'après le passage de ses tests ; `pnpm nx affected -t lint typecheck test e2e` doit passer à la fin de chaque user story (les parcours navigateur ne tournent que si le front, l'API ou le service d'auth ont changé, comme en CI). `/speckit-converge` ne conclut pas tant qu'un scénario d'acceptation n'a pas de test.
+- **Traçabilité spec → tests** : chaque scénario d'acceptation a un identifiant `<numéro de la feature>-US<story>-AS<n>` (`003-US1-AS2`), et le titre de chaque test qui le couvre commence par cet identifiant : `it('003-US1-AS2: refuses to cancel a shipped order', …)`. `pnpm -s spec:trace` en tire la matrice scénario → fichiers de test et échoue si un scénario n'a aucun test, ou si un test cite un scénario absent de la spec (spec modifiée, test mal nommé). `/speckit-converge` la lance avant de conclure. Les scénarios ne sont jamais renumérotés : un nouveau prend le numéro suivant, celui d'un scénario retiré reste libre. La matrice prouve qu'un test cite chaque scénario, pas qu'il le vérifie bien : la relecture des tests reste nécessaire.
 - **Constitution** : `.specify/memory/constitution.md`, résumé des principes de ce fichier, qui fait foi. Une règle change ici d'abord, puis dans la constitution (`/speckit-constitution`).
 - **Personnaliser** les templates ou les règles TDD : éditer `tools/spec-kit/preset/`, puis `uvx --from specify-cli==1.2.2 specify preset update boilerplate --dev tools/spec-kit/preset` (seule la date d'installation change dans `.specify/presets/.registry`). Ne jamais éditer `.specify/presets/` ni `.claude/skills/speckit-*` à la main : ils sont regénérés.
 - **Autre agent** (Copilot, Cursor, Codex, Gemini…) : installer [`uv`](https://docs.astral.sh/uv/), puis `uvx --from specify-cli==1.2.2 specify integration install <clé> --force` et `… specify integration use <clé>` (clés : `copilot`, `cursor-agent`, `codex`, `gemini`, `generic` ; liste dans la doc de Spec Kit). Les règles du boilerplate s'appliquent aussi à cet agent. Ne pas utiliser `integration switch`, qui supprime l'intégration Claude Code. Ces changements restent locaux : ne pas commiter le dossier de l'agent (`.github/skills/`…) ni `.specify/integration.json`, `.specify/init-options.json`, `.specify/presets/.registry` et `.specify/integrations/` ; `git checkout -- .specify/scripts` rend aux scripts leur bit exécutable, que l'installation retire.

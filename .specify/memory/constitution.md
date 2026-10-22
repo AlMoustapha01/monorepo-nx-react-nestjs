@@ -34,7 +34,7 @@ Each business domain is an Nx library under `libs/api/<domain>` and exposes only
 
 ### VIII. Test-First (NON-NEGOTIABLE)
 
-No production code is written without a test that failed first, for the expected reason. Every change follows red → green → refactor. Every acceptance scenario of a spec is covered by an automated test. Test levels:
+No production code is written without a test that failed first, for the expected reason. Every change follows red → green → refactor. Every acceptance scenario of a spec is covered by an automated test whose title starts with the scenario id (`003-US1-AS2: …`), which `pnpm -s spec:trace` checks. Test levels:
 
 - unit tests on `domain/` and `application/`, with in-memory fakes and no ORM mocks;
 - integration tests (`*.int.spec.ts`) against a real Postgres (Testcontainers);
@@ -54,4 +54,4 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 
 `AGENTS.md` is changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

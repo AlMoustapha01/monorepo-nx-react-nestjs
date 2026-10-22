@@ -4,14 +4,16 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "check": "oxfmt --check . && nx run-many -t lint typecheck test && tsc -p tools/dev/tsconfig.json && knip",
+    "check": "oxfmt --check . && nx run-many -t lint typecheck test && tsc -p tools/dev/tsconfig.json && pnpm test:tools && knip",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "knip": "knip",
     "typecheck:tools": "tsc -p tools/dev/tsconfig.json",
     "dev:setup": "node tools/dev/setup.mts",
     "dev:token": "node tools/dev/token.mts",
-    "dev:seed": "node tools/dev/seed.mts"
+    "dev:seed": "node tools/dev/seed.mts",
+    "spec:trace": "node tools/dev/spec-trace.mts",
+    "test:tools": "node --test 'tools/dev/*.test.mts'"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
