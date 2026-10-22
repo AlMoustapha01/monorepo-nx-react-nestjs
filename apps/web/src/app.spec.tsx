@@ -1,83 +1,36 @@
-import { i18n } from '@lingui/core';
-import { I18nProvider } from '@lingui/react';
-import { QueryClientProvider } from '@tanstack/react-query';
 import {
-  RouterProvider,
   createMemoryHistory,
   createRoute,
   createRootRouteWithContext,
   createRouter,
 } from '@tanstack/react-router';
 import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  createAccessTokenSource,
-  createApiClient,
-  createAuthClient,
-  createQueryClient,
-} from '@nx-react-nestjs/web-data-access';
+import { createQueryClient } from '@nx-react-nestjs/web-data-access';
 
 import { ErrorZone } from './components/error-zone';
 import { activateLocale } from './i18n/i18n';
-import { createAppRouter } from './router';
 import { Route as appRoot, type RouterContext } from './routes/__root';
-import type { SessionContext } from './session';
+import {
+  API,
+  AUTH,
+  api,
+  fakeToken,
+  renderAt,
+  renderRouter,
+  renderSignedIn,
+  sessionContext,
+  setupAppTest,
+  user,
+} from './testing/app-harness';
 
 vi.mock('./i18n/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./i18n/i18n')>();
   return { ...actual, activateLocale: vi.fn<typeof actual.activateLocale>(actual.activateLocale) };
 });
 
-const API = 'http://localhost:3000/api/v1';
-const AUTH = 'http://localhost:3100/api/auth';
-const api = createApiClient({ baseUrl: API });
-const auth = createAuthClient({ baseUrl: 'http://localhost:3100' });
-
-function sessionContext(devMode: boolean): SessionContext {
-  return { auth, tokens: createAccessTokenSource(() => auth.getAccessToken()), devMode };
-}
-const server = setupServer(
-  http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: {} })),
-);
-
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-function renderRouter(
-  router: ReturnType<typeof createAppRouter>,
-  queryClient = createQueryClient(),
-) {
-  render(
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </I18nProvider>,
-  );
-}
-
-/** `devMode` : comme avec VITE_DEV_TOKEN, sans connexion. */
-function renderAt(url: string, { devMode = true } = {}) {
-  const queryClient = createQueryClient();
-  const router = createAppRouter(
-    { queryClient, api, session: sessionContext(devMode) },
-    createMemoryHistory({ initialEntries: [url] }),
-  );
-  renderRouter(router, queryClient);
-  return router;
-}
-
-beforeEach(async () => {
-  localStorage.clear();
-  await activateLocale('fr');
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+const server = setupAppTest();
 
 describe('app', () => {
   it('renders the home page at /', async () => {
@@ -85,75 +38,6 @@ describe('app', () => {
     const heading = await screen.findByRole('heading', { level: 1 });
     expect(heading.textContent).toBe('Boilerplate web');
     expect(screen.getByRole('main')).toBeTruthy();
-  });
-
-  it('shows the catalog and the cart link when storefront is on', async () => {
-    server.use(
-      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
-      http.get(`${API}/catalog/products`, () =>
-        HttpResponse.json({
-          items: [
-            {
-              id: 'PRD-00000000000000000001',
-              sku: 'TEE-WHITE-M',
-              name: 'Tee-shirt blanc (M)',
-              description: null,
-              price: { amountMinor: 1990, currency: 'EUR' },
-              status: 'active',
-              soldCount: 0,
-              version: 1,
-              createdAt: '2026-01-01T00:00:00.000Z',
-              updatedAt: '2026-01-01T00:00:00.000Z',
-            },
-          ],
-          nextCursor: null,
-        }),
-      ),
-    );
-    renderAt('/');
-    expect(await screen.findByText('Tee-shirt blanc (M)')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Panier (0)' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Mes commandes' })).toBeTruthy();
-  });
-
-  it('shows the 404 page for an unknown order', async () => {
-    const id = 'ORD-00000000000000000001';
-    server.use(
-      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
-      http.get(`${API}/orders/${id}`, () =>
-        HttpResponse.json(
-          { status: 404, code: 'NOT_FOUND', title: 'Not Found', detail: 'Order not found' },
-          { status: 404, headers: { 'Content-Type': 'application/problem+json' } },
-        ),
-      ),
-    );
-    renderAt(`/commandes/${id}`);
-    const heading = await screen.findByRole('heading', { level: 1 });
-    expect(heading.textContent).toBe('404 : page introuvable');
-  });
-
-  it('shows the 404 page for a malformed order ID without calling the API', async () => {
-    let calls = 0;
-    server.use(
-      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
-      http.get(`${API}/orders/:id`, () => {
-        calls += 1;
-        return HttpResponse.json(
-          { status: 400, code: 'VALIDATION_FAILED', title: 'Bad Request', detail: 'Invalid id' },
-          { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
-        );
-      }),
-    );
-    renderAt('/commandes/abc');
-    const heading = await screen.findByRole('heading', { level: 1 });
-    expect(heading.textContent).toBe('404 : page introuvable');
-    expect(calls).toBe(0);
-  });
-
-  it('shows the 404 page on /panier when storefront is off', async () => {
-    renderAt('/panier');
-    const heading = await screen.findByRole('heading', { level: 1 });
-    expect(heading.textContent).toBe('404 : page introuvable');
   });
 
   it('renders the home page when the flags call fails', async () => {
@@ -247,7 +131,6 @@ describe('ErrorZone', () => {
 });
 
 describe('authentification', () => {
-  const user = { id: 'u1', name: 'Ada', email: 'ada@shop.test', emailVerified: true };
   let current: unknown;
 
   beforeEach(() => {
@@ -310,76 +193,10 @@ describe('authentification', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
   });
 
-  it('recharge les données du nouveau tenant au changement d’organisation', async () => {
-    const product = (id: string, name: string) => ({
-      id,
-      sku: `SKU-${id.slice(-3)}`,
-      name,
-      description: null,
-      price: { amountMinor: 1990, currency: 'EUR' },
-      status: 'active',
-      soldCount: 0,
-      version: 1,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    });
-    // Comme la vraie API : le catalogue dépend du tenant inscrit dans le token.
-    const catalogs: Record<string, ReturnType<typeof product>[]> = {
-      o1: [product('PRD-00000000000000000001', 'Tablier en lin')],
-      o2: [product('PRD-00000000000000000002', 'Mug émaillé')],
-    };
-    let active = 'o1';
-    current = { user, session: { activeOrganizationId: active } };
-    const exp = Math.floor(Date.now() / 1000) + 900;
-    server.use(
-      http.get(`${AUTH}/organization/list`, () =>
-        HttpResponse.json([
-          { id: 'o1', name: 'Atelier', slug: 'atelier' },
-          { id: 'o2', name: 'Boutique', slug: 'boutique' },
-        ]),
-      ),
-      http.post(`${AUTH}/organization/set-active`, async ({ request }) => {
-        ({ organizationId: active } = (await request.json()) as { organizationId: string });
-        current = { user, session: { activeOrganizationId: active } };
-        return HttpResponse.json({});
-      }),
-      http.get(`${AUTH}/token`, () =>
-        HttpResponse.json({ token: `h.${btoa(JSON.stringify({ exp, tenant: active }))}.s` }),
-      ),
-      http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: { storefront: true } })),
-      http.get(`${API}/catalog/products`, ({ request }) => {
-        const token = request.headers.get('authorization')?.split('.')[1] ?? '';
-        const { tenant } = JSON.parse(atob(token)) as { tenant: string };
-        return HttpResponse.json({ items: catalogs[tenant] ?? [], nextCursor: null });
-      }),
-    );
-    const queryClient = createQueryClient();
-    const session = sessionContext(false);
-    renderRouter(
-      createAppRouter(
-        {
-          queryClient,
-          api: createApiClient({ baseUrl: API, getToken: session.tokens.getToken }),
-          session,
-        },
-        createMemoryHistory({ initialEntries: ['/'] }),
-      ),
-      queryClient,
-    );
-    expect(await screen.findByText('Tablier en lin')).toBeTruthy();
-
-    await userEvent
-      .setup()
-      .selectOptions(await screen.findByRole('combobox', { name: 'Organisation' }), 'Boutique');
-    expect(await screen.findByText('Mug émaillé')).toBeTruthy();
-    expect(screen.queryByText('Tablier en lin')).toBeNull();
-  });
-
   it('envoie à l’API le token du service d’auth', async () => {
     current = { user, session: { activeOrganizationId: 'o1' } };
     const seen: (string | null)[] = [];
-    const exp = Math.floor(Date.now() / 1000) + 900;
-    const token = `h.${btoa(JSON.stringify({ exp })).replace(/=+$/, '')}.s`;
+    const token = fakeToken({ exp: Math.floor(Date.now() / 1000) + 900 });
     server.use(
       http.get(`${AUTH}/token`, () => HttpResponse.json({ token })),
       http.get(`${API}/feature-flags`, ({ request }) => {
@@ -387,16 +204,7 @@ describe('authentification', () => {
         return HttpResponse.json({ flags: {} });
       }),
     );
-    const queryClient = createQueryClient();
-    const session = sessionContext(false);
-    const authedApi = createApiClient({ baseUrl: API, getToken: session.tokens.getToken });
-    renderRouter(
-      createAppRouter(
-        { queryClient, api: authedApi, session },
-        createMemoryHistory({ initialEntries: ['/'] }),
-      ),
-      queryClient,
-    );
+    renderSignedIn('/');
     expect(await screen.findByRole('heading', { level: 1, name: 'Boilerplate web' })).toBeTruthy();
     expect(seen).toEqual([`Bearer ${token}`]);
   });
