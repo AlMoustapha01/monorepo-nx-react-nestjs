@@ -1,15 +1,17 @@
 ---
-name: "speckit-tasks"
-description: "Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts."
+name: speckit-tasks
+description: Generate an actionable, dependency-ordered tasks.md for the feature based
+  on available design artifacts.
 argument-hint: "Optional task generation constraints"
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/tasks.md"
+  author: github-spec-kit
+  source: preset:boilerplate
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Tasks Skill
 
 ## User Input
 
@@ -216,3 +218,15 @@ Every task MUST strictly follow this format:
 - [ ] tasks.md generated with all phases, task IDs, and file paths
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
 - [ ] Completion reported to user with task count, story breakdown, and MVP scope
+
+
+<!-- Boilerplate preset (source: tools/spec-kit/preset). Appended to the core command. -->
+
+## Test-First Task Generation (boilerplate)
+
+These rules come from the constitution (VIII. Test-First) and take precedence over any instruction above that contradicts them, including "Tests are OPTIONAL".
+
+- Test tasks are MANDATORY: generate them for every user story, whether or not the spec or the user asks for tests.
+- Every acceptance scenario of `spec.md` gets at least one test task, at the level and in the file given by the plan's Test Strategy, and referenced by its id (`US1-AS1`, `US1-AS2`, …).
+- Within a story, each test task comes before the implementation task it drives, and says to run the test and confirm it FAILS for the expected reason.
+- Follow the order and paths of the tasks template: one user story per pull request, under 500 changed lines.

@@ -4,22 +4,24 @@
     "boilerplate": {
       "version": "1.0.0",
       "source": "local",
-      "manifest_hash": "sha256:9e3f3de02808bd654ba4681c658141c76bfd7b2a68d00fac5839988349f0d337",
+      "manifest_hash": "sha256:69c87753ec2e2fd7aba24dc52caaad359785494e70178484ec8b93a9986b5413",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
         "claude": [
+          "speckit.tasks",
           "speckit.implement",
           "speckit.converge"
         ]
       },
       "registered_skills": {
         "claude": [
+          "speckit-tasks",
           "speckit-implement",
           "speckit-converge"
         ]
       },
-      "installed_at": "2026-10-22T10:51:36.251153+00:00"
+      "installed_at": "2026-10-22T10:59:10.316374+00:00"
     }
   }
 }

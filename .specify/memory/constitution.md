@@ -39,7 +39,8 @@ No production code is written without a test that failed first, for the expected
 - unit tests on `domain/` and `application/`, with in-memory fakes and no ORM mocks;
 - integration tests (`*.int.spec.ts`) against a real Postgres (Testcontainers);
 - API end-to-end tests (`apps/api/tests/*.e2e.spec.ts`) through `configureApp` and supertest;
-- browser journeys (`apps/web-e2e`, Playwright) for user-facing flows.
+- front-end component tests (Vitest + Testing Library) next to the screens in `libs/web/*`;
+- browser journeys (`apps/web-e2e`, Playwright) only for what Vitest cannot see: redirects between services, emails, cookies, several tenants.
 
 See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGENTS.md` for the front end.
 
