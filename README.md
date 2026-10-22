@@ -46,7 +46,7 @@ Ce mode n'utilise pas le service d'identité : le front envoie un token de dev �
 
 ## Développer
 
-Les fonctionnalités se développent avec [Spec Kit](https://github.com/github/spec-kit), déjà configuré pour Claude Code : spec, plan, tâches, puis implémentation en TDD, en commençant par `/speckit-specify <description>`.
+Les fonctionnalités se développent avec [Spec Kit](https://github.com/github/spec-kit), déjà configuré pour Claude Code : spec, plan, tâches, puis implémentation en TDD, en commençant par `/speckit-specify <description>`. Pas à pas : [Votre première fonctionnalité](docs/tutorial/premiere-fonctionnalite.md).
 
 ## Documentation
 
