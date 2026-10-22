@@ -8,6 +8,9 @@ export function StorefrontNav() {
   const count = cartCount(useCart());
   return (
     <Stack as="nav" direction="row" gap={2} align="center">
+      <Link to="/boutique" className={buttonVariants({ variant: 'ghost' })}>
+        <Trans>Boutique</Trans>
+      </Link>
       <Link to="/commandes" className={buttonVariants({ variant: 'ghost' })}>
         <Trans>Mes commandes</Trans>
       </Link>

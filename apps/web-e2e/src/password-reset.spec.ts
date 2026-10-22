@@ -22,7 +22,7 @@ test('mot de passe oublié : lien par email, nouveau mot de passe, connexion', a
     page.getByText('Mot de passe modifié. Connectez-vous avec le nouveau.'),
   ).toBeVisible();
   await signIn(page, account.email, 'brand-new-password-42');
-  await expect(page.getByRole('heading', { name: 'Catalogue' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
 });
 
 test('un lien de réinitialisation ne sert qu’une fois', async ({ page }) => {

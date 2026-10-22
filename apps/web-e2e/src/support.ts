@@ -109,28 +109,6 @@ export async function invite(account: Account, organizationId: string, email: st
   );
 }
 
-/** Produit publié dans l'organisation active du compte (staff : propriétaire). */
-export async function publishProduct(account: Account, name: string): Promise<void> {
-  const { token } = await ok<{ token: string }>('token', await account.auth.get('token'));
-  const api = await request.newContext({
-    baseURL: `http://localhost:${E2E_PORTS.api}/api/v1/`,
-    extraHTTPHeaders: { authorization: `Bearer ${token}` },
-  });
-  const product = await ok<{ id: string }>(
-    'product',
-    await api.post('catalog/products', {
-      headers: { 'idempotency-key': randomUUID() },
-      data: {
-        sku: `SKU-${randomUUID().slice(0, 8)}`,
-        name,
-        price: { amountMinor: 1990, currency: 'EUR' },
-      },
-    }),
-  );
-  await ok('publish', await api.post(`catalog/products/${product.id}/publish`));
-  await api.dispose();
-}
-
 export async function signIn(page: Page, email: string, password = PASSWORD): Promise<void> {
   await page.getByLabel('Adresse email').fill(email);
   await page.getByLabel('Mot de passe').fill(password);
