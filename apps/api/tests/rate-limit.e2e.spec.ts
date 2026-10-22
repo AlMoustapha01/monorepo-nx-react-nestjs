@@ -39,19 +39,20 @@ describe('Rate limiting (e2e)', () => {
     await Promise.all([database?.stop(), redis?.stop()]);
   });
 
-  const listProducts = (instance: number, token: string) =>
+  // Route authentifiée de core : le test ne dépend d'aucun domaine.
+  const call = (instance: number, token: string) =>
     request(apps[instance]?.getHttpServer())
-      .get('/api/v1/catalog/products')
+      .get('/api/v1/feature-flags')
       .auth(token, { type: 'bearer' });
 
   it('répond 429 au-delà de la limite, toutes instances confondues', async () => {
     const token = await signTestToken({ userId: randomUUID(), tenantId: randomUUID() });
-    await listProducts(0, token).expect(200);
-    await listProducts(1, token).expect(200);
-    const last = await listProducts(0, token).expect(200);
+    await call(0, token).expect(200);
+    await call(1, token).expect(200);
+    const last = await call(0, token).expect(200);
     expect(last.headers['x-ratelimit-remaining']).toBe('0');
 
-    const blocked = await listProducts(1, token).expect(429);
+    const blocked = await call(1, token).expect(429);
     expect(blocked.headers['content-type']).toContain('application/problem+json');
     expect(blocked.body).toMatchObject({ status: 429, code: 'TOO_MANY_REQUESTS' });
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
@@ -61,12 +62,12 @@ describe('Rate limiting (e2e)', () => {
     const tenantId = randomUUID();
     const busy = await signTestToken({ userId: randomUUID(), tenantId });
     for (let i = 0; i < 3; i++) {
-      await listProducts(0, busy).expect(200);
+      await call(0, busy).expect(200);
     }
-    await listProducts(0, busy).expect(429);
+    await call(0, busy).expect(429);
 
     const colleague = await signTestToken({ userId: randomUUID(), tenantId });
-    const response = await listProducts(0, colleague).expect(200);
+    const response = await call(0, colleague).expect(200);
     expect(response.headers['x-ratelimit-remaining']).toBe('2');
   });
 });
