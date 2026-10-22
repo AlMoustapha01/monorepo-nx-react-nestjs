@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Trans } from '@lingui/react/macro';
 import type { AuthSession } from '@nx-react-nestjs/contracts';
 import type { AuthClient } from '@nx-react-nestjs/web-data-access';
 import { Button, Label, Stack, Text } from '@nx-react-nestjs/web-ui';
@@ -25,7 +25,6 @@ export function AccountMenu({
   onSignedOut,
   onError,
 }: AccountMenuProps) {
-  const { t } = useLingui();
   const errorMessage = useAuthErrorMessage();
   const selectId = useId();
   const organizations = useQuery(organizationsQueryOptions(auth));
@@ -85,7 +84,6 @@ export function AccountMenu({
       <Button
         variant="ghost"
         disabled={busy}
-        aria-label={t`Se déconnecter`}
         onClick={() =>
           void run(async () => {
             await auth.signOut();
@@ -93,7 +91,7 @@ export function AccountMenu({
           })
         }
       >
-        <Trans>Déconnexion</Trans>
+        <Trans>Se déconnecter</Trans>
       </Button>
     </Stack>
   );

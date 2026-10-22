@@ -43,7 +43,18 @@ describe('SignUpPage', () => {
     expect(await screen.findByText('Entre 8 et 128 caractères.')).toBeTruthy();
   });
 
-  it('signale un compte existant', async () => {
+  it('répond pareil quand l’adresse a déjà un compte, comme le service', async () => {
+    // Avec la vérification d'email obligatoire, Better Auth ne révèle pas qu'un compte existe :
+    // même réponse qu'une inscription (vérifié contre le vrai service par apps/web-e2e).
+    server.use(
+      http.post(`${AUTH}/sign-up/email`, () => HttpResponse.json({ token: null, user: {} })),
+    );
+    await renderWithProviders(<SignUpPage auth={auth} verificationCallbackUrl="/" />);
+    await fill();
+    expect(await screen.findByRole('heading', { name: 'Vérifiez votre boîte mail' })).toBeTruthy();
+  });
+
+  it('signale un compte existant si le service le révèle (sans vérification d’email)', async () => {
     server.use(
       http.post(`${AUTH}/sign-up/email`, () => betterAuthError(422, 'USER_ALREADY_EXISTS')),
     );

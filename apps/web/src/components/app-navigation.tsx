@@ -6,7 +6,7 @@ import { StorefrontNav } from '@nx-react-nestjs/web-storefront';
 import { Stack } from '@nx-react-nestjs/web-ui';
 
 import { useFeatureFlag } from '../feature-flags';
-import { resetSession, ROOT_ROUTE } from '../session';
+import { reloadForNewTenant, resetSession, ROOT_ROUTE } from '../session';
 
 /** En-tête d'un utilisateur connecté : navigation métier et compte. */
 export function AppNavigation() {
@@ -26,9 +26,10 @@ export function AppNavigation() {
           auth={context.session.auth}
           session={current}
           onOrganizationChanged={async () => {
-            resetSession(context);
-            // Les pages ouvertes montraient les données de l'ancien tenant.
+            // Une page de détail de l'ancien tenant n'existe pas dans le nouveau : retour à
+            // l'accueil, puis rechargement de ses données.
             await navigate({ to: '/' });
+            await reloadForNewTenant(context);
           }}
           onSignedOut={async () => {
             resetSession(context);

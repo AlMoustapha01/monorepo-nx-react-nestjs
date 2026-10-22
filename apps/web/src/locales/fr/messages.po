@@ -126,10 +126,6 @@ msgstr "Créer un compte"
 msgid "Créer votre organisation"
 msgstr "Créer votre organisation"
 
-#: ../../libs/web/auth/src/lib/components/account-menu.tsx
-msgid "Déconnexion"
-msgstr "Déconnexion"
-
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
 msgid "Déjà un compte ? <0>Se connecter</0>"
 msgstr "Déjà un compte ? <0>Se connecter</0>"

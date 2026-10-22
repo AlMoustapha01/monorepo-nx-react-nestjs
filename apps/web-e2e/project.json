@@ -1,0 +1,27 @@
+{
+  "name": "web-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/web-e2e/src",
+  "projectType": "application",
+  "tags": ["scope:e2e", "type:e2e"],
+  "implicitDependencies": ["web", "api", "auth"],
+  "targets": {
+    "e2e": {
+      "executor": "nx:run-commands",
+      "dependsOn": [{ "projects": ["api", "auth"], "target": "build" }],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc --noEmit -p tsconfig.json"
+      }
+    }
+  }
+}

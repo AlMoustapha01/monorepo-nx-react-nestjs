@@ -12,6 +12,8 @@ export function useAuthErrorMessage(): (error: unknown) => string {
         return t`Email ou mot de passe incorrect.`;
       case 'EMAIL_NOT_VERIFIED':
         return t`Confirmez d'abord votre adresse email : nous vous avons envoyé un lien.`;
+      // Jamais renvoyé tant que la vérification d'email est obligatoire (le service ne révèle pas
+      // les comptes existants) ; gardé si cette configuration change.
       case 'USER_ALREADY_EXISTS':
       case 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL':
         return t`Un compte existe déjà avec cette adresse email.`;
