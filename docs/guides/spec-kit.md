@@ -31,7 +31,7 @@ Une fois mergée, `spec.md` décrit le comportement actuel ; `plan.md` et `tasks
 
 `pnpm -s spec:trace specs/<NNN-nom>` limite le contrôle à une spec, en mode strict. En CI, `--base` ajoute un avertissement (annotation de PR, sans échec) quand des tests qui citent une feature changent sans son `spec.md` : un renommage ne change pas le comportement, la revue tranche.
 
-## Branche de la fonctionnalité
+## Branche et commits automatiques
 
 `/speckit-specify` commence par créer la branche de la fonctionnalité et s'y placer : c'est le hook `before_specify` de l'extension `git` de Spec Kit (`.specify/extensions.yml`, skill `/speckit-git-feature`). Les règles ajoutées par le preset (`tools/spec-kit/preset/commands/speckit.specify.md`) :
 
@@ -39,7 +39,9 @@ Une fois mergée, `spec.md` décrit le comportement actuel ; `plan.md` et `tasks
 - la branche se nomme `NNN-<nom>`, numérotée après les dossiers de `specs/` et toutes les branches locales et distantes : deux fonctionnalités en cours n'ont jamais le même numéro ;
 - le dossier de la spec porte le même nom (`specs/NNN-<nom>`).
 
-Seul ce hook est branché. L'extension en propose d'autres (initialisation du repo, commits automatiques après chaque commande) : `specify extension update git` les remet dans `.specify/extensions.yml`, il faut alors les retirer. Le format du nom (préfixe, auteur) se règle dans `.specify/extensions/git/git-config.yml`.
+Ensuite, chaque commande qui écrit des fichiers commite son résultat sur cette branche : `specify`, `clarify`, `plan`, `tasks`, `checklist`, `implement`, `converge` et `constitution` (hooks `after_*`, skill `/speckit-git-commit`). L'agent rédige un message [Conventional Commits](https://www.conventionalcommits.org/) en anglais à partir de la diff (`docs(specs): add announcements spec`). Le commit prend tout l'arbre (`git add .`) : d'où l'arbre propre exigé au départ. `/speckit-analyze` ne modifie rien et ne commite pas.
+
+Le reste se règle dans `.specify/extensions/git/git-config.yml` : format du nom de branche (préfixe, auteur), commandes qui commitent (`auto_commit`), style des messages (`commit_style: fixed` pour des messages fixes). L'extension propose d'autres hooks (initialisation du repo, commit avant chaque commande), volontairement absents de `.specify/extensions.yml` : `specify extension update git` les remet, il faut alors les retirer.
 
 ## Personnaliser les templates ou les règles TDD
 
