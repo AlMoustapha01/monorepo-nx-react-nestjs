@@ -140,12 +140,13 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 <!-- example:end -->
 
 - **Cycle**, dans Claude Code :
-  1. `/speckit-specify <description>` : le quoi et le pourquoi, dans `specs/NNN-<nom>/spec.md`, sans technique ;
+  1. `/speckit-specify <description>` : crée la branche `NNN-<nom>` (arbre propre, depuis `main`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;
   2. `/speckit-clarify` : questions sur les `[NEEDS CLARIFICATION]`, jusqu'à ce qu'il n'en reste plus ;
   3. `/speckit-plan` : domaines, feature flag, événements, migrations, règles d'accès, stratégie de test (un test par scénario d'acceptation) ;
   4. `/speckit-tasks`, puis `/speckit-analyze` (cohérence spec, plan, tâches) ; `/speckit-checklist` en option ;
   5. `/speckit-implement`, puis `/speckit-converge`, à répéter jusqu'à « Converged ».
-- **Specs, plans et tâches en anglais.** Une user story par PR, sous 500 lignes.
+- **Commits** : chaque commande qui écrit des fichiers commite son résultat sur la branche de la fonctionnalité, avec un message Conventional Commits en anglais (voir [le guide](docs/guides/spec-kit.md#branche-et-commits-automatiques)).
+- **Specs, plans et tâches en anglais.** Une user story par PR.
 - **TDD** : les tests sont obligatoires dans les tâches, écrits avant le code et vus en échec. `/speckit-implement` ne coche une tâche de test qu'après l'échec du test, et une tâche de code qu'après le passage de ses tests ; `pnpm nx affected -t lint typecheck test e2e` doit passer à la fin de chaque user story (les parcours navigateur ne tournent que si le front, l'API ou le service d'auth ont changé, comme en CI). `/speckit-converge` ne conclut pas tant qu'un scénario d'acceptation n'a pas de test.
 - **Traçabilité spec → tests** : chaque scénario d'acceptation a un identifiant `<numéro de la feature>-US<story>-AS<n>` (`003-US1-AS2`), et le titre de chaque test qui le couvre commence par cet identifiant : `it('003-US1-AS2: refuses to cancel a shipped order', …)`. `pnpm -s spec:trace` en tire la matrice scénario → fichiers de test et échoue si un scénario n'a aucun test, ou si un test cite un scénario absent de la spec (spec modifiée, test mal nommé). `/speckit-converge` la lance avant de conclure. Les scénarios ne sont jamais renumérotés : un nouveau prend le numéro suivant, celui d'un scénario retiré reste libre. La matrice prouve qu'un test cite chaque scénario, pas qu'il le vérifie bien : la relecture des tests reste nécessaire.
 - **Specs à jour** : une fois mergée, `spec.md` décrit le comportement actuel. Une PR qui change le comportement d'une fonctionnalité spécifiée modifie son `spec.md` dans la même PR. Un scénario ne se supprime pas, il se retire (`**Retired** (replaced by …)`), et aucun test ne doit plus le citer. Statut en tête de spec : `Draft` → `Implemented` (`/speckit-converge`) → `Shipped` (PR qui supprime le flag) → `Retired`. `spec:trace` échoue si un scénario d'une spec `Implemented` ou `Shipped` n'a pas de test. Détails : [Spec Kit : cycle de vie et maintenance](docs/guides/spec-kit.md).
@@ -159,7 +160,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite. Toute route qui modifie des données partagées du tenant déclare son rôle (`@RequireRole`).
 4. Toute clé Redis a un TTL ; tout appel externe a un timeout, et passe par une queue s'il est lent.
 5. Les migrations sont générées (`db-generate`), jamais éditées à la main, et rétrocompatibles (expand/contract).
-6. Toute nouvelle fonctionnalité passe derrière un feature flag (désactivé par défaut) ; une PR fait moins de 500 lignes. Le flag s'applique à l'API pour l'instant ; le mécanisme front sera défini avec le premier écran métier (voir `apps/web/AGENTS.md`).
+6. Toute nouvelle fonctionnalité passe derrière un feature flag (désactivé par défaut). Le flag s'applique à l'API pour l'instant ; le mécanisme front sera défini avec le premier écran métier (voir `apps/web/AGENTS.md`).
 
 ## Conventions
 

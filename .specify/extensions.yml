@@ -1,0 +1,89 @@
+installed:
+- git
+settings:
+  auto_execute_hooks: true
+# Wired on purpose: branch creation before specify, and a commit after each command that writes files.
+# The extension's other hooks (repository initialization, commits before each command, after analyze
+# and taskstoissues) are left out. `specify extension update git` re-adds them: remove them again.
+hooks:
+  before_specify:
+  - extension: git
+    command: speckit.git.feature
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.git.feature?
+    description: Create feature branch before specification
+    condition: null
+  after_specify:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit specify changes?
+    description: Auto-commit after specification
+    condition: null
+  after_clarify:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit clarify changes?
+    description: Auto-commit after spec clarification
+    condition: null
+  after_plan:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit plan changes?
+    description: Auto-commit after implementation planning
+    condition: null
+  after_tasks:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit tasks changes?
+    description: Auto-commit after task generation
+    condition: null
+  after_checklist:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit checklist changes?
+    description: Auto-commit after checklist generation
+    condition: null
+  after_implement:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit implement changes?
+    description: Auto-commit after implementation
+    condition: null
+  after_converge:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit converge changes?
+    description: Auto-commit after convergence
+    condition: null
+  after_constitution:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit constitution changes?
+    description: Auto-commit after constitution update
+    condition: null
