@@ -14,7 +14,7 @@ ARG APP
 WORKDIR /repo
 RUN corepack enable
 ENV NX_DAEMON=false NX_NO_CLOUD=true NX_SKIP_NX_CACHE=true
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
@@ -27,8 +27,10 @@ ARG APP
 WORKDIR /app
 RUN corepack enable
 COPY --from=build /repo/dist/apps/${APP}/package.json /repo/dist/apps/${APP}/pnpm-lock.yaml /repo/dist/apps/${APP}/pnpm-workspace.yaml ./
+# Sans dépendances optionnelles : les peers optionnels (better-auth : drizzle-kit, vitest, react…)
+# que pnpm rattache aux paquets du monorepo n'entrent pas dans l'image.
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --prod --frozen-lockfile
+    pnpm install --prod --frozen-lockfile --no-optional
 
 FROM ${NODE_IMAGE} AS runtime
 ARG APP
