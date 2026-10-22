@@ -1,14 +1,17 @@
 ---
-name: "speckit-converge"
-description: "Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it."
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+name: speckit-converge
+description: Assess the current codebase against the feature's spec, plan, and tasks,
+  then append any remaining unbuilt work as new tasks to tasks.md so implement can
+  complete it.
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/converge.md"
+  author: github-spec-kit
+  source: preset:boilerplate
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Converge Skill
 
 ## User Input
 
@@ -283,3 +286,15 @@ After producing the result, check if `.specify/extensions.yml` exists in the pro
     After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
 
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+
+<!-- Boilerplate preset (source: tools/spec-kit/preset). Appended to the core command. -->
+
+## Test Coverage of Acceptance Scenarios (boilerplate)
+
+These rules come from the constitution (VIII. Test-First) and take precedence over any instruction above that contradicts them.
+
+- For every acceptance scenario (Given/When/Then) in `spec.md`, find the automated test that covers it, at the level given by the plan's Test Strategy.
+- A scenario without a covering test is a gap, even when the code seems to implement it. Append a test task for it, placed before any implementation task it drives, in the format of `tasks.md`.
+- A test that exists but was never seen failing (for example, written after the code) is reported, not silently accepted.
+- Never report **Converged** while a scenario has no test.

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "presets": {
+    "boilerplate": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:9e3f3de02808bd654ba4681c658141c76bfd7b2a68d00fac5839988349f0d337",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.implement",
+          "speckit.converge"
+        ]
+      },
+      "registered_skills": {
+        "claude": [
+          "speckit-implement",
+          "speckit-converge"
+        ]
+      },
+      "installed_at": "2026-10-22T10:51:36.251153+00:00"
+    }
+  }
+}
