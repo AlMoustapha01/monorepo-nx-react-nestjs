@@ -35,7 +35,7 @@ const product = (id: string, name: string) => ({
 });
 
 describe('storefront', () => {
-  it('shows the catalog and the cart link when storefront is on', async () => {
+  it('shows the catalog and the storefront links when storefront is on', async () => {
     server.use(
       storefrontOn(),
       http.get(`${API}/catalog/products`, () =>
@@ -45,8 +45,9 @@ describe('storefront', () => {
         }),
       ),
     );
-    renderAt('/');
+    renderAt('/boutique');
     expect(await screen.findByText('Tee-shirt blanc (M)')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Boutique' }).getAttribute('href')).toBe('/boutique');
     expect(screen.getByRole('link', { name: 'Panier (0)' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Mes commandes' })).toBeTruthy();
   });
@@ -85,11 +86,14 @@ describe('storefront', () => {
     expect(calls).toBe(0);
   });
 
-  it('shows the 404 page on /panier when storefront is off', async () => {
-    renderAt('/panier');
-    const heading = await screen.findByRole('heading', { level: 1 });
-    expect(heading.textContent).toBe('404 : page introuvable');
-  });
+  it.each(['/boutique', '/panier'])(
+    'shows the 404 page on %s when storefront is off',
+    async (url) => {
+      renderAt(url);
+      const heading = await screen.findByRole('heading', { level: 1 });
+      expect(heading.textContent).toBe('404 : page introuvable');
+    },
+  );
 
   it('recharge les données du nouveau tenant au changement d’organisation', async () => {
     // Comme la vraie API : le catalogue dépend du tenant inscrit dans le token.
@@ -104,12 +108,17 @@ describe('storefront', () => {
         HttpResponse.json({ items: catalogs[tenantOf(request) ?? ''] ?? [], nextCursor: null }),
       ),
     );
-    renderSignedIn('/');
+    renderSignedIn('/boutique');
     expect(await screen.findByText('Tablier en lin')).toBeTruthy();
 
-    await userEvent
-      .setup()
-      .selectOptions(await screen.findByRole('combobox', { name: 'Organisation' }), 'Comptoir');
+    const events = userEvent.setup();
+    await events.selectOptions(
+      await screen.findByRole('combobox', { name: 'Organisation' }),
+      'Comptoir',
+    );
+    // Le changement ramène à l'accueil ; le catalogue est celui du nouveau tenant.
+    await screen.findByRole('heading', { level: 1, name: 'Accueil' });
+    await events.click(screen.getByRole('link', { name: 'Boutique' }));
     expect(await screen.findByText('Mug émaillé')).toBeTruthy();
     expect(screen.queryByText('Tablier en lin')).toBeNull();
   });

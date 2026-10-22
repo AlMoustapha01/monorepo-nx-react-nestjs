@@ -164,10 +164,10 @@ describe('CartPage', () => {
   });
 
   it('shows the empty state with a link to the catalog', async () => {
-    await renderWithProviders(<CartPage api={api} />, { routes: ['/'] });
+    await renderWithProviders(<CartPage api={api} />, { routes: ['/boutique'] });
     expect(await screen.findByText('Votre panier est vide')).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Voir le catalogue' });
-    expect(link.getAttribute('href')).toBe('/');
+    expect(link.getAttribute('href')).toBe('/boutique');
   });
 
   describe('placing the order', () => {

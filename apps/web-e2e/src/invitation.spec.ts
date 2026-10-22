@@ -6,14 +6,12 @@ import {
   createOrganization,
   invite,
   linkFromEmail,
-  publishProduct,
   uniqueEmail,
 } from './support';
 
 test('une personne invitée crée son compte et rejoint l’organisation', async ({ page }) => {
   const owner = await createAccount('owner');
   const organizationId = await createOrganization(owner, 'Boutique des Lilas');
-  await publishProduct(owner, 'Bougie parfumée');
   const email = uniqueEmail('invitee');
   await invite(owner, organizationId, email);
 
@@ -33,7 +31,7 @@ test('une personne invitée crée son compte et rejoint l’organisation', async
   await expect(page.getByRole('heading', { name: 'Rejoindre Boutique des Lilas' })).toBeVisible();
   await page.getByRole('button', { name: "Accepter l'invitation" }).click();
 
-  await expect(page.getByText('Bougie parfumée')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
   await expect(page.getByText('Boutique des Lilas')).toBeVisible();
 });
 

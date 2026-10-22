@@ -19,6 +19,10 @@ msgstr "404 : page introuvable"
 msgid "Accepter l'invitation"
 msgstr "Accepter l'invitation"
 
+#: src/routes/_authenticated/index.tsx
+msgid "Accueil"
+msgstr "Accueil"
+
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
@@ -49,9 +53,9 @@ msgstr "Aucun produit pour le moment"
 msgid "Augmenter la quantité"
 msgstr "Augmenter la quantité"
 
-#: src/routes/_authenticated/index.tsx
-msgid "Boilerplate web"
-msgstr "Boilerplate web"
+#: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
+msgid "Boutique"
+msgstr "Boutique"
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Catalogue"

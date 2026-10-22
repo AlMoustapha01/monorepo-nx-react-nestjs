@@ -20,6 +20,7 @@ import {
   renderAt,
   renderRouter,
   renderSignedIn,
+  serveTwoOrganizations,
   sessionContext,
   setupAppTest,
   user,
@@ -36,7 +37,7 @@ describe('app', () => {
   it('renders the home page at /', async () => {
     renderAt('/');
     const heading = await screen.findByRole('heading', { level: 1 });
-    expect(heading.textContent).toBe('Boilerplate web');
+    expect(heading.textContent).toBe('Accueil');
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
@@ -45,7 +46,7 @@ describe('app', () => {
     server.use(http.get(`${API}/feature-flags`, () => new HttpResponse(null, { status: 500 })));
     renderAt('/');
     const heading = await screen.findByRole('heading', { level: 1 });
-    expect(heading.textContent).toBe('Boilerplate web');
+    expect(heading.textContent).toBe('Accueil');
     expect(spy.mock.calls.some((c) => c[0] === '[reportError]')).toBe(true);
   });
 
@@ -62,7 +63,7 @@ describe('app', () => {
     renderAt('/');
     await screen.findByRole('heading', { level: 1 });
     await userEvent.click(screen.getByRole('button', { name: 'en' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Web boilerplate' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'en' }).getAttribute('aria-pressed')).toBe('true');
     expect(localStorage.getItem('app.locale')).toBe('en');
     expect(document.documentElement.lang).toBe('en');
@@ -160,14 +161,14 @@ describe('authentification', () => {
   }
 
   it('renvoie vers la connexion, puis vers la page demandée', async () => {
-    const router = renderAt('/panier', { devMode: false });
+    const router = renderAt('/?onglet=2', { devMode: false });
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
-    expect(router.state.location.search).toEqual({ redirect: '/panier' });
+    expect(router.state.location.search).toEqual({ redirect: '/?onglet=2' });
 
     await signIn();
-    // Storefront coupé : la page demandée répond 404, mais on y est bien arrivé, connecté.
-    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/panier'));
-    expect(await screen.findByRole('button', { name: 'Se déconnecter' })).toBeTruthy();
+    await vi.waitFor(() => expect(router.state.location.href).toBe('/?onglet=2'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Accueil' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Se déconnecter' })).toBeTruthy();
   });
 
   it('ne suit pas une redirection vers un autre site', async () => {
@@ -193,6 +194,20 @@ describe('authentification', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
   });
 
+  it('revient à l’accueil avec la session du nouveau tenant au changement d’organisation', async () => {
+    serveTwoOrganizations(server);
+    const router = renderSignedIn('/?onglet=2');
+    const organization = () =>
+      screen.findByRole<HTMLSelectElement>('combobox', { name: 'Organisation' });
+    expect((await organization()).value).toBe('o1');
+
+    await userEvent.setup().selectOptions(await organization(), 'Comptoir');
+    // Le menu suit la session rechargée (il est rendu à nouveau) : la nouvelle organisation est active.
+    await vi.waitFor(async () => expect((await organization()).value).toBe('o2'));
+    expect(router.state.location.href).toBe('/');
+    expect(screen.getByRole('heading', { level: 1, name: 'Accueil' })).toBeTruthy();
+  });
+
   it('envoie à l’API le token du service d’auth', async () => {
     current = { user, session: { activeOrganizationId: 'o1' } };
     const seen: (string | null)[] = [];
@@ -205,7 +220,7 @@ describe('authentification', () => {
       }),
     );
     renderSignedIn('/');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Boilerplate web' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Accueil' })).toBeTruthy();
     expect(seen).toEqual([`Bearer ${token}`]);
   });
 });

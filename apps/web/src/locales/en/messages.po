@@ -19,6 +19,10 @@ msgstr "404: page not found"
 msgid "Accepter l'invitation"
 msgstr "Accept the invitation"
 
+#: src/routes/_authenticated/index.tsx
+msgid "Accueil"
+msgstr "Home"
+
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
@@ -49,9 +53,9 @@ msgstr "No products yet"
 msgid "Augmenter la quantité"
 msgstr "Increase quantity"
 
-#: src/routes/_authenticated/index.tsx
-msgid "Boilerplate web"
-msgstr "Web boilerplate"
+#: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
+msgid "Boutique"
+msgstr "Shop"
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Catalogue"
