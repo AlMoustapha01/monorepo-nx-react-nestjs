@@ -9,6 +9,9 @@ Le comportement des fonctionnalités d'un projet n'est pas décrit ici, mais dan
 | …                                                                        | Lire                                                                 |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
 | Développer ma première fonctionnalité, de la spec à la PR                | [Votre première fonctionnalité](tutorial/premiere-fonctionnalite.md) |
+| Comprendre comment les services, les libs et les événements s'assemblent | [Architecture : vue d'ensemble](architecture/vue-d-ensemble.md)      |
+| Écrire un domaine de l'API, fichier par fichier                          | [Référence : un domaine de l'API](reference/domaine-api.md)          |
+| Écrire un écran du front, de la lib à la route                           | [Référence : une lib feature du front](reference/feature-web.md)     |
 | Démarrer un nouveau projet : renommer le scope, retirer les exemples     | [Démarrer un projet](guides/demarrer-un-projet.md)                   |
 | Lancer le projet pour la première fois                                   | [README](../README.md#démarrer)                                      |
 | Me connecter avec de vrais comptes, utiliser un autre fournisseur        | [Authentification en local](guides/auth-en-local.md)                 |

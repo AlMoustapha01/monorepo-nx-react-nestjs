@@ -29,6 +29,8 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
+`nx affected` compare à la branche `main` locale : si elle est en retard sur le dépôt (copie de travail jamais mise à jour), il relance des projets déjà mergés. `git fetch`, puis `--base=origin/main`.
+
 Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
 
 La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage et tests des scripts de `tools/dev`, matrice des specs (`spec:trace`), puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.
@@ -59,7 +61,7 @@ tools/dev/spec-trace.mts    matrice scénario → tests (`pnpm -s spec:trace`)
 
 Conventions du front : [`apps/web/AGENTS.md`](apps/web/AGENTS.md) et [`libs/web/AGENTS.md`](libs/web/AGENTS.md).
 
-Un nouveau domaine se crée avec `pnpm new:domain <nom>` : la lib (config Nx, TypeScript, Vitest, oxlint avec la règle de `domain/`), sa façade et son module enregistré dans l'AppModule, sans code métier.
+Un nouveau domaine se crée avec `pnpm new:domain <nom>` : la lib (config Nx, TypeScript, Vitest, oxlint avec la règle de `domain/`), sa façade et son module enregistré dans l'AppModule, sans code métier. La forme de chaque fichier d'un domaine (agrégat, port, fake, repository, controller, tests) est montrée sur un exemple fictif dans [Référence : un domaine de l'API](docs/reference/domaine-api.md), celle d'un écran dans [Référence : une lib feature du front](docs/reference/feature-web.md) ; la carte d'ensemble dans [Architecture](docs/architecture/vue-d-ensemble.md).
 
 <!-- example:start -->
 
