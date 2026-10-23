@@ -2,9 +2,10 @@ installed:
 - git
 settings:
   auto_execute_hooks: true
-# Wired on purpose: branch creation before specify, and a commit after each command that writes files.
-# The extension's other hooks (repository initialization, commits before each command, after analyze
-# and taskstoissues) are left out. `specify extension update git` re-adds them: remove them again.
+# Wired on purpose: branch creation before specify, and a commit after each command that writes files
+# (after analyze too: it reports only, but the corrections applied right after it get committed; with
+# nothing changed the hook does nothing). The extension's other hooks (repository initialization,
+# commits before each command, taskstoissues) are left out. `specify extension update git` re-adds them: remove them again.
 hooks:
   before_specify:
   - extension: git
@@ -59,6 +60,15 @@ hooks:
     priority: 10
     prompt: Commit checklist changes?
     description: Auto-commit after checklist generation
+    condition: null
+  after_analyze:
+  - extension: git
+    command: speckit.git.commit
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Commit analysis corrections?
+    description: Auto-commit the corrections made after the analysis
     condition: null
   after_implement:
   - extension: git

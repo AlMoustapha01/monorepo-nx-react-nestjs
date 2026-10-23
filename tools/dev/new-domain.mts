@@ -53,4 +53,5 @@ ${moduleClassName(name)} enregistré dans ${APP_MODULE}. Ensuite, en TDD :
   infra/         ${name}.schema.ts (pgSchema('${name.replaceAll('-', '_')}')), repositories Drizzle, mappers
   http/          controllers et DTO
   pnpm nx run api:db-generate --name=<sujet>   après la première table
-Contrats partagés avec le front : libs/shared/contracts/src/lib/${name}/.`);
+Contrats partagés avec le front : libs/shared/contracts/src/lib/${name}/.
+Forme de chaque fichier, sur un exemple : docs/reference/domaine-api.md`);

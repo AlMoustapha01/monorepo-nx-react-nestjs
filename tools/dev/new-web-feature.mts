@@ -42,4 +42,6 @@ Lib web-${name} créée : libs/web/${name}, importée par ${scope}/web-${name}. 
   src/lib/{components,hooks,data,states}/   tests *.spec.tsx à côté, rendus par renderWithProviders (src/test-utils.tsx)
   src/index.ts                              exports nommés de ce qu'utilise apps/web
   apps/web/src/routes/_authenticated/       la route qui assemble l'écran, derrière requireFeature('<flag>')
-  pnpm nx run web:i18n-check                après les premiers textes (catalogues de apps/web)`);
+  pnpm nx run web:i18n-check                après les premiers textes (catalogues de apps/web)
+  apps/web-e2e/src/accessibility.spec.ts    la nouvelle page, son flag dans E2E_FEATURE_FLAGS (src/stack.ts)
+Forme de chaque fichier, sur un exemple : docs/reference/feature-web.md`);
