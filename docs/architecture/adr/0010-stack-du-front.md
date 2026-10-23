@@ -5,7 +5,7 @@
 
 ## Contexte
 
-Le front doit offrir le même cadre que l'API : des frontières entre libs, un état serveur cohérent, des formulaires validés par les mêmes schémas que l'API, une interface traduisible et accessible, et des règles vérifiées par l'outillage plutôt que par la seule revue. Les choix ont été arrêtés avec l'utilisateur dans [la conception du socle web](../../superpowers/specs/2026-10-21-web-boilerplate-design.md).
+Le front doit offrir le même cadre que l'API : des frontières entre libs, un état serveur cohérent, des formulaires validés par les mêmes schémas que l'API, une interface traduisible et accessible, et des règles vérifiées par l'outillage plutôt que par la seule revue. Les choix ont été arrêtés avec l'utilisateur dans [la conception du socle web](../../archive/specs/2026-10-21-web-boilerplate-design.md).
 
 ## Décision
 

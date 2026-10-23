@@ -23,7 +23,7 @@ const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' 
 const run = (args: string[], cwd = '.') => execFileSync('pnpm', args, { stdio: 'inherit', cwd });
 /** Fichiers suivis, hors ce script et l'historique des plans ; git grep sort en 1 sans résultat. */
 function grep(args: string[], exclude: string[] = []): string {
-  const pathspecs = ['.', ':!tools/dev/strip-examples*', ':!docs/superpowers', ...exclude];
+  const pathspecs = ['.', ':!tools/dev/strip-examples*', ':!docs/archive', ...exclude];
   try {
     return git('grep', ...args, '--', ...pathspecs);
   } catch {

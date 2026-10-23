@@ -16,7 +16,7 @@ Une décision structurante par fichier : le contexte, ce qui a été décidé, c
 | [0010](0010-stack-du-front.md)               | Stack du front                                                              | Acceptée |
 | [0011](0011-developpement-par-specs.md)      | Développement par specs (Spec Kit), en TDD, avec traçabilité                | Acceptée |
 
-Les ADR 0001 à 0011 ont été écrits après coup, en octobre 2026, à partir du code, des messages de commit et des documents de conception de [`docs/superpowers`](../../superpowers/). La date de chacun est celle du commit qui a introduit la décision. Quand les alternatives écartées n'étaient écrites nulle part, l'ADR le dit.
+Les ADR 0001 à 0011 ont été écrits après coup, en octobre 2026, à partir du code, des messages de commit et des documents de conception de [`docs/archive`](../../archive/README.md). La date de chacun est celle du commit qui a introduit la décision. Quand les alternatives écartées n'étaient écrites nulle part, l'ADR le dit.
 
 ## Écrire un ADR
 
