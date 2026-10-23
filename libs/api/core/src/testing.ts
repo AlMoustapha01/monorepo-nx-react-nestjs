@@ -24,6 +24,7 @@ import { TransactionManager } from './lib/database/database-session';
 import type { Database } from './lib/database/database.tokens';
 import { Outbox } from './lib/events/outbox';
 import { FeatureFlags } from './lib/feature-flags/feature-flags';
+import { type EmailMessage, Mailer } from './lib/mail/mailer';
 
 export const TEST_AUTH = {
   secret: 'test-secret-that-is-at-least-32-characters',
@@ -132,6 +133,15 @@ export class RecordingOutbox extends Outbox {
     return this.published
       .filter((event) => event.type === definition.type)
       .map((event) => event.payload as IntegrationEventPayload<TDefinition>);
+  }
+}
+
+/** Garde les emails en mémoire au lieu de les envoyer, pour les vérifier dans un test. */
+export class RecordingMailer extends Mailer {
+  readonly sent: EmailMessage[] = [];
+
+  async send(message: EmailMessage): Promise<void> {
+    this.sent.push(message);
   }
 }
 

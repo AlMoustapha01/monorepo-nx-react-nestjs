@@ -23,6 +23,7 @@ import {
   RedisHealthIndicator,
 } from './health/health.controller';
 import { ShutdownState } from './lifecycle/graceful-shutdown';
+import { Mailer, mailerProvider } from './mail/mailer';
 import { RateLimitModule } from './http/rate-limit/rate-limit.module';
 import { getRequestId } from './http/request-id';
 
@@ -71,6 +72,7 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     RedisHealthIndicator,
     ShutdownState,
     { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },
+    mailerProvider,
     // L'ordre compte : authentification, rate limiting (par utilisateur), flag (404 avant tout
     // 403), puis rôles.
     { provide: APP_GUARD, useClass: AuthGuard },
@@ -81,6 +83,6 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
   ],
-  exports: [RequestContext, FeatureFlags],
+  exports: [RequestContext, FeatureFlags, Mailer],
 })
 export class CoreModule {}

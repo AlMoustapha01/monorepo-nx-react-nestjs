@@ -3,11 +3,11 @@ import {
   FeatureFlags,
   type IntegrationEvent,
   type IntegrationEventHandler,
+  Mailer,
   OnIntegrationEvent,
 } from '@nx-react-nestjs/api-core';
 import { OrderPlaced } from '@nx-react-nestjs/contracts';
 import { orderConfirmationEmail } from '../domain/order-confirmation';
-import { Mailer } from './mailer.port';
 
 /** Réagit à OrderPlaced sans dépendre du domaine commandes : seul le contrat de l'événement compte. */
 @Injectable()

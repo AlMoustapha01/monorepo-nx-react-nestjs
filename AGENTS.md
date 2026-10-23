@@ -40,7 +40,7 @@ Dépendances : audit bloquant en CI (`pnpm audit --prod` en local), Renovate ; c
 ```
 apps/api/                   bootstrap uniquement : main.ts (HTTP), worker.ts, migrate.ts, AppModule, migrations/
 apps/auth/                  service d'identité (Better Auth) : comptes, organisations (tenants), access tokens, JWKS
-libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + BullMQ, logs, health
+libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + BullMQ, email, logs, health
 libs/api/<domaine>/         un domaine métier = une lib Nx
   src/index.ts              FAÇADE : seul point d'entrée public
   src/lib/domain/           entités et règles, TypeScript pur
@@ -109,6 +109,7 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 - **Contexte** : le handler s'exécute au nom du tenant et de l'auteur de l'événement (`RequestContext`) ; les repositories restent filtrés par tenant sans rien changer.
 - **Exploitation** : 10 tentatives avec backoff exponentiel ; un payload invalide échoue sans retry. Rétention : outbox 7 jours, marques d'idempotence 30 jours, jobs Redis 24 h (succès) et 7 jours (échecs). `JOBS_ENABLED=false` donne un process API sans relais ni worker.
 - **Tests** : `RecordingOutbox` et `InlineTransactionManager` (`api-core/testing`) pour les cas d'usage ; `eventually()` pour attendre un traitement asynchrone en e2e.
+- **Email** : injecter `Mailer` (api-core, fourni par `CoreModule`) dans un handler `transactional: false`, jamais dans la requête. SMTP si `SMTP_URL` est défini (Mailpit en local, obligatoire en production ; timeouts de 10 s), sinon l'email est seulement journalisé. Passer `event.id` en `idempotencyKey` : il devient le `Message-ID`, identique d'un retry à l'autre. Tests : `RecordingMailer` (`api-core/testing`) ; en e2e, un conteneur Mailpit (Testcontainers) dont on lit les messages par son API HTTP (`/api/v1/messages`).
 
 ## Déploiement
 
