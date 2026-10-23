@@ -74,6 +74,8 @@ export class TicketsError extends AppError<TicketsErrorCode> {
 }
 ```
 
+Chaque code a un commentaire `/** … */` quand son nom ne suffit pas : il devient sa ligne dans la [référence des codes d'erreur](codes-erreur.md), régénérée par `pnpm docs:errors` (vérifiée par `pnpm check` et la CI).
+
 ## Agrégat (`domain/ticket.ts`)
 
 Constructeur privé ; une fabrique qui applique les règles de création ; `restore` qui reconstruit depuis la base sans les rejouer ; des getters ; des méthodes de transition qui disent si quelque chose a changé ; `markPersisted` pour le verrou optimiste. Aucun import de NestJS, Drizzle ou `pg` (lint).

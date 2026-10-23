@@ -26,6 +26,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Vérifier la topologie de prod en local (images, migrations, services) | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                    |
 | Développer une fonctionnalité (Spec Kit, dans Claude Code)            | `/speckit-specify <description>`, puis la suite du cycle (voir [plus bas](#développer-une-fonctionnalité-spec-kit))  |
 | Matrice scénario → tests des specs                                    | `pnpm -s spec:trace` (toutes) ou `… specs/<NNN-nom>` (stricte) ; voir « Specs à jour » plus bas                      |
+| Régénérer la référence des codes d'erreur après en avoir ajouté un    | `pnpm docs:errors` ; voir [Codes d'erreur](docs/reference/codes-erreur.md)                                           |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
