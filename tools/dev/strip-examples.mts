@@ -81,9 +81,15 @@ if (leftovers) {
   console.log(`\nMentions à relire (git grep -n -i -E '${LEFTOVER_PATTERN}') :\n${leftovers}`);
 }
 
+// Un flag inconnu empêche l'API de démarrer : celui de la boutique doit sortir du .env local.
+const storefrontFlagInEnv =
+  existsSync('.env') && /^FEATURE_FLAGS=.*storefront/m.test(readFileSync('.env', 'utf8'));
 console.log(`Ensuite :
-  git diff && pnpm check   relire et vérifier, puis committer
-  retirer FEATURE_FLAGS=storefront=true de .env (un flag inconnu empêche l'API de démarrer)`);
+  git diff && pnpm check   relire et vérifier, puis committer${
+    storefrontFlagInEnv
+      ? "\n  retirer storefront de FEATURE_FLAGS dans .env (un flag inconnu empêche l'API de démarrer)"
+      : ''
+  }`);
 console.log(
   keepMigrations
     ? `Migrations gardées : n'en supprimer ni réécrire aucune. Une fois ce code déployé, générer celle
