@@ -25,6 +25,7 @@ export default defineConfig(() => ({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    passWithNoTests: true,
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../../coverage/libs/web/auth',

@@ -171,7 +171,7 @@ Ce qui a coincé sur Annonces, et que vous croiserez sans doute :
 - **Ordre par date** : 21 annonces créées dans la même milliseconde sortent dans le désordre. Figer l'horloge (`vi.setSystemTime`).
 - **Lint** : les règles d'accessibilité (`jsx-a11y`) et de traduction (`lingui/no-unlocalized-strings`) mordent tôt ; lancer `lint` souvent. knip signale les exports inutilisés.
 - **Catalogues de traduction** : `web:i18n-check` compare au dernier commit, il échoue tant que les `.po` mis à jour ne sont pas commités. Traduire les nouvelles chaînes en anglais.
-- **Nouveau domaine** : `pnpm new:domain announcements` crée la lib, sa façade et son module enregistré dans l'AppModule ; le reste s'écrit en TDD. Une lib front sans aucun test fait échouer `test` : la créer avec son premier test.
+- **Nouveau domaine** : `pnpm new:domain announcements` crée la lib, sa façade et son module enregistré dans l'AppModule ; le reste s'écrit en TDD. Côté front, `pnpm new:web-feature announcements` crée la lib feature, avec `renderWithProviders` pour les tests de composants.
 - **Composant manquant** dans `libs/web/ui` (ici `Textarea`) : l'ajouter avec sa story, et le mentionner dans le plan.
 
 ## 6. Converger
