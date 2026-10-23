@@ -25,6 +25,7 @@ Libs front React. App qui les assemble : [`apps/web/AGENTS.md`](../../apps/web/A
 - Thème : `src/lib/styles/theme.css` (tokens shadcn neutres, mode sombre via la classe `.dark`). Pas de couleur en dur : utiliser les tokens.
 - Ajouter un composant shadcn : copier le fichier dans `src/lib/components/` avec des imports relatifs (pas de `components.json`, pas d'alias), l'exporter depuis `index.ts` et écrire sa story `*.stories.tsx`. Un composant qui affiche un libellé d'accessibilité le reçoit en prop obligatoire (ex. `DialogContent` exige `closeLabel`), car la lib n'a pas de chaîne en dur.
 - Storybook 10 : `pnpm nx run web-ui:storybook` (http://localhost:6006), `pnpm nx run web-ui:build-storybook`.
+- Thème, ajout d'un composant pas à pas, stories : [Design system](../../docs/guides/design-system.md).
 
 ## Données (`web-data-access` et features)
 
