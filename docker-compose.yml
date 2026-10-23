@@ -33,7 +33,7 @@ services:
   #   docker compose --profile observability up -d, puis OTEL_EXPORTER_OTLP_ENDPOINT dans .env.
   # Grafana : http://localhost:3001 (OBSERVABILITY_UI_PORT), menu Explore → Tempo.
   observability:
-    image: grafana/otel-lgtm:0.35.0
+    image: grafana/otel-lgtm:0.37.0
     profiles: [observability]
     ports:
       - '${OTLP_PORT:-4318}:4318'
