@@ -35,7 +35,7 @@ const tsconfig = readFileSync(TSCONFIG, 'utf8');
 const scope = scopeOf(tsconfig);
 const edits: Record<string, string> = {
   ...domainFiles(name),
-  [TSCONFIG]: addPathAlias(tsconfig, name),
+  [TSCONFIG]: addPathAlias(tsconfig, `api-${name}`, `libs/api/${name}`),
   [APP_MODULE]: registerModule(readFileSync(APP_MODULE, 'utf8'), name, scope),
 };
 

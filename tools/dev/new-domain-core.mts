@@ -4,13 +4,21 @@
  * Logique pure ; les fichiers sont dans new-domain.mts.
  */
 
-const DOMAIN_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const LIB_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const RESERVED = new Set(['core']);
 
-/** Nom de domaine utilisable comme dossier, nom de projet Nx et alias ; sinon, ce qui ne va pas. */
-export function domainNameProblem(name: string): string | undefined {
-  if (!DOMAIN_NAME.test(name)) {
+/** Nom de lib utilisable comme dossier, nom de projet Nx et alias ; sinon, ce qui ne va pas. */
+export function libNameProblem(name: string): string | undefined {
+  if (!LIB_NAME.test(name)) {
     return `« ${name} » : minuscules, chiffres et tirets simples, commençant par une lettre (ex. billing, loyalty-points).`;
+  }
+  return undefined;
+}
+
+export function domainNameProblem(name: string): string | undefined {
+  const problem = libNameProblem(name);
+  if (problem) {
+    return problem;
   }
   if (RESERVED.has(name)) {
     return `« ${name} » est réservé (libs/api/${name} existe déjà dans le boilerplate).`;
@@ -26,7 +34,7 @@ export function moduleClassName(name: string): string {
   return `${pascal}Module`;
 }
 
-const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
+export const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 
 /** Scope npm du projet (`@acme`), lu dans l'alias de api-core : init:project a pu le renommer. */
 export function scopeOf(tsconfigBase: string): string {
@@ -170,26 +178,28 @@ export class ${className} {}
   };
 }
 
-/** Ajoute l'alias `@scope/api-<nom>` vers la façade, après le dernier alias de domaine API. */
-export function addPathAlias(tsconfigBase: string, name: string): string {
+/**
+ * Ajoute l'alias `@scope/<projet>` vers la façade de la lib (`<dossier>/src/index.ts`), après le
+ * dernier alias de la même famille (`api-…`, `web-…`).
+ */
+export function addPathAlias(tsconfigBase: string, project: string, root: string): string {
   const config = JSON.parse(tsconfigBase);
   const paths: Record<string, string[]> = config.compilerOptions.paths;
   const scope = scopeOf(tsconfigBase);
-  const alias = `${scope}/api-${name}`;
+  const alias = `${scope}/${project}`;
   if (alias in paths) {
     throw new Error(`L'alias ${alias} existe déjà dans tsconfig.base.json.`);
   }
-  const keys = Object.keys(paths);
-  const apiPrefix = `${scope}/api-`;
-  let insertAt = keys.length;
-  for (let i = keys.length - 1; i >= 0; i--) {
-    if (keys[i].startsWith(apiPrefix)) {
+  const familyPrefix = `${scope}/${project.slice(0, project.indexOf('-') + 1)}`;
+  const entries = Object.entries(paths);
+  let insertAt = entries.length;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i][0].startsWith(familyPrefix)) {
       insertAt = i + 1;
       break;
     }
   }
-  const entries = Object.entries(paths);
-  entries.splice(insertAt, 0, [alias, [`./libs/api/${name}/src/index.ts`]]);
+  entries.splice(insertAt, 0, [alias, [`./${root}/src/index.ts`]]);
   config.compilerOptions.paths = Object.fromEntries(entries);
   return json(config);
 }

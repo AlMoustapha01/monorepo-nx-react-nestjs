@@ -11,11 +11,12 @@
     "libs/api/core/src/testing.ts",
     "libs/api/*/src/lib/infra/*.schema.ts",
     "libs/api/core/src/lib/**/*.schema.ts",
-    "tools/dev/{setup,token,seed,spec-trace,init-project,strip-examples,new-domain}.mts",
+    "tools/dev/{setup,token,seed,spec-trace,init-project,strip-examples,new-domain,new-web-feature}.mts",
     "tools/dev/*.test.mts",
     "apps/web/src/main.tsx",
     "apps/web/lingui.config.ts",
     "libs/web/*/lingui.config.ts",
+    "libs/web/*/src/test-utils.tsx",
     "apps/web/src/routes/**/*.tsx",
     "libs/web/*/src/**/*.stories.tsx",
     "libs/web/*/.storybook/main.ts"

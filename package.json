@@ -15,6 +15,7 @@
     "init:project": "node tools/dev/init-project.mts",
     "strip:examples": "node tools/dev/strip-examples.mts",
     "new:domain": "node tools/dev/new-domain.mts",
+    "new:web-feature": "node tools/dev/new-web-feature.mts",
     "spec:trace": "node tools/dev/spec-trace.mts",
     "test:tools": "node --test 'tools/dev/*.test.mts'"
   },

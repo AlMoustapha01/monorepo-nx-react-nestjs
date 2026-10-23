@@ -136,7 +136,8 @@ describe('domainFiles', () => {
 
 describe('addPathAlias', () => {
   it("ajoute l'alias vers la façade après le dernier domaine API", () => {
-    const paths = JSON.parse(addPathAlias(TSCONFIG, 'billing')).compilerOptions.paths;
+    const paths = JSON.parse(addPathAlias(TSCONFIG, 'api-billing', 'libs/api/billing'))
+      .compilerOptions.paths;
     assert.deepEqual(Object.keys(paths), [
       '@acme/contracts',
       '@acme/api-core',
@@ -149,13 +150,20 @@ describe('addPathAlias', () => {
   });
 
   it('garde le reste du fichier', () => {
-    const config = JSON.parse(addPathAlias(TSCONFIG, 'billing'));
+    const config = JSON.parse(addPathAlias(TSCONFIG, 'api-billing', 'libs/api/billing'));
     assert.equal(config.compilerOptions.strict, true);
     assert.deepEqual(config.exclude, ['node_modules', 'tmp']);
   });
 
   it('refuse un alias qui existe déjà', () => {
-    assert.throws(() => addPathAlias(TSCONFIG, 'catalog'), /existe déjà/);
+    assert.throws(() => addPathAlias(TSCONFIG, 'api-catalog', 'libs/api/catalog'), /existe déjà/);
+  });
+
+  it('range une lib front après le dernier alias web', () => {
+    const paths = JSON.parse(addPathAlias(TSCONFIG, 'web-billing', 'libs/web/billing'))
+      .compilerOptions.paths;
+    assert.deepEqual(Object.keys(paths).slice(-2), ['@acme/web-ui', '@acme/web-billing']);
+    assert.deepEqual(paths['@acme/web-billing'], ['./libs/web/billing/src/index.ts']);
   });
 });
 
