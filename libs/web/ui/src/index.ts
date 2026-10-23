@@ -5,6 +5,8 @@ export { Heading, type HeadingProps } from './lib/components/heading';
 export { Badge, badgeVariants, type BadgeProps } from './lib/components/badge';
 export { Button, buttonVariants } from './lib/components/button';
 export { Input } from './lib/components/input';
+export { Textarea } from './lib/components/textarea';
+export { FormError, FormField, TextareaField } from './lib/components/form-field';
 export { Label } from './lib/components/label';
 export {
   Card,

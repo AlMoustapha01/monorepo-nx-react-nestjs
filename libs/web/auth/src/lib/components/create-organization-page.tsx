@@ -3,12 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { createOrganizationSchema, type CreateOrganizationInput } from '@nx-react-nestjs/contracts';
 import type { AuthClient } from '@nx-react-nestjs/web-data-access';
-import { Button, Stack } from '@nx-react-nestjs/web-ui';
+import { Button, FormError, FormField, Stack } from '@nx-react-nestjs/web-ui';
 
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
 import { AuthCard } from './auth-card';
-import { FormError } from './form-error';
-import { FormField } from './form-field';
 
 interface CreateOrganizationPageProps {
   auth: AuthClient;

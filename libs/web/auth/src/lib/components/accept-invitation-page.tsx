@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import type { AuthClient } from '@nx-react-nestjs/web-data-access';
-import { Button, Stack, Text } from '@nx-react-nestjs/web-ui';
+import { Button, FormError, Stack, Text } from '@nx-react-nestjs/web-ui';
 
 import { invitationQueryOptions } from '../data/queries';
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
 import { AuthCard } from './auth-card';
-import { FormError } from './form-error';
 
 interface AcceptInvitationPageProps {
   auth: AuthClient;
