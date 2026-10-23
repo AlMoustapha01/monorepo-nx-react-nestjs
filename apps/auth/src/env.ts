@@ -26,6 +26,11 @@ const envSchema = z.object({
   /** Origines du front autorisées à appeler le service (CORS, protection CSRF). */
   CORS_ORIGINS: csv,
 
+  /** Délai entre le signal d'arrêt et la fermeture, `/ready` en 503 : le temps que le load balancer retire l'instance. */
+  SHUTDOWN_DRAIN_MS: z.coerce.number().int().nonnegative().default(0),
+  /** Au-delà, le process sort en erreur. Inférieur au délai avant SIGKILL de l'orchestrateur. */
+  SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(25_000),
+
   /** Même base que l'API ; les tables de Better Auth vivent dans le schéma `auth`. */
   DATABASE_URL: z.url(),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(5),
