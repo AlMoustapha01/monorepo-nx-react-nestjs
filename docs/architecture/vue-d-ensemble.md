@@ -125,4 +125,5 @@ L'événement est écrit dans la même transaction que la donnée métier : il n
 - Écrire un domaine, fichier par fichier : [Référence : un domaine de l'API](../reference/domaine-api.md).
 - Écrire un écran : [Référence : une lib feature du front](../reference/feature-web.md).
 - Déploiement, sondes, arrêt : [Déployer](../guides/deployer.md).
+- Les notions employées ici (monolithe modulaire, DDD, hexagonal, outbox…) et où les apprendre : [Notions et ressources](../notions.md).
 - Observabilité : [Observabilité en local](../guides/observabilite-en-local.md) et [Référence : métriques et alertes](../reference/metriques-et-alertes.md).
