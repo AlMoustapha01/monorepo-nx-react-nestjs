@@ -87,16 +87,17 @@ Chaque process valide son environnement au démarrage et refuse de démarrer si 
 
 ### Service d'identité
 
-| Variable                               | En production                                                                           |
-| -------------------------------------- | --------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET`                   | 32 caractères minimum, généré (`openssl rand -hex 32`), dans un gestionnaire de secrets |
-| `BETTER_AUTH_URL`                      | URL publique du service, vue par le navigateur (liens des emails, cookies)              |
-| `AUTH_APP_URL`                         | URL du front (liens d'invitation)                                                       |
-| `CORS_ORIGINS`                         | l'URL du front : origines autorisées et protection CSRF                                 |
-| `DATABASE_URL`                         | la même base que l'API                                                                  |
-| `SMTP_URL`, `MAIL_FROM`                | obligatoire, pour la vérification d'email et la réinitialisation du mot de passe        |
-| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE` | mêmes valeurs que l'API                                                                 |
-| `TRUST_PROXY_HOPS`                     | comme pour l'API                                                                        |
+| Variable                                   | En production                                                                           |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`                       | 32 caractères minimum, généré (`openssl rand -hex 32`), dans un gestionnaire de secrets |
+| `BETTER_AUTH_URL`                          | URL publique du service, vue par le navigateur (liens des emails, cookies)              |
+| `AUTH_APP_URL`                             | URL du front (liens d'invitation)                                                       |
+| `CORS_ORIGINS`                             | l'URL du front : origines autorisées et protection CSRF                                 |
+| `DATABASE_URL`                             | la même base que l'API                                                                  |
+| `SMTP_URL`, `MAIL_FROM`                    | obligatoire, pour la vérification d'email et la réinitialisation du mot de passe        |
+| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`     | mêmes valeurs que l'API                                                                 |
+| `TRUST_PROXY_HOPS`                         | comme pour l'API                                                                        |
+| `SHUTDOWN_DRAIN_MS`, `SHUTDOWN_TIMEOUT_MS` | comme pour l'API                                                                        |
 
 **Ne jamais changer `BETTER_AUTH_SECRET`** sans plan : il chiffre les clés privées du JWKS stockées en base. Un nouveau secret rend ces clés illisibles, et toutes les sessions deviennent invalides.
 
@@ -126,11 +127,11 @@ L'API sans jobs ne vérifie pas Redis : une panne Redis ne doit pas retirer tout
 
 ## Arrêt et redémarrage
 
-Sur SIGTERM, l'API :
+Sur SIGTERM, l'API et le service d'identité :
 
 1. passe `/ready` en 503 ;
 2. attend `SHUTDOWN_DRAIN_MS`, le temps que le load balancer voie la sonde et retire l'instance ;
-3. termine les requêtes et les jobs en cours, ferme Redis et Postgres, vide la télémétrie, puis sort ;
+3. termine les requêtes et les jobs en cours, ferme Redis (API seulement) et Postgres, vide la télémétrie, puis sort ;
 4. sort en erreur si tout ça dépasse `SHUTDOWN_TIMEOUT_MS`.
 
 Réglage :
@@ -138,7 +139,7 @@ Réglage :
 - `SHUTDOWN_DRAIN_MS` : 5000 derrière Kubernetes ou un load balancer (assez pour un cycle de sonde) ; 0 en local.
 - `SHUTDOWN_TIMEOUT_MS` (25 s) doit rester sous le délai avant SIGKILL de l'orchestrateur (`terminationGracePeriodSeconds`, `stop_grace_period` : 30 s par défaut), drain compris.
 
-Le worker suit les mêmes étapes ; sans load balancer à attendre, laissez-lui `SHUTDOWN_DRAIN_MS=0`. Le service d'identité, lui, n'attend pas de drain : il ferme son serveur dès le signal et sort en erreur au-delà de 25 s.
+Le worker suit les mêmes étapes ; sans load balancer à attendre, laissez-lui `SHUTDOWN_DRAIN_MS=0`.
 
 ## Derrière un load balancer
 
