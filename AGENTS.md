@@ -34,7 +34,7 @@ Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : chan
 
 Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
 
-La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage et tests des scripts de `tools/dev`, matrice des specs (`spec:trace`), puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build.
+La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage et tests des scripts de `tools/dev`, matrice des specs (`spec:trace`), puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build. Lire un échec, reproduire un job en local : [Intégration continue](docs/guides/ci.md).
 
 Dépendances : audit bloquant en CI (`pnpm audit --prod` en local), Renovate ; corriger une faille par mise à jour, override ciblée ou exception justifiée : voir [Dépendances et failles](docs/guides/dependances.md).
 
