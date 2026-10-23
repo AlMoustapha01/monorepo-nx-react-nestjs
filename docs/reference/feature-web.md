@@ -157,7 +157,7 @@ export function TicketsPage({ api }: { api: ApiClient }) {
 }
 ```
 
-Un composant qui manque dans `web-ui` s'y ajoute, avec sa story (les stories sont exécutées comme tests).
+Un composant qui manque dans `web-ui` s'y ajoute, avec sa story (les stories sont exécutées comme tests) : voir [Design system](../guides/design-system.md).
 
 ## Tests de composants (`*.spec.tsx`)
 
