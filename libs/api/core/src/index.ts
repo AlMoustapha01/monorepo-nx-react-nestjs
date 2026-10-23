@@ -17,6 +17,7 @@ export {
   OnIntegrationEvent,
 } from './lib/events/integration-event';
 export { Outbox } from './lib/events/outbox';
+export { type EmailMessage, Mailer } from './lib/mail/mailer';
 export { domainIdGenerator } from './lib/ids/domain-id';
 export { type KeysetCursor, decodeCursor, encodeCursor } from './lib/http/cursor';
 export { configureApp } from './lib/http/configure-app';

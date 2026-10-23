@@ -18,6 +18,16 @@ export const E2E_PORTS = {
 const ROOT = resolve(__dirname, '../../..');
 const LOGS = join(ROOT, 'dist/.playwright/apps/web-e2e/logs');
 
+/**
+ * Flags activés pour les parcours (`<flag>=true`) : une page derrière un flag coupé répond 404,
+ * et le test d'accessibilité de chaque nouvelle page en a besoin.
+ */
+const E2E_FEATURE_FLAGS: string[] = [
+  // example:start
+  'storefront=true',
+  // example:end
+];
+
 /** Ce que les tests lisent (process.env, transmis aux workers par Playwright). */
 interface StackEnv {
   E2E_DATABASE_URL: string;
@@ -71,9 +81,7 @@ export async function startStack(): Promise<Stack> {
       PORT: String(E2E_PORTS.api),
       REDIS_URL: redis.getConnectionUrl(),
       AUTH_JWKS_URL: `${authUrl}/api/auth/jwks`,
-      // example:start
-      FEATURE_FLAGS: 'storefront=true',
-      // example:end
+      FEATURE_FLAGS: E2E_FEATURE_FLAGS.join(','),
       RATE_LIMIT_MAX: '10000',
     };
     const authEnv = {

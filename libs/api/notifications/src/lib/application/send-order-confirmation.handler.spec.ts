@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { IntegrationEvent } from '@nx-react-nestjs/api-core';
-import { StaticFeatureFlags } from '@nx-react-nestjs/api-core/testing';
+import { RecordingMailer, StaticFeatureFlags } from '@nx-react-nestjs/api-core/testing';
 import type { OrderPlaced } from '@nx-react-nestjs/contracts';
 import { SendOrderConfirmation } from './send-order-confirmation.handler';
-import { RecordingMailer } from './testing/recording-mailer';
 
 const event = (customerEmail: string | null): IntegrationEvent<typeof OrderPlaced> => ({
   id: 'EVT-01jb4x7k2m9qwfzp3hd8',

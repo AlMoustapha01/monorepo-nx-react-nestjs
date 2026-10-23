@@ -41,7 +41,14 @@
     "db-generate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "drizzle-kit generate --config apps/api/drizzle.config.ts"
+        "commands": [
+          {
+            "command": "drizzle-kit generate --config apps/api/drizzle.config.ts",
+            "forwardAllArgs": true
+          },
+          { "command": "oxfmt apps/api/migrations", "forwardAllArgs": false }
+        ],
+        "parallel": false
       }
     },
     "db-migrate": {

@@ -109,6 +109,10 @@ export async function invite(account: Account, organizationId: string, email: st
   );
 }
 
+/**
+ * Remplit et envoie le formulaire de connexion, sans attendre la suite : attendre la page
+ * d'arrivée (ex. le titre « Accueil ») avant un `page.goto`, qui couperait la connexion en cours.
+ */
 export async function signIn(page: Page, email: string, password = PASSWORD): Promise<void> {
   await page.getByLabel('Adresse email').fill(email);
   await page.getByLabel('Mot de passe').fill(password);

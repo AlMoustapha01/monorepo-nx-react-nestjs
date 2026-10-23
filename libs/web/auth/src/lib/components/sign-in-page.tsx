@@ -5,12 +5,10 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { Link } from '@tanstack/react-router';
 import { signInSchema, type SignInInput } from '@nx-react-nestjs/contracts';
 import { ApiError, type AuthClient } from '@nx-react-nestjs/web-data-access';
-import { Button, Stack, Text, buttonVariants } from '@nx-react-nestjs/web-ui';
+import { Button, FormError, FormField, Stack, Text, buttonVariants } from '@nx-react-nestjs/web-ui';
 
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
 import { AuthCard } from './auth-card';
-import { FormError } from './form-error';
-import { FormField } from './form-field';
 
 interface SignInPageProps {
   auth: AuthClient;

@@ -9,12 +9,10 @@ import {
   type ResetPasswordInput,
 } from '@nx-react-nestjs/contracts';
 import type { AuthClient } from '@nx-react-nestjs/web-data-access';
-import { Button, Stack, Text } from '@nx-react-nestjs/web-ui';
+import { Button, FormError, FormField, Stack, Text } from '@nx-react-nestjs/web-ui';
 
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
 import { AuthCard } from './auth-card';
-import { FormError } from './form-error';
-import { FormField } from './form-field';
 
 interface ResetPasswordPageProps {
   auth: AuthClient;
