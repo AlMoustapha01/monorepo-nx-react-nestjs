@@ -26,4 +26,4 @@ Le comportement des fonctionnalités d'un projet n'est pas décrit ici, mais dan
 | Faire évoluer une spec après son merge, changer son statut                                 | [Spec Kit : cycle de vie et maintenance](guides/spec-kit.md)                                                                                                                                       |
 | Personnaliser Spec Kit, l'utiliser avec un autre agent, le mettre à jour                   | [Spec Kit : cycle de vie et maintenance](guides/spec-kit.md)                                                                                                                                       |
 
-`superpowers/` contient les specs et plans de travail qui ont servi à construire le boilerplate : un historique, pas une documentation à jour.
+[`archive/`](archive/README.md) contient les documents de conception et les plans qui ont servi à construire le boilerplate : un historique, pas une documentation à jour.

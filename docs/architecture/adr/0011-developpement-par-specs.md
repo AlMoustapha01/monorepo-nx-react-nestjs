@@ -23,4 +23,4 @@ Les projets issus du boilerplate sont développés en grande partie avec des age
 
 ## Alternatives écartées
 
-Une garde en CI « PR `feat` ⇒ spec » a été envisagée puis écartée : l'usage de Spec Kit repose sur la documentation et l'outillage. Elle pourra revenir ([conception](../../superpowers/specs/2026-10-22-spec-kit-design.md)).
+Une garde en CI « PR `feat` ⇒ spec » a été envisagée puis écartée : l'usage de Spec Kit repose sur la documentation et l'outillage. Elle pourra revenir ([conception](../../archive/specs/2026-10-22-spec-kit-design.md)).
