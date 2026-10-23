@@ -14,6 +14,7 @@
     "dev:seed": "node tools/dev/seed.mts",
     "init:project": "node tools/dev/init-project.mts",
     "strip:examples": "node tools/dev/strip-examples.mts",
+    "new:domain": "node tools/dev/new-domain.mts",
     "spec:trace": "node tools/dev/spec-trace.mts",
     "test:tools": "node --test 'tools/dev/*.test.mts'"
   },
