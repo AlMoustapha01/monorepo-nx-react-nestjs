@@ -10,6 +10,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Lancer l'API                                                          | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
 | Nouveau projet : renommer le scope `@nx-react-nestjs`                 | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
 | Retirer le code d'exemple, avant le premier déploiement               | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                      |
+| Nouveau domaine métier : lib API vide, alias et module câblés         | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                         |
 | Données de démo (API démarrée)                                        | `pnpm dev:seed`                                                                                                      |
 | Token pour appeler l'API (Swagger, curl)                              | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
 | Lancer le service d'identité (Better Auth)                            | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
@@ -57,9 +58,11 @@ tools/dev/spec-trace.mts    matrice scénario → tests (`pnpm -s spec:trace`)
 
 Conventions du front : [`apps/web/AGENTS.md`](apps/web/AGENTS.md) et [`libs/web/AGENTS.md`](libs/web/AGENTS.md).
 
+Un nouveau domaine se crée avec `pnpm new:domain <nom>` : la lib (config Nx, TypeScript, Vitest, oxlint avec la règle de `domain/`), sa façade et son module enregistré dans l'AppModule, sans code métier.
+
 <!-- example:start -->
 
-Domaines d'exemple à copier : `libs/api/catalog` (agrégat simple, compteur de ventes alimenté par événements), `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade, publication d'événements) et `libs/api/notifications` (domaine purement réactif : aucun controller, seulement des handlers). Le code propre aux exemples est dans ses propres fichiers ou entre des lignes `example:start` et `example:end` : `pnpm strip:examples` les retire, et la CI vérifie qu'un projet sans exemples passe `pnpm check`. Un nouvel exemple suit la même règle.
+Domaines d'exemple dont s'inspirer : `libs/api/catalog` (agrégat simple, compteur de ventes alimenté par événements), `libs/api/orders` (agrégat sur deux tables, dépendance au catalogue par sa façade, publication d'événements) et `libs/api/notifications` (domaine purement réactif : aucun controller, seulement des handlers). Le code propre aux exemples est dans ses propres fichiers ou entre des lignes `example:start` et `example:end` : `pnpm strip:examples` les retire, et la CI vérifie qu'un projet sans exemples passe `pnpm check`. Un nouvel exemple suit la même règle.
 
 <!-- example:end -->
 
