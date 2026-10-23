@@ -24,18 +24,22 @@ const TSCONFIG = `{
 }
 `;
 
+// Marqueurs construits : écrits en toutes lettres, strip:examples les retirerait de ce fichier.
+const START = `// example:${'start'}`;
+const END = `// example:${'end'}`;
+
 const APP_MODULE = `import { Module } from '@nestjs/common';
 import { CoreModule } from '@acme/api-core';
-// example:start
+${START}
 import { CatalogModule } from '@acme/api-catalog';
-// example:end
+${END}
 
 @Module({
   imports: [
     CoreModule,
-    // example:start
+    ${START}
     CatalogModule,
-    // example:end
+    ${END}
   ],
 })
 export class AppModule {}
