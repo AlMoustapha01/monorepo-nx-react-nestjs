@@ -115,6 +115,8 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 
 ## Déploiement
 
+Procédure complète (ordre, configuration, expand/contract, liste avant la première mise en production) : [Déployer](docs/guides/deployer.md).
+
 - **Une image** (`Dockerfile`), trois commandes : `node main.js` (HTTP), `node worker.js` (relais de l'outbox, worker BullMQ, purge quotidienne), `node migrate.js`. `docker-compose.prod.yml` montre l'enchaînement.
 - **Service d'identité** : même Dockerfile avec `--build-arg APP=auth`, deux commandes : `node main.js` et `node migrate.js` (tables de Better Auth : ajouts seulement, rétrocompatibles). `BETTER_AUTH_SECRET` chiffre les clés privées du JWKS en base : le changer rend ces clés illisibles.
 - **Migrations** : étape de déploiement à part, avant le démarrage des nouvelles instances, jamais au boot de l'API. `migrate.js` prend un verrou Postgres : deux déploiements simultanés se sérialisent. Comme les anciennes instances tournent encore pendant la migration, elle doit rester rétrocompatible (principe 5).
