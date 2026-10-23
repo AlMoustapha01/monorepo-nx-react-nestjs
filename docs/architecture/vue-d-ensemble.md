@@ -121,6 +121,7 @@ L'événement est écrit dans la même transaction que la donnée métier : il n
 ## Pour aller plus loin
 
 - En détail, avec les raisons des choix et les limites : [Authentification](authentification.md), [Outbox et événements](outbox-et-evenements.md), [Multi-tenant et autorisations](multi-tenant-et-autorisations.md).
+- Pourquoi ces choix : les [décisions d'architecture (ADR)](adr/README.md).
 - Écrire un domaine, fichier par fichier : [Référence : un domaine de l'API](../reference/domaine-api.md).
 - Écrire un écran : [Référence : une lib feature du front](../reference/feature-web.md).
 - Déploiement, sondes, arrêt : [Déployer](../guides/deployer.md).
