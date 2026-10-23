@@ -17,7 +17,7 @@ export interface IntegrationEventJob {
 }
 
 export const DEFAULT_JOB_OPTIONS: DefaultJobOptions = {
-  // ~17 min de retries cumulés (1 s, 2 s, 4 s…) avant de laisser le job en échec.
+  // ~8,5 min de retries cumulés (1 s, 2 s, 4 s… 256 s) avant de laisser le job en échec.
   attempts: 10,
   backoff: { type: 'exponential', delay: 1000 },
   // Principe 4 : rien ne reste indéfiniment dans Redis.
