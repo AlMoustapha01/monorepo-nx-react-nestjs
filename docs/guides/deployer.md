@@ -63,7 +63,7 @@ Les migrations restent générées (`pnpm nx run api:db-generate --name=<sujet>`
 
 ## Configuration
 
-Chaque process valide son environnement au démarrage et refuse de démarrer si une variable manque ou est invalide, en la nommant. Schémas : `libs/api/core/src/lib/config/env.ts` (API, worker) et `apps/auth/src/env.ts` (identité). `.env.example` les commente toutes.
+Chaque process valide son environnement au démarrage et refuse de démarrer si une variable manque ou est invalide, en la nommant. Schémas : `libs/api/core/src/lib/config/env.ts` (API, worker) et `apps/auth/src/env.ts` (identité). Toutes sont décrites dans la [référence des variables d'environnement](../reference/variables-environnement.md) ; les tableaux ci-dessous ne retiennent que ce qui compte en production.
 
 ### API et worker
 
