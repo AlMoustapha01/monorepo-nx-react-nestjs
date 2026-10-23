@@ -56,6 +56,10 @@ jobs:
       - name: Specs à jour
         run: pnpm -s spec:trace --base "$NX_BASE"
 
+      # Échoue si docs/reference/codes-erreur.md ne reflète plus les tables *_ERROR_KINDS.
+      - name: Codes d'erreur documentés
+        run: pnpm -s docs:errors --check
+
       - name: Code mort et dépendances inutilisées
         run: pnpm knip
 

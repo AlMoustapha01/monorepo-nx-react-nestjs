@@ -30,18 +30,30 @@ export abstract class AppError<TCode extends string = string> extends Error {
 }
 
 const CORE_ERROR_KINDS = {
+  /** Token absent, invalide, expiré, ou sans tenant. */
   UNAUTHENTICATED: 'UNAUTHENTICATED',
+  /** Route réservée à un autre rôle (`@RequireRole`) ; `details.required` liste les rôles admis. */
   FORBIDDEN: 'FORBIDDEN',
   /** Route derrière un flag désactivé : on ne révèle pas qu'elle existe. */
   FEATURE_DISABLED: 'NOT_FOUND',
+  /** Curseur de pagination illisible ou forgé : repartir de la première page. */
   INVALID_CURSOR: 'VALIDATION',
+  /** Bug : tenant ou utilisateur lu hors d'une requête ou d'un handler. */
   TENANT_CONTEXT_MISSING: 'INTERNAL',
+  /** Bug : événement publié hors de la transaction de l'écriture métier. */
   OUTBOX_REQUIRES_TRANSACTION: 'INTERNAL',
+  /** `If-Match` doit être un seul ETag, comme `"3"`. */
   INVALID_IF_MATCH: 'VALIDATION',
+  /** La ressource a changé depuis sa lecture (`If-Match`) : la relire avant de réessayer. */
   PRECONDITION_FAILED: 'PRECONDITION_FAILED',
+  /** Route de création sans en-tête `Idempotency-Key`. */
   IDEMPOTENCY_KEY_REQUIRED: 'VALIDATION',
+  /** `Idempotency-Key` n'est pas un UUID. */
   INVALID_IDEMPOTENCY_KEY: 'VALIDATION',
-  /** 422, comme le recommande le brouillon IETF « The Idempotency-Key HTTP Header Field ». */
+  /**
+   * Même `Idempotency-Key` pour une requête différente. 422, comme le recommande le brouillon IETF
+   * « The Idempotency-Key HTTP Header Field ».
+   */
   IDEMPOTENCY_KEY_REUSED: 'BUSINESS_RULE',
 } as const satisfies Record<string, ErrorKind>;
 
