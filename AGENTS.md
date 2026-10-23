@@ -164,7 +164,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite. Toute route qui modifie des données partagées du tenant déclare son rôle (`@RequireRole`).
 4. Toute clé Redis a un TTL ; tout appel externe a un timeout, et passe par une queue s'il est lent.
 5. Les migrations sont générées (`db-generate`), jamais éditées à la main, et rétrocompatibles (expand/contract).
-6. Toute nouvelle fonctionnalité passe derrière un feature flag (désactivé par défaut). Le flag s'applique à l'API pour l'instant ; le mécanisme front sera défini avec le premier écran métier (voir `apps/web/AGENTS.md`).
+6. Toute nouvelle fonctionnalité passe derrière un feature flag (désactivé par défaut), côté API comme côté front (voir `apps/web/AGENTS.md`).
 
 ## Conventions
 
@@ -191,3 +191,4 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).
 - Une classe de base abstraite injectée par héritage doit porter `@Injectable()`, sinon Nest ne voit pas les dépendances de son constructeur.
+- `pnpm strip:examples` traite toute ligne qui ne contient qu'un marqueur `example:start` ou `example:end` (en commentaire), y compris dans un template literal de test, partout sauf dans ses propres fichiers et `docs/superpowers`. Un test qui a besoin de ces marqueurs les construit par interpolation (``const START = `// example:${'start'}`;``), sinon `strip:examples` retire ou rejette sa fixture.
