@@ -6,6 +6,7 @@ import { createAuth, createPool } from './auth';
 import { validateEnv } from './env';
 import { createSendEmail } from './mailer';
 import { createRequestListener } from './server';
+import { gracefulShutdown } from './shutdown';
 
 /** Service d'identité : inscription, connexion, organisations (tenants), access tokens pour l'API. */
 function main() {
@@ -19,36 +20,30 @@ function main() {
     logger,
   });
 
-  let shuttingDown = false;
   const server = createServer(
     createRequestListener({
       auth,
       pool,
       corsOrigins: env.CORS_ORIGINS,
       trustProxyHops: env.TRUST_PROXY_HOPS,
-      isShuttingDown: () => shuttingDown,
+      // Appelé par requête, après la déclaration de `shutdown`.
+      isShuttingDown: () => shutdown.shuttingDown,
     }),
   );
+  const shutdown = gracefulShutdown({
+    server,
+    drainMs: env.SHUTDOWN_DRAIN_MS,
+    timeoutMs: env.SHUTDOWN_TIMEOUT_MS,
+    close: async () => {
+      await Promise.all([pool.end(), shutdownTelemetry()]);
+    },
+    logger,
+  });
   server.listen(env.AUTH_PORT, () => logger.info(`Auth service on port ${env.AUTH_PORT}`));
 
-  const shutdown = (signal: string) => {
-    if (shuttingDown) {
-      return;
-    }
-    shuttingDown = true;
-    logger.info({ signal }, 'Shutting down');
-    // Au-delà, l'orchestrateur enverrait SIGKILL : on sort en erreur avant.
-    setTimeout(() => process.exit(1), 25_000).unref();
-    server.close(() => {
-      Promise.all([pool.end(), shutdownTelemetry()]).then(
-        () => process.exit(0),
-        () => process.exit(1),
-      );
-    });
-    server.closeIdleConnections();
-  };
-  process.once('SIGTERM', shutdown);
-  process.once('SIGINT', shutdown);
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.once(signal, () => void shutdown.start(signal));
+  }
 }
 
 main();

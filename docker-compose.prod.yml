@@ -96,7 +96,10 @@ services:
     image: nx-react-nestjs-auth
     # Construite par le service auth-migrate : rien à télécharger.
     pull_policy: never
-    environment: *auth-env
+    environment:
+      <<: *auth-env
+      # /ready passe en 503 au SIGTERM ; le load balancer a 5 s pour retirer l'instance.
+      SHUTDOWN_DRAIN_MS: '5000'
     ports:
       - '${AUTH_PORT:-3100}:3100'
     stop_grace_period: 30s
