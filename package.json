@@ -38,6 +38,7 @@
     "@opentelemetry/instrumentation-pg": "^0.76.0",
     "@opentelemetry/instrumentation-pino": "^0.69.0",
     "@opentelemetry/sdk-node": "^0.223.0",
+    "@scalar/client-side-rendering": "^0.4.12",
     "@sentry/core": "^11.4.0",
     "@sentry/node": "^11.4.0",
     "@tanstack/react-query": "^5.104.5",

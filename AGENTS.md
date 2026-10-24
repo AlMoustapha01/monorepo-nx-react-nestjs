@@ -8,13 +8,13 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                     |
 | Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                       |
-| Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
+| Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, doc (Scalar) sur `/api/docs`, OpenAPI sur `/api/docs-json`       |
 | Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
 | Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                      |
 | Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                         |
 | Nouvelle lib feature front : lib vide, config de test et alias câblés         | `pnpm new:web-feature <nom>`, puis les écrans en TDD ; voir [`libs/web/AGENTS.md`](libs/web/AGENTS.md)               |
 | Données de démo (API démarrée)                                                | `pnpm dev:seed`                                                                                                      |
-| Token pour appeler l'API (Swagger, curl)                                      | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
+| Token pour appeler l'API (doc, curl)                                          | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
 | Lancer le service d'identité (Better Auth)                                    | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
 | Voir les emails envoyés en local                                              | http://localhost:8025 (Mailpit)                                                                                      |
 | Appliquer les migrations                                                      | `pnpm nx run api:db-migrate`                                                                                         |

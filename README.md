@@ -35,7 +35,7 @@ Prérequis : Node 24 (`nvm use`), pnpm via corepack, Docker.
 
 ```sh
 pnpm install && pnpm dev:setup                          # .env, Postgres, Redis, Mailpit, migrations
-pnpm nx serve api                                       # http://localhost:3000/api/v1, Swagger sur /api/docs
+pnpm nx serve api                                       # http://localhost:3000/api/v1, doc sur /api/docs
 pnpm dev:seed                                           # autre terminal : données de démo
 VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web   # http://localhost:4200
 ```
