@@ -20,15 +20,15 @@ sequenceDiagram
   participant R as Relais (worker)
   participant Q as BullMQ (Redis)
   participant H as Handler (worker)
-  U->>DB: BEGIN ; écriture métier ; INSERT messaging.outbox ; COMMIT
+  U->>DB: BEGIN → écriture métier → INSERT messaging.outbox → COMMIT
   loop toutes les secondes, ou sans pause tant que les lots sont pleins
     R->>DB: SELECT … WHERE published_at IS NULL FOR UPDATE SKIP LOCKED (100)
-    R->>Q: un job par (événement, handler), jobId = <événement>__<handler>
+    R->>Q: un job par (événement, handler), jobId = événement__handler
     R->>DB: published_at = now()
   end
   Q->>H: job
   H->>H: valide le payload (zod), RequestContext = tenant et auteur
-  H->>DB: BEGIN ; INSERT processed_events (ou rien si déjà là) ; effet ; COMMIT
+  H->>DB: BEGIN → INSERT processed_events (ou rien si déjà là) → effet → COMMIT
 ```
 
 ### 1. Déclarer
