@@ -4,7 +4,7 @@
  *   pnpm docs:errors --check  → code de sortie 1 si la page n'est plus à jour (CI)
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   type ErrorCodeSection,
   parseErrorKinds,
@@ -26,7 +26,8 @@ function sections(): ErrorCodeSection[] {
     },
   )
     .split('\n')
-    .filter((file) => SOURCE_FILE.test(file) && !file.endsWith('.spec.ts'))
+    // Un fichier supprimé mais encore dans l'index (après strip:examples, avant le commit) n'existe plus.
+    .filter((file) => SOURCE_FILE.test(file) && !file.endsWith('.spec.ts') && existsSync(file))
     .sort();
 
   const found: ErrorCodeSection[] = [];

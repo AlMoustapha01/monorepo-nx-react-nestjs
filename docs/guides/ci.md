@@ -101,6 +101,7 @@ Rien n'empêche aujourd'hui de merger une PR en échec : la protection de branch
 
 - exiger les checks `check`, `e2e`, `strip-examples` et `image` ; `e2e` peut l'être, il réussit quand il n'a rien à lancer ;
 - ne pas exiger `audit` : il ne tourne que si les dépendances changent, et un check exigé qui ne tourne pas bloque la PR ;
+- exiger la revue des propriétaires de code (« Require review from Code Owners ») pour les chemins sensibles de [`.github/CODEOWNERS`](../../.github/CODEOWNERS), **seulement à partir de deux mainteneurs** : GitHub ne compte pas l'approbation de l'auteur d'une PR, un mainteneur seul ne pourrait plus merger ses propres PR. D'ici là, CODEOWNERS sert de liste : le relecteur la cite, et la revue humaine reste une règle d'équipe ;
 - en option, exiger une branche à jour avec `main` avant le merge : deux PR vertes chacune peuvent casser `main` une fois réunies, mais chaque merge oblige alors à remettre les autres PR à jour.
 
 Référence : [About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) (GitHub).
