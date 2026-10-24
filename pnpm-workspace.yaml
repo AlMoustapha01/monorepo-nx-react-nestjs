@@ -18,6 +18,9 @@ overrides:
   'oxfmt>tinypool': ^2.1.2
   # @nestjs/swagger 11.4.7 épingle js-yaml 5.3.0 (GHSA-r3ph-w7gj-g6xm, dépendance de prod).
   '@nestjs/swagger>js-yaml': ^5.4.1
+  # @nestjs/platform-express 11.2.8 épingle multer 2.4.0 (GHSA-q7qp-rjg7-q26m, dépendance de prod) ;
+  # à retirer quand @nestjs/platform-express dépend de multer >= 2.5.0.
+  '@nestjs/platform-express>multer': ^2.5.0
 auditConfig:
   ignoreGhsas:
     # braces (via @lingui/cli > micromatch) : aucune version corrigée. Outil de dev, qui ne lit que

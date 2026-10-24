@@ -55,7 +55,7 @@ Le reste au besoin, quand on touche au sujet.
   Apprendre : [Asynchronous context tracking](https://nodejs.org/api/async_context.html) (Node.js), [Async Local Storage](https://docs.nestjs.com/recipes/async-local-storage) (NestJS), [nestjs-cls](https://papooch.github.io/nestjs-cls/).
 - **Validation par schéma (zod)** : un schéma décrit une donnée, la valide et en déduit le type TypeScript ; le même schéma sert au front et à l'API.
   Ici : `libs/shared/contracts`, DTO `createZodDto`.
-  Apprendre : [Zod](https://zod.dev/), [nestjs-zod](https://github.com/BenLorantfy/nestjs-zod), [OpenAPI dans NestJS](https://docs.nestjs.com/openapi/introduction) (le Swagger de `/api/docs`).
+  Apprendre : [Zod](https://zod.dev/), [nestjs-zod](https://github.com/BenLorantfy/nestjs-zod), [OpenAPI dans NestJS](https://docs.nestjs.com/openapi/introduction) (document servi sur `/api/docs-json`, affiché par [Scalar](https://scalar.com) sur `/api/docs`).
 - **Drizzle ORM** : un ORM proche du SQL, dont le schéma est écrit en TypeScript et d'où sont générées les migrations.
   Ici : `*.schema.ts` dans `infra/`, `pnpm nx run api:db-generate`.
   Apprendre : [Why Drizzle?](https://orm.drizzle.team/docs/overview), [Schemas](https://orm.drizzle.team/docs/schemas) (Drizzle).

@@ -44,7 +44,7 @@ Dans le front : `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`, ou la v
    - `dev@shop.local` : membre, client.
 4. Lancer le front **sans** `VITE_DEV_TOKEN` : `pnpm nx serve web`, puis se connecter sur http://localhost:4200/connexion.
 
-Dans ce mode, `pnpm -s dev:token [--staff]` renvoie le vrai token (15 min) de l'un des deux comptes, pour Swagger ou curl ; les autres options sont refusées.
+Dans ce mode, `pnpm -s dev:token [--staff]` renvoie le vrai token (15 min) de l'un des deux comptes, pour la doc de l'API (`/api/docs`) ou curl ; les autres options sont refusées.
 
 Les emails (vérification, mot de passe oublié, invitations) arrivent dans Mailpit : http://localhost:8025.
 

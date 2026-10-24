@@ -31,7 +31,7 @@ Tout est désactivé par défaut : sans `OTEL_EXPORTER_OTLP_ENDPOINT` ni `SENTRY
 
 3. Relancer l'API (`pnpm nx serve api`) et, si vous l'utilisez, le service d'identité (`pnpm nx serve auth`). Les instrumentations sont chargées au démarrage du process (`instrumentation.ts`) : un process déjà lancé n'envoie rien.
 
-4. Faire quelques requêtes : `pnpm dev:seed`, l'interface, ou Swagger. Pour voir des événements, déclencher une action qui en publie ; avec le code d'exemple, passer une commande, qui déclenche les handlers du catalogue et des notifications. Les exemples de cette page viennent de ce code.
+4. Faire quelques requêtes : `pnpm dev:seed`, l'interface, ou la doc de l'API (`/api/docs`). Pour voir des événements, déclencher une action qui en publie ; avec le code d'exemple, passer une commande, qui déclenche les handlers du catalogue et des notifications. Les exemples de cette page viennent de ce code.
 
 5. Ouvrir Grafana : http://localhost:3001 (`OBSERVABILITY_UI_PORT`), sans identifiant.
 
