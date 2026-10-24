@@ -193,3 +193,105 @@ export function driftedFeatures(
     .map(([featureId, paths]) => ({ featureId, paths: [...paths].sort() }))
     .sort((a, b) => a.featureId.localeCompare(b.featureId));
 }
+
+/**
+ * Index des exigences (`specs/product-requirements.json`) : la liste des exigences du cahier des
+ * charges (`PAY-03`). Chaque spec nomme celles qu'elle implémente (`**Product Requirements**:`) ;
+ * l'état d'une exigence se déduit du statut de ses specs, il ne s'écrit pas dans l'index.
+ */
+export interface ProductRequirement {
+  id: string;
+  title: string;
+}
+
+type RequirementState = 'Unspecified' | SpecStatus;
+
+export interface SpecRequirementRefs {
+  featureDir: string;
+  status: SpecStatus;
+  /** `undefined` : ligne `**Product Requirements**` absente ; `[]` : `None`. */
+  refs: string[] | undefined;
+}
+
+export interface RequirementReport {
+  rows: {
+    id: string;
+    title: string;
+    state: RequirementState;
+    specs: { featureDir: string; status: SpecStatus }[];
+  }[];
+  /** Exigences citées par une spec et absentes de l'index (ou index absent). */
+  unknown: { featureDir: string; id: string }[];
+  /** Specs sans ligne `**Product Requirements**`, alors que l'index existe. */
+  missingLine: string[];
+  ok: boolean;
+}
+
+const REQUIREMENT_ID = /^[A-Z][A-Z0-9]*-\d+$/;
+
+export function parseRequirementIndex(json: string): ProductRequirement[] {
+  const data: unknown = JSON.parse(json);
+  const list = (data as { requirements?: unknown } | null)?.requirements;
+  if (!Array.isArray(list)) {
+    throw new Error('Attendu : { "requirements": [{ "id": "PAY-03", "title": "…" }] }.');
+  }
+  const seen = new Set<string>();
+  return list.map((entry: unknown) => {
+    const { id, title } = (entry ?? {}) as { id?: unknown; title?: unknown };
+    if (typeof id !== 'string' || !REQUIREMENT_ID.test(id)) {
+      throw new Error(`Identifiant d'exigence "${String(id)}" invalide (attendu : PAY-03).`);
+    }
+    if (typeof title !== 'string' || title.trim() === '') {
+      throw new Error(`L'exigence ${id} n'a pas de titre.`);
+    }
+    if (seen.has(id)) throw new Error(`L'exigence ${id} apparaît deux fois.`);
+    seen.add(id);
+    return { id, title };
+  });
+}
+
+export function parseRequirementRefs(specMarkdown: string): string[] | undefined {
+  const value = /^\*\*Product Requirements\*\*:\s*(.*?)\s*$/m.exec(specMarkdown)?.[1];
+  if (value === undefined) return undefined;
+  if (value === '' || value === 'None') return [];
+  return value.split(',').map((id) => id.trim());
+}
+
+const STATE_ORDER: SpecStatus[] = ['Draft', 'Implemented', 'Shipped'];
+
+export function traceRequirements(
+  index: ProductRequirement[] | undefined,
+  specs: SpecRequirementRefs[],
+): RequirementReport {
+  const known = new Set(index?.map((requirement) => requirement.id));
+  const unknown = specs
+    .flatMap(({ featureDir, refs }) => (refs ?? []).map((id) => ({ featureDir, id })))
+    .filter(({ id }) => !known.has(id));
+  const missingLine = index
+    ? specs.filter((spec) => spec.refs === undefined).map((spec) => spec.featureDir)
+    : [];
+
+  const rows = (index ?? []).map(({ id, title }) => {
+    const cited = specs
+      .filter((spec) => spec.refs?.includes(id))
+      .map(({ featureDir, status }) => ({ featureDir, status }))
+      .sort((a, b) => a.featureDir.localeCompare(b.featureDir));
+    const active = cited.filter((spec) => spec.status !== 'Retired');
+    // L'exigence n'avance qu'avec sa spec la moins avancée : une v2 en Draft la remet en cours.
+    const state: RequirementState =
+      cited.length === 0
+        ? 'Unspecified'
+        : active.length === 0
+          ? 'Retired'
+          : (STATE_ORDER.find((status) => active.some((spec) => spec.status === status)) ??
+            'Draft');
+    return { id, title, state, specs: cited };
+  });
+
+  return {
+    rows,
+    unknown,
+    missingLine,
+    ok: unknown.length === 0 && missingLine.length === 0,
+  };
+}

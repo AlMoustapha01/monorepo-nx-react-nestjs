@@ -6,6 +6,9 @@
  * Chaque scénario d'acceptation actif `NNN-US<story>-AS<n>` doit être cité par au moins un test
  * (`it('003-US1-AS2: …')`) ; une spec en Draft y échappe, sauf si on la vise (mode strict).
  * Aucun test ne doit citer un scénario absent ou retiré. Code de sortie 1 sinon.
+ * Si specs/product-requirements.json existe, chaque spec nomme les exigences qu'elle implémente
+ * (`**Product Requirements**:`), toutes présentes dans l'index ; sans argument, la commande
+ * affiche aussi l'état de chaque exigence.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -13,14 +16,21 @@ import { join } from 'node:path';
 import {
   driftedFeatures,
   featureIdOf,
+  parseRequirementIndex,
+  parseRequirementRefs,
   parseScenarios,
   parseStatus,
+  type ProductRequirement,
+  type RequirementReport,
+  type SpecRequirementRefs,
   type TestFile,
   type TraceReport,
   traceFeature,
+  traceRequirements,
 } from './spec-trace-core.mts';
 
 const SPECS_DIR = 'specs';
+const REQUIREMENT_INDEX = join(SPECS_DIR, 'product-requirements.json');
 const TEST_FILE = /\.spec\.tsx?$/;
 
 function featureDirs(args: string[]): string[] {
@@ -70,6 +80,34 @@ function print(featureDir: string, report: TraceReport): void {
   }
 }
 
+function printRequirements(
+  report: RequirementReport,
+  { hasIndex, showRows }: { hasIndex: boolean; showRows: boolean },
+): void {
+  if (showRows) {
+    console.log(`\n## Exigences (${REQUIREMENT_INDEX}) : ${report.ok ? 'OK' : 'INCOMPLET'}\n`);
+    console.log('| Exigence | État | Specs |');
+    console.log('| -------- | ---- | ----- |');
+    for (const row of report.rows) {
+      const specs = row.specs.map((spec) => `${spec.featureDir} (${spec.status})`).join('<br>');
+      const state = row.state === 'Unspecified' ? '**non spécifiée**' : row.state;
+      console.log(`| ${row.id} ${row.title} | ${state} | ${specs} |`);
+    }
+  }
+  for (const { featureDir, id } of report.unknown) {
+    const where = hasIndex
+      ? `absente de ${REQUIREMENT_INDEX}`
+      : `et ${REQUIREMENT_INDEX} n'existe pas`;
+    console.log(`\nExigence inconnue : ${featureDir}/spec.md cite ${id}, ${where}.`);
+  }
+  for (const featureDir of report.missingLine) {
+    console.log(
+      `\nLigne **Product Requirements** absente de ${featureDir}/spec.md ` +
+        `(les exigences de ${REQUIREMENT_INDEX} qu'elle implémente, ou None).`,
+    );
+  }
+}
+
 // Tests modifiés depuis la base (commits et fichiers en cours) dont la spec n'a pas bougé.
 function warnDrift(base: string): void {
   const git = (args: string[]) =>
@@ -106,7 +144,16 @@ if (baseIndex >= 0 && !base) {
 // Viser une feature, c'est vérifier qu'elle est complète : même en Draft, tout scénario a son test.
 const strict = args.length > 0;
 const dirs = featureDirs(args);
-if (dirs.length === 0) {
+let index: ProductRequirement[] | undefined;
+if (existsSync(REQUIREMENT_INDEX)) {
+  try {
+    index = parseRequirementIndex(readFileSync(REQUIREMENT_INDEX, 'utf8'));
+  } catch (error) {
+    console.error(`${REQUIREMENT_INDEX} : ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+if (dirs.length === 0 && !index) {
   console.log(`Aucune spec dans ${SPECS_DIR}/.`);
   if (base) warnDrift(base);
   process.exit(0);
@@ -114,6 +161,7 @@ if (dirs.length === 0) {
 
 const files = testFiles();
 let ok = true;
+const requirementRefs: SpecRequirementRefs[] = [];
 for (const dir of dirs) {
   const specPath = join(dir, 'spec.md');
   if (!existsSync(specPath)) {
@@ -139,6 +187,14 @@ for (const dir of dirs) {
   );
   print(dir, report);
   ok &&= report.ok;
+  requirementRefs.push({ featureDir: dir, status, refs: parseRequirementRefs(spec) });
 }
+const requirements = traceRequirements(index, requirementRefs);
+// Le tableau des exigences n'a de sens que sur toutes les specs.
+printRequirements(requirements, {
+  hasIndex: index !== undefined,
+  showRows: index !== undefined && !strict,
+});
+ok &&= requirements.ok;
 if (base) warnDrift(base);
 process.exit(ok ? 0 : 1);
