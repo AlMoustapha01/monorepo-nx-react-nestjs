@@ -1,4 +1,4 @@
-// En premier : charge .env et active OpenTelemetry avant tout autre module.
+// En premier : charge les .env et active OpenTelemetry avant tout autre module.
 import { shutdownTelemetry } from './instrumentation';
 import { NestFactory } from '@nestjs/core';
 import { AppConfig, closeOnSignal, configureApp } from '@nx-react-nestjs/api-core';

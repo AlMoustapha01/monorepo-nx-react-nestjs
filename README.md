@@ -23,7 +23,7 @@ Boilerplate de produit SaaS multi-tenant : une API NestJS découpée en domaines
 
 <!-- example:start -->
 
-- **Exemples à copier** : `catalog`, `orders` et `notifications` côté API, une boutique (`libs/web/storefront`, `/boutique`, avec `FEATURE_FLAGS=storefront=true` dans `.env`) côté front. `pnpm strip:examples` les retire ([Démarrer un projet](docs/guides/demarrer-un-projet.md)).
+- **Exemples à copier** : `catalog`, `orders` et `notifications` côté API, une boutique (`libs/web/storefront`, `/boutique`, avec `FEATURE_FLAGS=storefront=true` dans `apps/api/.env`) côté front. `pnpm strip:examples` les retire ([Démarrer un projet](docs/guides/demarrer-un-projet.md)).
 
 <!-- example:end -->
 
@@ -34,7 +34,7 @@ Stack : Node 24, TypeScript, Nx, NestJS 11, Drizzle + Postgres 17, Redis 7 + Bul
 Prérequis : Node 24 (`nvm use`), pnpm via corepack, Docker.
 
 ```sh
-pnpm install && pnpm dev:setup                          # .env, Postgres, Redis, Mailpit, migrations
+pnpm install && pnpm dev:setup                          # fichiers .env, Postgres, Redis, Mailpit, migrations
 pnpm nx serve api                                       # http://localhost:3000/api/v1, doc sur /api/docs
 pnpm dev:seed                                           # autre terminal : données de démo
 VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web   # http://localhost:4200

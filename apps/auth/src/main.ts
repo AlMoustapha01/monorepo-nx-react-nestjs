@@ -1,4 +1,4 @@
-// En premier : charge .env et active OpenTelemetry et Sentry avant tout autre module.
+// En premier : charge les .env et active OpenTelemetry et Sentry avant tout autre module.
 import { shutdownTelemetry } from './instrumentation';
 import { createServer } from 'node:http';
 import { pino } from 'pino';

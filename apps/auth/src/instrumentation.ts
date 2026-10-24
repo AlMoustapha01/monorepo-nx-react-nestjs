@@ -5,18 +5,16 @@
  *   propres spans (endpoints, hooks) dès qu'un SDK est actif ;
  * - Sentry, pour les erreurs seulement, si SENTRY_DSN est défini.
  */
-import { existsSync } from 'node:fs';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import * as Sentry from '@sentry/node';
+import { loadEnvFiles } from './load-env';
 
-if (existsSync('.env')) {
-  process.loadEnvFile('.env');
-}
+loadEnvFiles();
 
-/** Le .env de dev est partagé avec l'API (OTEL_SERVICE_NAME=api) : le service a son propre nom. */
+/** OTEL_SERVICE_NAME peut venir d'un environnement commun avec l'API : le service a son propre nom. */
 const SERVICE_NAME = process.env['AUTH_OTEL_SERVICE_NAME'] ?? 'auth';
 const UNTRACED_PATHS = new Set(['/health', '/ready']);
 

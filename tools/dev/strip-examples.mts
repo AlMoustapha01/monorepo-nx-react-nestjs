@@ -82,12 +82,13 @@ if (leftovers) {
 }
 
 // Un flag inconnu empêche l'API de démarrer : celui de la boutique doit sortir du .env local.
-const storefrontFlagInEnv =
-  existsSync('.env') && /^FEATURE_FLAGS=.*storefront/m.test(readFileSync('.env', 'utf8'));
+const storefrontFlagEnv = ['apps/api/.env', '.env'].find(
+  (file) => existsSync(file) && /^FEATURE_FLAGS=.*storefront/m.test(readFileSync(file, 'utf8')),
+);
 console.log(`Ensuite :
   git diff && pnpm check   relire et vérifier, puis committer${
-    storefrontFlagInEnv
-      ? "\n  retirer storefront de FEATURE_FLAGS dans .env (un flag inconnu empêche l'API de démarrer)"
+    storefrontFlagEnv
+      ? `\n  retirer storefront de FEATURE_FLAGS dans ${storefrontFlagEnv} (un flag inconnu empêche l'API de démarrer)`
       : ''
   }`);
 console.log(

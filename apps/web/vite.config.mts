@@ -8,7 +8,8 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
-  envDir: '../../',
+  // apps/web/.env (variables VITE_*) : le .env de la racine sert à l'API et au service d'auth.
+  envDir: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/web',
   resolve: {
     tsconfigPaths: true,

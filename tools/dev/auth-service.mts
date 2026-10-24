@@ -1,6 +1,6 @@
 /**
  * Comptes de démo dans le vrai service d'identité (apps/auth), quand l'API vérifie les tokens par
- * son JWKS (AUTH_JWKS_URL dans .env). Sans AUTH_JWKS_URL, les scripts signent leurs tokens avec
+ * son JWKS (AUTH_JWKS_URL dans apps/api/.env). Sans AUTH_JWKS_URL, les scripts signent leurs tokens avec
  * AUTH_JWT_SECRET (dev-env.mts) et ce module ne sert pas.
  */
 import pg from 'pg';
@@ -24,7 +24,9 @@ export function usesAuthService(): boolean {
 function setting(name: string): string {
   const value = process.env[name];
   if (!value) {
-    console.error(`${name} manquant dans .env (voir .env.example).`);
+    console.error(
+      `${name} manquant dans les .env : lancez "pnpm dev:setup" (voir les .env.example).`,
+    );
     process.exit(1);
   }
   return value;

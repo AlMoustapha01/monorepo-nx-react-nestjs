@@ -5,7 +5,6 @@
  * configure par les variables standard : OTEL_SERVICE_NAME, OTEL_TRACES_SAMPLER, etc.
  * Sentry (erreurs seulement) : actif avec SENTRY_DSN ; SENTRY_ENVIRONMENT, SENTRY_RELEASE.
  */
-import { existsSync } from 'node:fs';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
@@ -13,10 +12,9 @@ import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import * as Sentry from '@sentry/node';
+import { loadEnvFiles } from './load-env';
 
-if (existsSync('.env')) {
-  process.loadEnvFile('.env');
-}
+loadEnvFiles();
 
 const UNTRACED_PATHS = new Set(['/health', '/ready']);
 

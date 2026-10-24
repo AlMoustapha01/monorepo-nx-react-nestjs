@@ -38,7 +38,7 @@ Le script :
 - repart d'une migration unique, `0000_init.sql` (tables de core et de vos domaines), régénère `routeTree.gen.ts` (build du front) et les catalogues Lingui, reformate et vide le cache de Nx ;
 - liste les mentions des exemples qui restent : des règles générales illustrées par eux (`orders` → `ProductCatalog` → `CatalogFacade`, préfixes `PRD-`/`ORD-` dans `AGENTS.md`), des données de test. À relire et à remplacer par vos propres domaines.
 
-Il refuse un second passage. Ensuite : retirer `FEATURE_FLAGS=storefront=true` de votre `.env` (un flag inconnu empêche l'API de démarrer), puis `pnpm dev:down -v && pnpm dev:setup` pour une base locale neuve.
+Il refuse un second passage. Ensuite : retirer `FEATURE_FLAGS=storefront=true` de votre `apps/api/.env` (un flag inconnu empêche l'API de démarrer), puis `pnpm dev:down -v && pnpm dev:setup` pour une base locale neuve.
 
 **Projet déjà déployé** : `pnpm strip:examples --keep-migrations`. Ne jamais supprimer ni réécrire une migration appliquée : retirer le code, déployer, puis générer une migration qui supprime les tables (`pnpm nx run api:db-generate --name=drop-examples`). drizzle-kit ne génère pas le `DROP SCHEMA` d'un `pgSchema` disparu : relire le SQL produit.
 

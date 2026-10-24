@@ -1,5 +1,5 @@
 /**
- * Prépare le tenant de dev. Avec le service d'auth (AUTH_JWKS_URL dans .env, `pnpm nx serve auth`) :
+ * Prépare le tenant de dev. Avec le service d'auth (AUTH_JWKS_URL dans apps/api/.env, `pnpm nx serve auth`) :
  * crée les comptes et l'organisation de démo, qui devient le tenant. Les données de démo passent par
  * l'API (règles métier comprises), qui doit être démarrée (`pnpm nx serve api`). Idempotent.
  */
