@@ -53,7 +53,12 @@ describe('signalement des erreurs à Sentry', () => {
     const filter = new ProblemDetailsFilter(context);
     const principal = { userId: 'user-2', tenantId: 'tenant-2' };
     const hostFor = (): ArgumentsHost => {
-      const response = { status: () => response, type: () => response, json: () => response };
+      const response = {
+        locals: {},
+        status: () => response,
+        type: () => response,
+        json: () => response,
+      };
       const request = {
         method: 'POST',
         path: '/api/v1/orders/ORD-1/cancel',

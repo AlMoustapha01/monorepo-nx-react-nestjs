@@ -1,8 +1,9 @@
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { type ArgumentsHost, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ZodValidationException } from 'nestjs-zod';
 import { z } from 'zod';
 import { AppError, CoreError } from './app-error';
-import { toProblem } from './problem-details.filter';
+import { RequestContext } from '../context/request-context';
+import { ProblemDetailsFilter, toProblem } from './problem-details.filter';
 
 class StockError extends AppError<'OUT_OF_STOCK'> {
   constructor() {
@@ -51,5 +52,22 @@ describe('toProblem', () => {
       code: 'INTERNAL_ERROR',
       detail: 'An unexpected error occurred.',
     });
+  });
+});
+
+describe('ProblemDetailsFilter', () => {
+  it('note le code de l’erreur pour la ligne de log de la requête', () => {
+    const locals = {};
+    const response = { locals, status: () => response, type: () => response, json: () => response };
+    const host = {
+      switchToHttp: () => ({
+        getRequest: () => ({ originalUrl: '/api/v1/stock' }),
+        getResponse: () => response,
+      }),
+    } as unknown as ArgumentsHost;
+
+    new ProblemDetailsFilter({} as RequestContext).catch(new StockError(), host);
+
+    expect(locals).toEqual({ problemCode: 'OUT_OF_STOCK' });
   });
 });

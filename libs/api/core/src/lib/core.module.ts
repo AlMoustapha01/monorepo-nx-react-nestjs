@@ -26,6 +26,7 @@ import { ShutdownState } from './lifecycle/graceful-shutdown';
 import { Mailer, mailerProvider } from './mail/mailer';
 import { RateLimitModule } from './http/rate-limit/rate-limit.module';
 import { getRequestId } from './http/request-id';
+import { requestLoggingOptions } from './http/request-logging';
 
 const UNLOGGED_PATHS = new Set(['/health', '/ready']);
 
@@ -46,15 +47,20 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
       useFactory: (config: AppConfig) => ({
         assignResponse: true,
         pinoHttp: {
+          ...requestLoggingOptions(config.get('LOG_LEVEL')),
           level: config.get('LOG_LEVEL'),
           genReqId: (req) => getRequestId(req),
-          redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
           autoLogging: { ignore: (req) => UNLOGGED_PATHS.has(req.url ?? '') },
-          // Le filtre ne journalise que les 5xx : les 4xx restent visibles ici, en warn.
-          customLogLevel: (_req, res, error) =>
-            error || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
           ...(config.get('NODE_ENV') === 'development' && {
-            transport: { target: 'pino-pretty', options: { singleLine: true } },
+            transport: {
+              target: 'pino-pretty',
+              // Le message résume déjà la requête : on n'y ajoute que la durée et le request id.
+              options: {
+                singleLine: true,
+                ignore: 'pid,hostname,req,res,responseTime,code',
+                messageFormat: '{msg}{if responseTime} ({responseTime} ms) [{req.id}]{end}',
+              },
+            },
           }),
         },
       }),
