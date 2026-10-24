@@ -4,7 +4,7 @@
     "boilerplate": {
       "version": "1.0.0",
       "source": "local",
-      "manifest_hash": "sha256:90ddbeeb75b83ac77453e565e5d5bf32114d53bbe634462ac906426a7dfd829e",
+      "manifest_hash": "sha256:b349ad1c4865081fb733c4985e7139716085771613bd65d471262c57d37ec8d8",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -23,7 +23,7 @@
           "speckit-converge"
         ]
       },
-      "installed_at": "2026-10-23T08:11:45.023579+00:00"
+      "installed_at": "2026-10-24T12:27:41.830083+00:00"
     }
   }
 }

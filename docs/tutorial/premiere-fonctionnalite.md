@@ -184,6 +184,8 @@ Ce qui a coincé sur Annonces, et que vous croiserez sans doute :
 
 La commande compare le code à la spec, au plan et aux tâches, lance `pnpm -s spec:trace`, et ajoute à `tasks.md` ce qui manque encore. Elle ne conclut « Converged », et ne passe la spec en `Implemented`, que quand **tous** les scénarios de la spec ont un test.
 
+Quand la story n'a plus de manque, elle la fait relire par le relecteur indépendant (sous-agent `relecteur`, grille dans [`docs/agents/relecteur.md`](../agents/relecteur.md)), qui ne voit que le code et la spec, pas le résumé de l'agent. Ses écarts bloquants deviennent des tâches : relancez `/speckit-implement`, puis `/speckit-converge`. « Converged » attend donc aussi une relecture sans écart bloquant.
+
 ```sh
 pnpm -s spec:trace                          # toutes les specs, comme la CI
 pnpm -s spec:trace specs/001-announcements  # celle-ci, en mode strict

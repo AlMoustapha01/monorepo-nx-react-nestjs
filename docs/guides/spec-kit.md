@@ -43,6 +43,27 @@ Ensuite, chaque commande qui écrit des fichiers commite son résultat sur cette
 
 Le reste se règle dans `.specify/extensions/git/git-config.yml` : format du nom de branche (préfixe, auteur), commandes qui commitent (`auto_commit`), style des messages (`commit_style: fixed` pour des messages fixes). L'extension propose d'autres hooks (initialisation du repo, commit avant chaque commande), volontairement absents de `.specify/extensions.yml` : `specify extension update git` les remet, il faut alors les retirer.
 
+## Relecture indépendante
+
+Un agent juge généreusement son propre travail. Avant de rendre une story, `/speckit-converge` la fait relire par un relecteur qui ne l'a pas écrite (preset, section « Independent Review ») :
+
+- la grille, portable, est dans [`docs/agents/relecteur.md`](../agents/relecteur.md) ; l'adaptateur Claude Code est le sous-agent `.claude/agents/relecteur.md`, qui la lit ;
+- le relecteur ne reçoit que la base (`origin/main`) et le dossier de la spec, jamais le résumé de l'auteur ;
+- il ne signale que les écarts d'exigence, de correction et de principe, preuve à l'appui, et laisse ses doutes « à vérifier par un humain » ;
+- chaque écart bloquant devient une tâche ajoutée à `tasks.md` ; un écart que l'agent conteste figure dans son rapport, avec la preuve, et reste ouvert : pas de « Converged » tant que vous n'avez pas tranché.
+
+Avec un autre agent que Claude Code, `/speckit-converge` vous demande de lancer la relecture dans une nouvelle session (« applique docs/agents/relecteur.md à cette branche ») et d'en coller le rapport.
+
+Quand le jugement du relecteur diverge du vôtre (trop sévère, ou il laisse passer un vrai problème), corrigez la grille plutôt que de passer outre : c'est elle qui fait foi d'une session à l'autre.
+
+## Vérification de fin de tour
+
+Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/stop-check.mts` à chaque fin de tour : format (`oxfmt --check`) des fichiers changés depuis `origin/main` (commits, modifications, nouveaux fichiers), puis `nx affected -t lint typecheck` sur ces fichiers et les fichiers supprimés : supprimer un fichier encore importé ailleurs fait échouer le typecheck du projet qui l'importe. Rien de changé : il ne fait rien. En échec, l'agent reprend la main avec l'erreur ; s'il échoue encore au tour suivant, vous êtes seulement averti, pour éviter une boucle.
+
+- `STOP_CHECK=off` le désactive, par exemple quand une autre session modifie le même arbre : ses fichiers en cours feraient échouer la vérification.
+- Il ne lance pas les tests (trop lents à chaque tour) : `/speckit-implement`, `pnpm check` et la CI s'en chargent.
+- Le script tourne aussi sous Node 22 (`--experimental-strip-types`), au cas où le shell de Claude Code n'a pas fait `nvm use`.
+
 ## Personnaliser les templates ou les règles TDD
 
 La source est `tools/spec-kit/preset/`. Après une modification :
