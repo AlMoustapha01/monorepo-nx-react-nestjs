@@ -15,7 +15,7 @@ App React (Vite) qui assemble les libs `libs/web/*`. Conventions des libs : [`li
 
 `web:i18n-check` lance `lingui extract --clean` (il réécrit les catalogues en local), pose `git add --intent-to-add` sur `src/locales`, puis échoue si `git diff` n'est pas vide : committer les catalogues mis à jour.
 
-Variables (voir `.env.example` à la racine) : `VITE_API_URL` (défaut `http://localhost:3000/api/v1`), `VITE_AUTH_URL` (service d'identité, défaut `http://localhost:3100`) et `VITE_DEV_TOKEN` (token de dev, absent par défaut).
+Variables (dans `apps/web/.env`, créé par `pnpm dev:setup` depuis `apps/web/.env.example` ; Vite ne lit pas le `.env` de la racine) : `VITE_API_URL` (défaut `http://localhost:3000/api/v1`), `VITE_AUTH_URL` (service d'identité, défaut `http://localhost:3100`) et `VITE_DEV_TOKEN` (token de dev, absent par défaut).
 
 ## Rôle de l'app
 
@@ -78,7 +78,7 @@ Jotai, Sentry.
 
 ## Parcours navigateur (`apps/web-e2e`)
 
-Playwright contre la vraie stack, démarrée une fois par exécution (`src/stack.ts`) : Postgres, Redis et Mailpit via Testcontainers, les vraies migrations (`migrate.js`), le service d'auth et l'API compilés (JWKS), le front construit et servi par `vite preview` (ports 4310, 3310, 3110). Les process tournent dans un dossier vide : un `.env` local ne s'en mêle pas.
+Playwright contre la vraie stack, démarrée une fois par exécution (`src/stack.ts`) : Postgres, Redis et Mailpit via Testcontainers, les vraies migrations (`migrate.js`), le service d'auth et l'API compilés (JWKS), le front construit et servi par `vite preview` (ports 4310, 3310, 3110). Les process tournent dans un dossier vide : aucun `.env` local ne s'en mêle.
 
 - Lancer : `pnpm nx run web-e2e:e2e` (Docker requis ; `pnpm exec playwright install chromium` la première fois). Rapport, traces, captures et journaux des services : `dist/.playwright/apps/web-e2e`.
 - Un parcours couvre ce qu'un test unitaire ne voit pas : redirections entre services, emails (lus dans Mailpit, `linkFromEmail`), cookies, tokens, plusieurs tenants. Le reste se teste en Vitest.

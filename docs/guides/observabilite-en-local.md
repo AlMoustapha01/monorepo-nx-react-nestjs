@@ -21,7 +21,7 @@ Tout est désactivé par défaut : sans `OTEL_EXPORTER_OTLP_ENDPOINT` ni `SENTRY
    docker compose --profile observability up -d
    ```
 
-2. Dans `.env` :
+2. Dans le `.env` de la racine, lu par l'API et le service d'identité :
 
    ```sh
    OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
@@ -105,7 +105,7 @@ Sans SDK démarré (tests, dev sans endpoint), `@opentelemetry/api` renvoie des 
 
 ## Sentry en local
 
-Facultatif. Avec `SENTRY_DSN` d'un projet de dev dans `.env` (et `SENTRY_ENVIRONMENT=development`), sont envoyées :
+Facultatif. Avec `SENTRY_DSN` d'un projet de dev dans le `.env` de la racine (et `SENTRY_ENVIRONMENT=development`), sont envoyées :
 
 - les 5xx inattendues, avec la route, le `request_id`, le tenant et l'ID de l'utilisateur ;
 - les jobs abandonnés (retries épuisés ou payload invalide), avec le handler et l'ID de l'événement ; un échec suivi d'un retry réussi n'est pas envoyé ;
@@ -119,9 +119,9 @@ Chaque erreur porte le tag `trace_id` : on le colle dans Tempo pour retrouver la
 
 ## Ça n'apparaît pas
 
-- **Aucune trace** : `OTEL_EXPORTER_OTLP_ENDPOINT` est-il dans le `.env` lu par le process, et le process a-t-il été relancé ? `OTEL_SDK_DISABLED=true` coupe tout.
+- **Aucune trace** : `OTEL_EXPORTER_OTLP_ENDPOINT` est-il dans un `.env` lu par le process (celui de la racine, ou `apps/<app>/.env`), et le process a-t-il été relancé ? `OTEL_SDK_DISABLED=true` coupe tout.
 - **Pas de métriques** : elles partent toutes les 60 s par défaut ; baisser `OTEL_METRIC_EXPORT_INTERVAL`. Les métriques de l'outbox et de la file ne sont émises que par un process qui a `JOBS_ENABLED=true`.
 - **Pas de span `process …`** : aucun événement n'a été publié, ou le worker ne tourne pas (`JOBS_ENABLED=false` sans `worker.js` lancé).
-- **Port 4318 ou 3001 déjà pris** : changer `OTLP_PORT` (et l'endpoint) ou `OBSERVABILITY_UI_PORT` dans `.env`.
+- **Port 4318 ou 3001 déjà pris** : changer `OTLP_PORT` (et l'endpoint) ou `OBSERVABILITY_UI_PORT` dans le `.env` de la racine.
 
 Pour arrêter : `docker compose --profile observability stop observability`. Les traces, logs et métriques n'ont pas de volume : ils disparaissent quand le conteneur est supprimé (`docker compose --profile observability down`).

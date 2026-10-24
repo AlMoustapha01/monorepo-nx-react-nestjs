@@ -1,10 +1,10 @@
 /**
- * Génère un JWT de dev, signé avec le secret de .env.
+ * Génère un JWT de dev, signé avec AUTH_JWT_SECRET (apps/api/.env).
  *   pnpm -s dev:token                      → client de dev (aucun rôle)
  *   pnpm -s dev:token --staff              → staff de dev (rôle staff : gestion du tenant)
  *   pnpm -s dev:token --tenant <uuid> --user <uuid> --email a@b.c --expires 1h
  *   TOKEN=$(pnpm -s dev:token) && curl -H "authorization: Bearer $TOKEN" …
- * Avec le service d'auth (AUTH_JWKS_URL dans .env) : un vrai token de 15 min, celui d'un compte de
+ * Avec le service d'auth (AUTH_JWKS_URL dans apps/api/.env) : un vrai token de 15 min, celui d'un compte de
  * démo créé par `pnpm dev:seed` ; les options d'identité ne s'appliquent pas.
  */
 import { randomUUID } from 'node:crypto';

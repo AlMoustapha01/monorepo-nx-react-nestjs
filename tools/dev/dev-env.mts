@@ -1,20 +1,26 @@
 import { existsSync } from 'node:fs';
 import { SignJWT } from 'jose';
+import { APP_ENV_FILES } from './env-files-core.mts';
 
 /** Identités de dev fixes : le seed et les tokens générés tombent dans le même tenant. */
 export const DEV_TENANT_ID = '00000000-0000-4000-8000-000000000001';
 export const DEV_USER_ID = '00000000-0000-4000-8000-000000000002';
 export const DEV_EMAIL = 'dev@shop.local';
 
-if (existsSync('.env')) {
-  process.loadEnvFile('.env');
+// Comme l'API et le service d'auth : le fichier de chaque app, puis le .env commun.
+for (const file of [...APP_ENV_FILES, '.env']) {
+  if (existsSync(file)) {
+    process.loadEnvFile(file);
+  }
 }
 
 function env(name: string): string {
   const value = process.env[name];
   if (!value) {
     // Script de dev : un message actionnable plutôt qu'une stack trace.
-    console.error(`${name} manquant : lancez "pnpm dev:setup" (crée .env depuis .env.example).`);
+    console.error(
+      `${name} manquant : lancez "pnpm dev:setup" (crée les .env depuis leurs exemples).`,
+    );
     process.exit(1);
   }
   return value;

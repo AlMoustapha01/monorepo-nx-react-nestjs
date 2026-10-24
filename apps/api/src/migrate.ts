@@ -1,8 +1,8 @@
-import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Client } from 'pg';
+import { loadEnvFiles } from './load-env';
 
 /** Clé arbitraire et fixe : deux exécutions simultanées (deux déploiements) se sérialisent. */
 const MIGRATION_LOCK_KEY = 7_316_221;
@@ -12,9 +12,7 @@ const MIGRATION_LOCK_KEY = 7_316_221;
  * déploiement à part). Sans drizzle-kit : l'image de production n'a que les dépendances runtime.
  */
 async function main() {
-  if (existsSync('.env')) {
-    process.loadEnvFile('.env');
-  }
+  loadEnvFiles();
   const connectionString = process.env['DATABASE_URL'];
   if (!connectionString) {
     throw new Error('DATABASE_URL is required');

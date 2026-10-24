@@ -4,12 +4,12 @@ Le contrat entre l'API et le fournisseur d'identité est décrit dans [`AGENTS.m
 
 ## Deux modes
 
-L'API vérifie les tokens avec **l'un ou l'autre** de ces réglages du `.env`, jamais les deux :
+L'API vérifie les tokens avec **l'un ou l'autre** de ces réglages de `apps/api/.env`, jamais les deux :
 
-| Mode                 | Variable                                            | Usage                                                       |
-| -------------------- | --------------------------------------------------- | ----------------------------------------------------------- |
-| Secret partagé HS256 | `AUTH_JWT_SECRET`                                   | Défaut du `.env` de dev ; `dev:token`, `signTestToken`, e2e |
-| Service d'identité   | `AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks` | Vrais comptes, connexion dans le front                      |
+| Mode                 | Variable                                            | Usage                                                         |
+| -------------------- | --------------------------------------------------- | ------------------------------------------------------------- |
+| Secret partagé HS256 | `AUTH_JWT_SECRET`                                   | Défaut de `apps/api/.env` ; `dev:token`, `signTestToken`, e2e |
+| Service d'identité   | `AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks` | Vrais comptes, connexion dans le front                        |
 
 `AUTH_JWT_SECRET` est refusé en production.
 
@@ -27,11 +27,11 @@ pnpm -s dev:token --no-email
 
 Pour curl : `TOKEN=$(pnpm -s dev:token) && curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/…`.
 
-Dans le front : `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`. Le token n'est jamais inclus dans un build de production.
+Dans le front : `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`, ou la valeur dans `apps/web/.env`. Le token n'est jamais inclus dans un build de production.
 
 ## Mode service d'identité
 
-1. Dans `.env`, commenter `AUTH_JWT_SECRET` et décommenter `AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks`.
+1. Dans `apps/api/.env`, commenter `AUTH_JWT_SECRET` et décommenter `AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks`.
 2. Lancer le service, puis l'API :
 
    ```sh

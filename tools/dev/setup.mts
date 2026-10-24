@@ -1,16 +1,55 @@
 /**
- * Prépare l'environnement local : .env, Postgres, Redis, Mailpit, migrations.
+ * Prépare l'environnement local : fichiers .env, Postgres, Redis, Mailpit, migrations.
  * Vérifie que les ports publiés par docker compose concordent avec les URLs de connexion,
  * et explique quoi changer quand un port est déjà pris sur la machine.
  */
 import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { APP_ENV_FILES, appKeysInRoot, splitLegacyEnv } from './env-files-core.mts';
 
-if (!existsSync('.env')) {
-  copyFileSync('.env.example', '.env');
-  console.log('.env créé depuis .env.example');
+const appExamples = Object.fromEntries(
+  APP_ENV_FILES.map((file) => [file, readFileSync(`${file}.example`, 'utf8')]),
+);
+
+// Un .env unique d'avant le découpage par app : ses valeurs passent dans le fichier de chaque app.
+if (existsSync('.env')) {
+  const legacy = readFileSync('.env', 'utf8');
+  const misplaced = appKeysInRoot(legacy, Object.values(appExamples));
+  const existing = APP_ENV_FILES.filter((file) => existsSync(file));
+  if (misplaced.length > 0 && existing.length > 0) {
+    console.error(
+      `Dans .env, ${misplaced.join(', ')} appartiennent maintenant au fichier de leur app ` +
+        `(${existing.join(', ')} existe déjà) : déplacez-les (voir les .env.example), puis relancez.`,
+    );
+    process.exit(1);
+  }
+  if (misplaced.length > 0) {
+    const split = splitLegacyEnv(legacy, {
+      root: readFileSync('.env.example', 'utf8'),
+      apps: appExamples,
+    });
+    const backup = existsSync('.env.backup') ? `.env.backup-${Date.now()}` : '.env.backup';
+    copyFileSync('.env', backup);
+    writeFileSync('.env', split.root);
+    for (const [file, text] of Object.entries(split.apps)) {
+      writeFileSync(file, text);
+    }
+    console.log(
+      `.env réparti : variables communes dans .env, le reste dans ${APP_ENV_FILES.join(', ')}. ` +
+        `L'ancien fichier est gardé dans ${backup}.`,
+    );
+  }
 }
-process.loadEnvFile('.env');
+for (const file of ['.env', ...APP_ENV_FILES]) {
+  if (!existsSync(file)) {
+    copyFileSync(`${file}.example`, file);
+    console.log(`${file} créé depuis ${file}.example`);
+  }
+}
+// Comme l'API et le service d'auth : le fichier de chaque app, puis le .env commun.
+for (const file of [...APP_ENV_FILES, '.env']) {
+  process.loadEnvFile(file);
+}
 
 /** Chaque port publié par compose et l'URL que l'API utilise pour le joindre. */
 const BINDINGS = [

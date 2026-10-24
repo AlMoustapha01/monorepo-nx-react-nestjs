@@ -3,7 +3,13 @@
 Toutes les variables lues par l'API, le worker, le service d'identité, le front et les outils de dev. Pour savoir quoi régler en production et pourquoi, lire [Déployer](../guides/deployer.md).
 
 - **Validation** : l'API et le worker valident leur environnement avec `libs/api/core/src/lib/config/env.ts`, le service d'identité avec `apps/auth/src/env.ts`. Une variable absente ou invalide empêche le démarrage, avec son nom dans le message.
-- **En dev** : un seul `.env` à la racine, partagé par l'API et le service d'identité, créé depuis `.env.example` par `pnpm dev:setup`.
+- **En dev** : un fichier par app et un fichier commun, créés depuis leur `.env.example` par `pnpm dev:setup` :
+  - `.env` à la racine : ce que plusieurs apps ou docker compose lisent (infra, `DATABASE_URL`, SMTP, contrat des tokens `AUTH_JWT_ISSUER` et `AUTH_JWT_AUDIENCE`, CORS, arrêt, OTEL et Sentry) ;
+  - `apps/api/.env`, `apps/auth/.env` : ce que l'app seule lit (port, secrets, flags). L'app lit son fichier, puis le `.env` commun ; une variable déjà définie n'est pas remplacée : le shell, puis le fichier de l'app, l'emportent ;
+  - `apps/web/.env` : les `VITE_*`, seul fichier lu par Vite.
+
+  Les scripts de `tools/dev` lisent les trois fichiers des apps, puis le commun. Un ancien `.env` unique est réparti par `pnpm dev:setup`, qui garde l'original dans `.env.backup`. En production, aucun fichier : l'environnement du conteneur.
+
 - **À jour** : un test de chaque projet (`env.spec.ts`) échoue si une variable de son schéma manque dans cette page. Une variable ajoutée au schéma s'ajoute ici, une par ligne.
 
 ## API et worker
@@ -81,7 +87,7 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 
 ## Service d'identité
 
-`apps/auth`. Les variables communes avec l'API (`DATABASE_URL`, `AUTH_JWT_ISSUER`…) gardent le même nom : en dev, le `.env` est partagé.
+`apps/auth`. Les variables communes avec l'API (`DATABASE_URL`, `AUTH_JWT_ISSUER`…) gardent le même nom : en dev, elles sont dans le `.env` de la racine, le reste dans `apps/auth/.env`.
 
 | Variable              | Défaut                       | Rôle                                                                                                               |
 | --------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -106,22 +112,22 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 
 Lues par l'API, le worker et le service d'identité, avant tout autre module (`instrumentation.ts`). Hors schéma : une valeur absente désactive la fonction, sans erreur.
 
-| Variable                      | Défaut                    | Rôle                                                                              |
-| ----------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | absent                    | URL OTLP/HTTP du collecteur ; absent, OpenTelemetry est inactif                   |
-| `OTEL_SERVICE_NAME`           | `api` dans `.env.example` | nom du service dans les traces : `api` pour l'API, `api-worker` pour le worker    |
-| `AUTH_OTEL_SERVICE_NAME`      | `auth`                    | nom du service d'identité ; distinct, car le `.env` de dev est partagé avec l'API |
-| `OTEL_SDK_DISABLED`           | absent                    | `true` coupe OpenTelemetry même avec un endpoint                                  |
-| `OTEL_METRIC_EXPORT_INTERVAL` | `60000`                   | intervalle d'export des métriques, en ms                                          |
-| `SENTRY_DSN`                  | absent                    | projet Sentry ; absent, Sentry est inactif                                        |
-| `SENTRY_ENVIRONMENT`          | absent                    | environnement affiché dans Sentry (`production`, `staging`…)                      |
-| `SENTRY_RELEASE`              | absent                    | version déployée, ex. le SHA du commit                                            |
+| Variable                      | Défaut                             | Rôle                                                                                                           |
+| ----------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | absent                             | URL OTLP/HTTP du collecteur ; absent, OpenTelemetry est inactif                                                |
+| `OTEL_SERVICE_NAME`           | `api` dans `apps/api/.env.example` | nom du service dans les traces : `api` pour l'API, `api-worker` pour le worker                                 |
+| `AUTH_OTEL_SERVICE_NAME`      | `auth`                             | nom du service d'identité ; distinct d'`OTEL_SERVICE_NAME`, qu'un environnement commun avec l'API peut définir |
+| `OTEL_SDK_DISABLED`           | absent                             | `true` coupe OpenTelemetry même avec un endpoint                                                               |
+| `OTEL_METRIC_EXPORT_INTERVAL` | `60000`                            | intervalle d'export des métriques, en ms                                                                       |
+| `SENTRY_DSN`                  | absent                             | projet Sentry ; absent, Sentry est inactif                                                                     |
+| `SENTRY_ENVIRONMENT`          | absent                             | environnement affiché dans Sentry (`production`, `staging`…)                                                   |
+| `SENTRY_RELEASE`              | absent                             | version déployée, ex. le SHA du commit                                                                         |
 
 Les autres variables standard d'OpenTelemetry (`OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG`, `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_EXPORTER_OTLP_HEADERS`…) sont lues par le SDK sans rien changer au code.
 
 ## Front
 
-Lues par Vite au build (`pnpm nx build web`) et figées dans les fichiers produits : un environnement, un build.
+Lues par Vite au build (`pnpm nx build web`) et figées dans les fichiers produits : un environnement, un build. En dev, dans `apps/web/.env` seulement (pas le `.env` de la racine).
 
 | Variable         | Défaut                         | Rôle                                                                                                            |
 | ---------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
@@ -131,7 +137,7 @@ Lues par Vite au build (`pnpm nx build web`) et figées dans les fichiers produi
 
 ## Développement local
 
-Lues par `docker-compose.yml` et `pnpm dev:setup`, pas par les applications.
+Lues dans le `.env` de la racine par `docker-compose.yml` et `pnpm dev:setup`, pas par les applications.
 
 | Variable                | Défaut | Rôle                                                         |
 | ----------------------- | ------ | ------------------------------------------------------------ |
@@ -144,6 +150,6 @@ Lues par `docker-compose.yml` et `pnpm dev:setup`, pas par les applications.
 
 `pnpm dev:setup` refuse un port qui ne concorde pas avec son URL et nomme la variable en conflit.
 
-`docker-compose.prod.yml` lit en plus `API_PORT` et `AUTH_PORT` (ports publiés) et des valeurs pour ses services (`BETTER_AUTH_SECRET` obligatoire, `BETTER_AUTH_URL`, `AUTH_APP_URL`, `CORS_ORIGINS`…), avec des valeurs par défaut adaptées à un essai local.
+`docker-compose.prod.yml` lit en plus `API_PORT` et `AUTH_PORT` (ports publiés) et des valeurs pour ses services (`BETTER_AUTH_SECRET` obligatoire, `BETTER_AUTH_URL`, `AUTH_APP_URL`, `CORS_ORIGINS`…), avec des valeurs par défaut adaptées à un essai local. Comme toute commande docker compose, il ne lit que le `.env` de la racine, pas ceux des apps : `BETTER_AUTH_SECRET` se passe sur la ligne de commande.
 
-Les parcours navigateur (`apps/web-e2e`) démarrent leur propre stack avec un environnement fixé dans `src/stack.ts`, sans lire le `.env` ; seuls leurs ports se changent (`E2E_API_PORT`, `E2E_AUTH_PORT`, `E2E_WEB_PORT`).
+Les parcours navigateur (`apps/web-e2e`) démarrent leur propre stack avec un environnement fixé dans `src/stack.ts`, sans lire les `.env` ; seuls leurs ports se changent (`E2E_API_PORT`, `E2E_AUTH_PORT`, `E2E_WEB_PORT`).
