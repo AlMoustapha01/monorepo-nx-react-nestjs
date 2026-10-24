@@ -72,4 +72,6 @@ Verdict : <aucun écart bloquant | N écart(s) bloquant(s)>
 <matrice de spec:trace, ou « pas de spec »>
 ```
 
+Si le changement touche un chemin de `.github/CODEOWNERS`, nomme ces chemins dans « À vérifier par un humain » : leur relecture humaine est obligatoire, quel que soit ton verdict.
+
 Pas d'écart sans preuve : chaque constat cite le code, le test ou la sortie d'une commande. Un doute que tu ne peux pas prouver va dans « À vérifier par un humain », pas dans les bloquants.

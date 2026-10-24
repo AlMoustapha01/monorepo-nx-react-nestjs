@@ -1,0 +1,40 @@
+# Chemins sensibles : une PR qui en touche un est relue par un humain, même si un agent l'a déjà
+# relue (docs/agents/relecteur.md). GitHub demande la revue de leur propriétaire ; pour la rendre
+# obligatoire, voir docs/guides/ci.md « Rendre les vérifications obligatoires ».
+# Nouveau projet : remplacer @AlMoustapha01 par l'équipe qui fait foi (@org/equipe).
+# Un nouveau chemin sensible (paiements, webhooks, données personnelles…) s'ajoute ici.
+
+# Identité et autorisations : tokens, rôles, routes publiques
+/apps/auth/                                   @AlMoustapha01
+/libs/api/core/src/lib/auth/                  @AlMoustapha01
+/libs/shared/contracts/src/lib/auth/          @AlMoustapha01
+
+# Isolation des tenants : contexte de requête, sessions et accès à la base
+/libs/api/core/src/lib/context/               @AlMoustapha01
+/libs/api/core/src/lib/database/              @AlMoustapha01
+/libs/api/*/src/lib/infra/*.schema.ts         @AlMoustapha01
+
+# Migrations : générées, rétrocompatibles, irréversibles une fois déployées
+/apps/api/migrations/                         @AlMoustapha01
+
+# Garanties transverses de l'API : erreurs exposées, idempotence, limitation de débit, événements
+/libs/api/core/src/lib/errors/                @AlMoustapha01
+/libs/api/core/src/lib/http/                  @AlMoustapha01
+/libs/api/core/src/lib/events/                @AlMoustapha01
+/libs/shared/contracts/src/lib/**/*.events.ts @AlMoustapha01
+
+# Chaîne de livraison : CI, images, dépendances (overrides, audit)
+/.github/                                     @AlMoustapha01
+/Dockerfile                                   @AlMoustapha01
+/docker-compose.prod.yml                      @AlMoustapha01
+/pnpm-workspace.yaml                          @AlMoustapha01
+/renovate.json                                @AlMoustapha01
+
+# Règles des agents : ce qu'ils lisent, ce qui les vérifie, ce qu'ils exécutent (hooks)
+/AGENTS.md                                    @AlMoustapha01
+/.specify/memory/constitution.md              @AlMoustapha01
+/tools/spec-kit/preset/                       @AlMoustapha01
+/docs/agents/                                 @AlMoustapha01
+/.claude/settings.json                        @AlMoustapha01
+/.claude/agents/                              @AlMoustapha01
+/tools/dev/stop-check*.mts                    @AlMoustapha01
