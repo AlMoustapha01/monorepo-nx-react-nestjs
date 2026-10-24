@@ -10,6 +10,7 @@
     "knip": "knip",
     "typecheck:tools": "tsc -p tools/dev/tsconfig.json",
     "dev:setup": "node tools/dev/setup.mts",
+    "dev:down": "docker compose --profile observability down",
     "dev:token": "node tools/dev/token.mts",
     "dev:seed": "node tools/dev/seed.mts",
     "init:project": "node tools/dev/init-project.mts",

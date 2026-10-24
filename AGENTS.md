@@ -4,29 +4,30 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 ## Commandes
 
-| Besoin                                                                | Commande                                                                                                             |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Première installation : `.env`, Postgres, Redis, Mailpit, migrations  | `pnpm install && pnpm dev:setup`                                                                                     |
-| Lancer l'API                                                          | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
-| Nouveau projet : renommer le scope `@nx-react-nestjs`                 | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
-| Retirer le code d'exemple, avant le premier déploiement               | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                      |
-| Nouveau domaine métier : lib API vide, alias et module câblés         | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                         |
-| Nouvelle lib feature front : lib vide, config de test et alias câblés | `pnpm new:web-feature <nom>`, puis les écrans en TDD ; voir [`libs/web/AGENTS.md`](libs/web/AGENTS.md)               |
-| Données de démo (API démarrée)                                        | `pnpm dev:seed`                                                                                                      |
-| Token pour appeler l'API (Swagger, curl)                              | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
-| Lancer le service d'identité (Better Auth)                            | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
-| Voir les emails envoyés en local                                      | http://localhost:8025 (Mailpit)                                                                                      |
-| Appliquer les migrations                                              | `pnpm nx run api:db-migrate`                                                                                         |
-| Générer une migration après un changement de schéma                   | `pnpm nx run api:db-generate --name=<sujet>`                                                                         |
-| Tout vérifier, comme la CI (format, lint, types, tests, code mort)    | `pnpm check`                                                                                                         |
-| Parcours navigateur (Playwright) contre la vraie stack, Docker requis | `pnpm nx run web-e2e:e2e` (`pnpm exec playwright install chromium` la première fois)                                 |
-| Seulement ce qui a changé                                             | `pnpm nx affected -t lint typecheck test`                                                                            |
-| Formater                                                              | `pnpm format`                                                                                                        |
-| Traces en local (Grafana sur http://localhost:3001)                   | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env` |
-| Vérifier la topologie de prod en local (images, migrations, services) | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                    |
-| Développer une fonctionnalité (Spec Kit, dans Claude Code)            | `/speckit-specify <description>`, puis la suite du cycle (voir [plus bas](#développer-une-fonctionnalité-spec-kit))  |
-| Matrice scénario → tests, et état des exigences du cahier des charges | `pnpm -s spec:trace` (toutes) ou `… specs/<NNN-nom>` (stricte) ; voir « Specs à jour » plus bas                      |
-| Régénérer la référence des codes d'erreur après en avoir ajouté un    | `pnpm docs:errors` ; voir [Codes d'erreur](docs/reference/codes-erreur.md)                                           |
+| Besoin                                                                        | Commande                                                                                                             |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                     |
+| Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                       |
+| Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, Swagger sur `/api/docs`                                          |
+| Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
+| Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                      |
+| Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                         |
+| Nouvelle lib feature front : lib vide, config de test et alias câblés         | `pnpm new:web-feature <nom>`, puis les écrans en TDD ; voir [`libs/web/AGENTS.md`](libs/web/AGENTS.md)               |
+| Données de démo (API démarrée)                                                | `pnpm dev:seed`                                                                                                      |
+| Token pour appeler l'API (Swagger, curl)                                      | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
+| Lancer le service d'identité (Better Auth)                                    | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
+| Voir les emails envoyés en local                                              | http://localhost:8025 (Mailpit)                                                                                      |
+| Appliquer les migrations                                                      | `pnpm nx run api:db-migrate`                                                                                         |
+| Générer une migration après un changement de schéma                           | `pnpm nx run api:db-generate --name=<sujet>`                                                                         |
+| Tout vérifier, comme la CI (format, lint, types, tests, code mort)            | `pnpm check`                                                                                                         |
+| Parcours navigateur (Playwright) contre la vraie stack, Docker requis         | `pnpm nx run web-e2e:e2e` (`pnpm exec playwright install chromium` la première fois)                                 |
+| Seulement ce qui a changé                                                     | `pnpm nx affected -t lint typecheck test`                                                                            |
+| Formater                                                                      | `pnpm format`                                                                                                        |
+| Traces en local (Grafana sur http://localhost:3001)                           | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env` |
+| Vérifier la topologie de prod en local (images, migrations, services)         | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                    |
+| Développer une fonctionnalité (Spec Kit, dans Claude Code)                    | `/speckit-specify <description>`, puis la suite du cycle (voir [plus bas](#développer-une-fonctionnalité-spec-kit))  |
+| Matrice scénario → tests, et état des exigences du cahier des charges         | `pnpm -s spec:trace` (toutes) ou `… specs/<NNN-nom>` (stricte) ; voir « Specs à jour » plus bas                      |
+| Régénérer la référence des codes d'erreur après en avoir ajouté un            | `pnpm docs:errors` ; voir [Codes d'erreur](docs/reference/codes-erreur.md)                                           |
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT`, `MAILPIT_UI_PORT` ou `PORT` dans `.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
