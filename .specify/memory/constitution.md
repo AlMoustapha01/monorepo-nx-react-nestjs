@@ -46,6 +46,7 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 
 ## Development Workflow
 
+- Every change of observable behavior starts from a spec. Without a spec: refactoring, chores, documentation, dependencies, performance, and a fix that restores an already specified behavior; a bug that reveals an unspecified behavior adds its scenario to the spec, with its test.
 - A feature lives in `specs/NNN-<name>/` (`spec.md`, `plan.md`, `tasks.md` and their companions), written in English.
 - A feature is developed on its own branch, `NNN-<name>`, which `/speckit-specify` creates (`before_specify` hook of the git extension) and whose name is also the spec directory's.
 - One user story per pull request.
@@ -57,4 +58,4 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 
 `AGENTS.md` is changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-24
+**Version**: 2.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-24

@@ -145,7 +145,7 @@ En pratique : [Observabilité en local](docs/guides/observabilite-en-local.md) (
 
 ## Développer une fonctionnalité (Spec Kit)
 
-Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spec Kit](https://github.com/github/spec-kit) (1.2.2), installé et configuré dans le repo pour Claude Code.
+Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spec Kit](https://github.com/github/spec-kit) (1.2.2), installé et configuré dans le repo pour Claude Code. Comment ce cycle couvre une méthode de travail avec des agents (phases, mémoire entre sessions, prototypes, ce qui manque encore) : [Méthode](docs/guides/methode.md).
 
 <!-- example:start -->
 
@@ -159,6 +159,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
   3. `/speckit-plan` : domaines, feature flag, événements, migrations, règles d'accès, stratégie de test (un test par scénario d'acceptation) ;
   4. `/speckit-tasks`, puis `/speckit-analyze` (cohérence spec, plan, tâches) ; `/speckit-checklist` en option ;
   5. `/speckit-implement`, puis `/speckit-converge`, à répéter jusqu'à « Converged ». Quand une story n'a plus de manque, `/speckit-converge` la fait relire par le relecteur indépendant avant de conclure.
+- **Sans spec** : ce qui ne change aucun comportement observable (`refactor`, `chore`, `docs`, dépendances, performance), et le `fix` qui rétablit un comportement déjà spécifié. Un bug qui révèle un comportement non spécifié ajoute son scénario à la spec, avec son test. Le reste part d'une spec.
 - **Commits** : chaque commande qui écrit des fichiers commite son résultat sur la branche de la fonctionnalité, avec un message Conventional Commits en anglais (voir [le guide](docs/guides/spec-kit.md#branche-et-commits-automatiques)).
 - **Specs, plans et tâches en anglais.** Une user story par PR.
 - **TDD** : les tests sont obligatoires dans les tâches, écrits avant le code et vus en échec. `/speckit-implement` ne coche une tâche de test qu'après l'échec du test, et une tâche de code qu'après le passage de ses tests ; `pnpm nx affected -t lint typecheck test e2e` doit passer à la fin de chaque user story (les parcours navigateur ne tournent que si le front, l'API ou le service d'auth ont changé, comme en CI). `/speckit-converge` ne conclut pas tant qu'un scénario d'acceptation n'a pas de test.
