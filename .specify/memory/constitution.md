@@ -50,10 +50,11 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 - A feature is developed on its own branch, `NNN-<name>`, which `/speckit-specify` creates (`before_specify` hook of the git extension) and whose name is also the spec directory's.
 - One user story per pull request.
 - `/speckit-implement` and `/speckit-converge` run until converge reports **Converged**, which requires a test for every acceptance scenario.
+- Whoever produces the work does not validate it: before a story is handed over, an independent reviewer, in a fresh context and without the author's summary, applies `docs/agents/relecteur.md`; each blocking finding becomes a task, and a disputed one goes to a human.
 - Once merged, `spec.md` describes the current behavior and stays current: a pull request that changes a specified behavior updates its spec; a scenario is retired, never deleted or renumbered; the spec's status (`Draft`, `Implemented`, `Shipped`, `Retired`) follows the feature's lifecycle. `plan.md` and `tasks.md` are history and are not updated. `pnpm -s spec:trace` enforces it in CI.
 
 ## Governance
 
 `AGENTS.md` is changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 2.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-24

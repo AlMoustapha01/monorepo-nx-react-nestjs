@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node --experimental-strip-types --no-warnings tools/dev/stop-check.mts",
+            "timeout": 300,
+            "statusMessage": "Format, lint et types des fichiers changés…"
+          }
+        ]
+      }
+    ]
+  }
+}
