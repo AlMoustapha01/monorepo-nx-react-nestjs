@@ -11,6 +11,7 @@ import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { z } from 'zod';
 import { RequestContext } from '../context/request-context';
+import { recordProblemCode } from '../http/request-logging';
 import { AppError, type ErrorKind } from './app-error';
 import { reportError } from './error-reporter';
 
@@ -71,6 +72,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       });
     }
 
+    recordProblemCode(response, problem.code);
     response
       .status(problem.status)
       .type('application/problem+json')

@@ -63,7 +63,15 @@ Depuis un span dans Tempo, **Logs for this span** ouvre les lignes de Loki qui p
 {service_name="api"} | trace_id = "e520398bbc6930943b99a2c5b4868e66"
 ```
 
-Dans le terminal, chaque ligne émise pendant un span porte aussi `trace_id` et `span_id`. Chaque requête a de plus un `x-request-id`, renvoyé dans la réponse et présent dans le log `request completed` : on part de l'ID donné par un client pour retrouver la trace.
+Dans le terminal, chaque ligne émise pendant un span porte aussi `trace_id` et `span_id`. Chaque requête a de plus un `x-request-id`, renvoyé dans la réponse et présent dans sa ligne de log : on part de l'ID donné par un client pour retrouver la trace.
+
+Une requête donne une ligne, qui la résume, avec le code d'erreur s'il y en a un :
+
+```
+WARN: POST /api/v1/invoices → 422 IDEMPOTENCY_KEY_REUSED (6 ms) [2bafb09a-…] {"tenantId":"…","userId":"…"}
+```
+
+En JSON (hors dev), le code est aussi un champ, `code`, à filtrer dans Loki (`| code = "IDEMPOTENCY_KEY_REUSED"`). Les en-têtes de la requête et de la réponse ne sont journalisés qu'avec `LOG_LEVEL=debug`.
 
 ## Lire les métriques
 
