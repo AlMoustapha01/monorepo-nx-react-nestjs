@@ -3,9 +3,12 @@ import { describe, it } from 'node:test';
 import {
   driftedFeatures,
   featureIdOf,
+  parseRequirementIndex,
+  parseRequirementRefs,
   parseScenarios,
   parseStatus,
   traceFeature,
+  traceRequirements,
 } from './spec-trace-core.mts';
 
 const SPEC = `# Feature Specification: Order note
@@ -241,5 +244,136 @@ deleted file mode 100644
       ]),
       [],
     );
+  });
+});
+
+describe('parseRequirementIndex', () => {
+  it('reads the product requirements of the index', () => {
+    const index = parseRequirementIndex(
+      JSON.stringify({ requirements: [{ id: 'PAY-03', title: 'Pay by mobile money' }] }),
+    );
+
+    assert.deepEqual(index, [{ id: 'PAY-03', title: 'Pay by mobile money' }]);
+  });
+
+  it('rejects an id that is not <PREFIX>-<number>', () => {
+    assert.throws(
+      () => parseRequirementIndex(JSON.stringify({ requirements: [{ id: 'pay 3', title: 'x' }] })),
+      /pay 3/,
+    );
+  });
+
+  it('rejects a requirement without a title', () => {
+    assert.throws(
+      () => parseRequirementIndex(JSON.stringify({ requirements: [{ id: 'PAY-03' }] })),
+      /PAY-03/,
+    );
+  });
+
+  it('rejects a duplicated id', () => {
+    const requirements = [
+      { id: 'PAY-03', title: 'a' },
+      { id: 'PAY-03', title: 'b' },
+    ];
+
+    assert.throws(() => parseRequirementIndex(JSON.stringify({ requirements })), /PAY-03/);
+  });
+
+  it('rejects a file without a requirements list', () => {
+    assert.throws(() => parseRequirementIndex('[]'), /requirements/);
+  });
+});
+
+describe('parseRequirementRefs', () => {
+  it('reads the product requirements a spec implements', () => {
+    assert.deepEqual(
+      parseRequirementRefs('**Status**: Draft\n\n**Product Requirements**: PAY-03, PAY-04\n'),
+      ['PAY-03', 'PAY-04'],
+    );
+  });
+
+  it('reads None as no requirement', () => {
+    assert.deepEqual(parseRequirementRefs('**Product Requirements**: None\n'), []);
+  });
+
+  it('ignores a trailing comma', () => {
+    assert.deepEqual(parseRequirementRefs('**Product Requirements**: PAY-03,\n'), ['PAY-03']);
+  });
+
+  it('tells a missing line apart from None', () => {
+    assert.equal(parseRequirementRefs(SPEC), undefined);
+  });
+});
+
+describe('traceRequirements', () => {
+  const index = [
+    { id: 'PAY-03', title: 'Pay by mobile money' },
+    { id: 'PAY-04', title: 'Refund' },
+    { id: 'ORD-01', title: 'Order note' },
+  ];
+
+  it('maps each requirement to its specs, and its state to the least advanced active spec', () => {
+    const report = traceRequirements(index, [
+      { featureDir: 'specs/003-pay', status: 'Shipped', refs: ['PAY-03'] },
+      { featureDir: 'specs/007-pay-v2', status: 'Draft', refs: ['PAY-03', 'ORD-01'] },
+      { featureDir: 'specs/002-note', status: 'Retired', refs: ['ORD-01'] },
+    ]);
+
+    assert.deepEqual(
+      report.rows.map((row) => [row.id, row.state, row.specs.map((spec) => spec.featureDir)]),
+      [
+        ['PAY-03', 'Draft', ['specs/003-pay', 'specs/007-pay-v2']],
+        ['PAY-04', 'Unspecified', []],
+        ['ORD-01', 'Draft', ['specs/002-note', 'specs/007-pay-v2']],
+      ],
+    );
+    assert.equal(report.ok, true);
+  });
+
+  it('marks a requirement whose specs are all retired as retired', () => {
+    const report = traceRequirements(index, [
+      { featureDir: 'specs/002-note', status: 'Retired', refs: ['ORD-01'] },
+    ]);
+
+    assert.equal(report.rows.find((row) => row.id === 'ORD-01')?.state, 'Retired');
+  });
+
+  it('fails when a spec cites a requirement absent from the index', () => {
+    const report = traceRequirements(index, [
+      { featureDir: 'specs/003-pay', status: 'Draft', refs: ['PAY-99'] },
+    ]);
+
+    assert.deepEqual(report.unknown, [{ featureDir: 'specs/003-pay', id: 'PAY-99' }]);
+    assert.equal(report.ok, false);
+  });
+
+  it('fails when a spec has no Product Requirements line, so that none is forgotten', () => {
+    const report = traceRequirements(index, [
+      { featureDir: 'specs/003-pay', status: 'Draft', refs: undefined },
+    ]);
+
+    assert.deepEqual(report.missingLine, ['specs/003-pay']);
+    assert.equal(report.ok, false);
+  });
+
+  it('does not require the line in a retired spec, written before the index existed', () => {
+    const report = traceRequirements(index, [
+      { featureDir: 'specs/002-note', status: 'Retired', refs: undefined },
+    ]);
+
+    assert.deepEqual(report.missingLine, []);
+    assert.equal(report.ok, true);
+  });
+
+  it('without an index, accepts specs without the line but not specs that cite a requirement', () => {
+    const report = traceRequirements(undefined, [
+      { featureDir: 'specs/002-note', status: 'Draft', refs: undefined },
+      { featureDir: 'specs/003-pay', status: 'Draft', refs: ['PAY-03'] },
+    ]);
+
+    assert.deepEqual(report.rows, []);
+    assert.deepEqual(report.missingLine, []);
+    assert.deepEqual(report.unknown, [{ featureDir: 'specs/003-pay', id: 'PAY-03' }]);
+    assert.equal(report.ok, false);
   });
 });
