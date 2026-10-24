@@ -56,6 +56,13 @@
       "options": {
         "command": "node --env-file-if-exists=.env --env-file-if-exists=apps/api/.env node_modules/drizzle-kit/bin.cjs migrate --config apps/api/drizzle.config.ts"
       }
+    },
+    "db-studio": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "options": {
+        "command": "node --env-file-if-exists=.env --env-file-if-exists=apps/api/.env node_modules/drizzle-kit/bin.cjs studio --config apps/api/drizzle.config.ts"
+      }
     }
   }
 }

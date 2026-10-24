@@ -18,6 +18,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Lancer le service d'identité (Better Auth)                                    | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
 | Voir les emails envoyés en local                                              | http://localhost:8025 (Mailpit)                                                                                      |
 | Appliquer les migrations                                                      | `pnpm nx run api:db-migrate`                                                                                         |
+| Explorer la base (Drizzle Studio, tables des schémas Drizzle seulement)       | `pnpm nx run api:db-studio` → https://local.drizzle.studio                                                           |
 | Générer une migration après un changement de schéma                           | `pnpm nx run api:db-generate --name=<sujet>`                                                                         |
 | Tout vérifier, comme la CI (format, lint, types, tests, code mort)            | `pnpm check`                                                                                                         |
 | Parcours navigateur (Playwright) contre la vraie stack, Docker requis         | `pnpm nx run web-e2e:e2e` (`pnpm exec playwright install chromium` la première fois)                                 |
