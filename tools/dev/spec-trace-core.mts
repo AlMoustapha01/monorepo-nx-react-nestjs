@@ -222,7 +222,7 @@ export interface RequirementReport {
   }[];
   /** Exigences citées par une spec et absentes de l'index (ou index absent). */
   unknown: { featureDir: string; id: string }[];
-  /** Specs sans ligne `**Product Requirements**`, alors que l'index existe. */
+  /** Specs actives sans ligne `**Product Requirements**`, alors que l'index existe. */
   missingLine: string[];
   ok: boolean;
 }
@@ -254,7 +254,10 @@ export function parseRequirementRefs(specMarkdown: string): string[] | undefined
   const value = /^\*\*Product Requirements\*\*:\s*(.*?)\s*$/m.exec(specMarkdown)?.[1];
   if (value === undefined) return undefined;
   if (value === '' || value === 'None') return [];
-  return value.split(',').map((id) => id.trim());
+  return value
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id !== '');
 }
 
 const STATE_ORDER: SpecStatus[] = ['Draft', 'Implemented', 'Shipped'];
@@ -267,8 +270,11 @@ export function traceRequirements(
   const unknown = specs
     .flatMap(({ featureDir, refs }) => (refs ?? []).map((id) => ({ featureDir, id })))
     .filter(({ id }) => !known.has(id));
+  // Une spec retirée avant la création de l'index n'a pas à être complétée.
   const missingLine = index
-    ? specs.filter((spec) => spec.refs === undefined).map((spec) => spec.featureDir)
+    ? specs
+        .filter((spec) => spec.refs === undefined && spec.status !== 'Retired')
+        .map((spec) => spec.featureDir)
     : [];
 
   const rows = (index ?? []).map(({ id, title }) => {

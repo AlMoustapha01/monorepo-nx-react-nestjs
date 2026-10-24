@@ -46,8 +46,8 @@ Quand le produit a un cahier des charges, `specs/product-requirements.json` en l
 
 - Identifiant `<PRÉFIXE>-<numéro>`, celui du cahier des charges ; un titre court. L'index appartient au produit : `/speckit-specify` le lit, ne le modifie pas.
 - En tête de spec, `**Product Requirements**: PAY-03, PAY-04`, ou `None` (fonctionnalité technique). `/speckit-specify` la remplit, et pose la question si plusieurs exigences peuvent correspondre.
-- L'état d'une exigence ne s'écrit nulle part, il se déduit du statut de ses specs : « non spécifiée » sans spec, sinon le statut de la spec active la moins avancée (une v2 en `Draft` remet l'exigence en cours), `Retired` si toutes ses specs sont retirées. Aucun agent ne peut donc déclarer une exigence terminée sans que ses scénarios aient leurs tests.
-- `pnpm -s spec:trace` affiche le tableau exigence → specs → état, et échoue si une spec cite une exigence absente de l'index, ou si l'index existe et qu'une spec n'a pas la ligne `**Product Requirements**`. Une exigence sans spec n'est pas une erreur : c'est le travail qui reste.
+- L'état d'une exigence ne s'écrit nulle part, il se déduit du statut de ses specs : « non spécifiée » sans spec, sinon le statut de la spec active la moins avancée (une v2 en `Draft` remet l'exigence en cours), `Retired` si toutes ses specs sont retirées. Comme `spec:trace` refuse une spec `Implemented` ou `Shipped` dont un scénario n'a pas de test, aucun agent ne peut déclarer une exigence terminée sans ces tests.
+- `pnpm -s spec:trace` affiche le tableau exigence → specs → état, et échoue si une spec cite une exigence absente de l'index, ou si l'index existe et qu'une spec non retirée n'a pas la ligne `**Product Requirements**`. Une exigence sans spec n'est pas une erreur : c'est le travail qui reste.
 - Sans index, rien ne change : la ligne vaut `None`.
 
 `tasks.md` et l'historique git font office de journal de progression : pas de `progress.md` ni de `feature_list.json` à tenir à côté.

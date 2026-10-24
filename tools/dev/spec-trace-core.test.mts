@@ -296,6 +296,10 @@ describe('parseRequirementRefs', () => {
     assert.deepEqual(parseRequirementRefs('**Product Requirements**: None\n'), []);
   });
 
+  it('ignores a trailing comma', () => {
+    assert.deepEqual(parseRequirementRefs('**Product Requirements**: PAY-03,\n'), ['PAY-03']);
+  });
+
   it('tells a missing line apart from None', () => {
     assert.equal(parseRequirementRefs(SPEC), undefined);
   });
@@ -350,6 +354,15 @@ describe('traceRequirements', () => {
 
     assert.deepEqual(report.missingLine, ['specs/003-pay']);
     assert.equal(report.ok, false);
+  });
+
+  it('does not require the line in a retired spec, written before the index existed', () => {
+    const report = traceRequirements(index, [
+      { featureDir: 'specs/002-note', status: 'Retired', refs: undefined },
+    ]);
+
+    assert.deepEqual(report.missingLine, []);
+    assert.equal(report.ok, true);
   });
 
   it('without an index, accepts specs without the line but not specs that cite a requirement', () => {
