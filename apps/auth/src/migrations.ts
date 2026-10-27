@@ -16,7 +16,8 @@ export async function migrateAuthDatabase(env: AuthEnv, logger: Logger): Promise
   // Le verrou consultatif est attaché à cette connexion : deux déploiements se sérialisent.
   const lock = new Client({ connectionString: env.DATABASE_URL });
   await lock.connect();
-  const pool = createPool(env, logger);
+  // Sans statement_timeout : un index sur une table remplie peut dépasser celui des requêtes.
+  const pool = createPool({ ...env, DATABASE_STATEMENT_TIMEOUT_MS: 0 }, logger);
   try {
     await lock.query('select pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
     await lock.query(`create schema if not exists ${AUTH_SCHEMA}`);

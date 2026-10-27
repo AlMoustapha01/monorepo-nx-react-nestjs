@@ -82,6 +82,8 @@ Chaque process valide son environnement au démarrage et refuse de démarrer si 
 | `TRUST_PROXY_HOPS`                         | nombre de proxys devant l'API ; voir [Derrière un load balancer](#derrière-un-load-balancer) |
 | `RATE_LIMIT_MAX`, `RATE_LIMIT_TTL_MS`      | 100 requêtes par minute par défaut                                                           |
 | `DATABASE_POOL_MAX`                        | 10 par process par défaut ; voir [Postgres](#postgres)                                       |
+| `DATABASE_STATEMENT_TIMEOUT_MS`            | 30 s par défaut ; voir [Postgres](#postgres)                                                 |
+| `NODE_OPTIONS`                             | `--enable-source-maps` (posé par l'image) ; voir [Mémoire](#mémoire)                         |
 | `FEATURE_FLAGS`                            | surcharges, ex. `announcements=true` ; un nom inconnu bloque le démarrage                    |
 | `OTEL_*`, `SENTRY_*`                       | optionnelles ; `OTEL_SERVICE_NAME=api` pour l'API, `api-worker` pour le worker               |
 
@@ -98,6 +100,7 @@ Chaque process valide son environnement au démarrage et refuse de démarrer si 
 | `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`     | mêmes valeurs que l'API                                                                 |
 | `TRUST_PROXY_HOPS`                         | comme pour l'API                                                                        |
 | `SHUTDOWN_DRAIN_MS`, `SHUTDOWN_TIMEOUT_MS` | comme pour l'API                                                                        |
+| `DATABASE_STATEMENT_TIMEOUT_MS`            | comme pour l'API ; ignoré par `migrate.js`                                              |
 
 **Ne jamais changer `BETTER_AUTH_SECRET`** sans plan : il chiffre les clés privées du JWKS stockées en base. Un nouveau secret rend ces clés illisibles, et toutes les sessions deviennent invalides.
 
@@ -152,6 +155,12 @@ Sans ce réglage, tous les clients ont l'IP du proxy :
 
 Une valeur trop grande est l'erreur inverse : le client choisit son IP en forgeant `X-Forwarded-For`. Comptez exactement les proxys que vous contrôlez.
 
+## Mémoire
+
+Fixez une limite mémoire à chaque conteneur, et le heap de V8 en dessous : `NODE_OPTIONS="--enable-source-maps --max-old-space-size=<Mo>"`, à environ 75 % de la limite. Le reste couvre ce que V8 ne compte pas dans son heap (buffers, sockets, code compilé). Sans ce réglage, le process peut dépasser la limite avant que le ramasse-miettes ne réagisse, et l'orchestrateur le tue sans qu'aucun log ne l'explique. Reprenez `--enable-source-maps` : votre `NODE_OPTIONS` remplace celui de l'image.
+
+Exemple : limite de 512 Mo → `--max-old-space-size=384`.
+
 ## Redis
 
 Redis porte les jobs BullMQ et les compteurs de rate limiting. Il doit être configuré avec :
@@ -166,6 +175,7 @@ Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer,
 ## Postgres
 
 - **Connexions** : chaque process ouvre jusqu'à `DATABASE_POOL_MAX` connexions (10 pour l'API et le worker, 5 pour l'identité). Le total, toutes instances comprises, doit rester sous `max_connections`, migrations comprises. Au-delà de quelques dizaines d'instances, placer un pooler (PgBouncer en mode transaction).
+- **Timeouts** : une requête SQL est annulée après `DATABASE_STATEMENT_TIMEOUT_MS` (30 s), une transaction restée ouverte sans requête après 60 s, et l'attente d'une connexion (pool plein, Postgres injoignable) échoue après 5 s : une requête lente ou bloquée ne garde ni connexion ni verrous indéfiniment. Les migrations n'ont pas de `statement_timeout` (un index sur une grosse table peut être long). Derrière PgBouncer, ces réglages sont envoyés au démarrage de la connexion : ajoutez `statement_timeout` et `idle_in_transaction_session_timeout` à `ignore_startup_parameters`, et réglez-les sur le rôle Postgres (`alter role … set statement_timeout = '30s'`).
 - **Droits** : `migrate.js` crée des schémas et des tables ; les process applicatifs n'ont besoin que de lire et écrire. Deux rôles Postgres distincts limitent les dégâts d'une injection.
 - **Rétention** : le worker purge chaque jour l'outbox (7 jours) et les marques d'idempotence (30 jours). Les jobs restent dans Redis 24 h en cas de succès, 7 jours en cas d'échec.
 
@@ -180,6 +190,7 @@ Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer,
 - [ ] `TRUST_PROXY_HOPS` égal au nombre de proxys réels.
 - [ ] Redis en `noeviction` avec AOF.
 - [ ] Les migrations tournent comme étape bloquante avant les nouvelles instances.
+- [ ] Limite mémoire des conteneurs, et `--max-old-space-size` en dessous (voir [Mémoire](#mémoire)).
 - [ ] `SHUTDOWN_DRAIN_MS=5000`, et délai avant SIGKILL supérieur à `SHUTDOWN_TIMEOUT_MS`.
 - [ ] Sondes branchées : `/health` en liveness, `/ready` en readiness, pour l'API et l'identité.
 - [ ] Traces et erreurs : `OTEL_EXPORTER_OTLP_ENDPOINT` et `SENTRY_DSN`, et des alertes sur le retard de l'outbox et les jobs abandonnés (voir [Référence : métriques et alertes](../reference/metriques-et-alertes.md)).

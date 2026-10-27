@@ -34,7 +34,9 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 FROM ${NODE_IMAGE} AS runtime
 ARG APP
-ENV NODE_ENV=production
+# Stack traces dans les sources TypeScript, grâce aux .map du bundle. Un NODE_OPTIONS posé par
+# l'orchestrateur remplace cette valeur : y reprendre --enable-source-maps.
+ENV NODE_ENV=production NODE_OPTIONS=--enable-source-maps
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /repo/dist/apps/${APP} ./
