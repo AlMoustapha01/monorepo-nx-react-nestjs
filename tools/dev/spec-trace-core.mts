@@ -1,3 +1,5 @@
+import { parse as parseYaml } from 'yaml';
+
 /**
  * Traçabilité spec → tests : chaque scénario d'acceptation d'une spec Spec Kit
  * (`specs/NNN-<nom>/spec.md`) porte un identifiant `NNN-US<story>-AS<n>`, et au moins un test
@@ -81,7 +83,7 @@ export function parseScenarios(featureId: string, specMarkdown: string): Scenari
       inScenarios = false;
       continue;
     }
-    if (story && /^\*\*Acceptance Scenarios\*\*/.test(line)) {
+    if (story && line.startsWith('**Acceptance Scenarios**')) {
       inScenarios = true;
       continue;
     }
@@ -91,7 +93,7 @@ export function parseScenarios(featureId: string, specMarkdown: string): Scenari
       scenarios.push({
         id: `${featureId}-US${story}-AS${item[1]}`,
         text,
-        retired: /^\*\*Retired\*\*/.test(text),
+        retired: text.startsWith('**Retired**'),
       });
     }
   }
@@ -195,13 +197,38 @@ export function driftedFeatures(
 }
 
 /**
- * Index des exigences (`specs/product-requirements.json`) : la liste des exigences du cahier des
- * charges (`PAY-03`). Chaque spec nomme celles qu'elle implémente (`**Product Requirements**:`) ;
- * l'état d'une exigence se déduit du statut de ses specs, il ne s'écrit pas dans l'index.
+ * Index du produit (`specs/product.yml`) : les exigences du cahier des charges (`PAY-03`),
+ * regroupées en epics (`E03`) qui dépendent les uns des autres et déclarent leurs parcours de bout
+ * en bout (`E03-J1`). Chaque spec nomme les exigences qu'elle implémente
+ * (`**Product Requirements**:`) ; l'état d'une exigence se déduit du statut de ses specs, celui d'un
+ * epic de ses exigences : rien ne s'écrit à la main. Un identifiant ne se renumérote jamais, il se
+ * retire (`retired: <raison>`).
  */
-export interface ProductRequirement {
+interface ProductRequirement {
   id: string;
   title: string;
+  retired?: string | undefined;
+}
+
+interface Journey {
+  id: string;
+  title: string;
+  steps: string[];
+  retired?: string | undefined;
+}
+
+interface Epic {
+  id: string;
+  title: string;
+  goal: string;
+  requirements: string[];
+  dependsOn: string[];
+  journeys: Journey[];
+}
+
+export interface ProductIndex {
+  requirements: ProductRequirement[];
+  epics: Epic[];
 }
 
 type RequirementState = 'Unspecified' | SpecStatus;
@@ -224,30 +251,186 @@ export interface RequirementReport {
   unknown: { featureDir: string; id: string }[];
   /** Specs actives sans ligne `**Product Requirements**`, alors que l'index existe. */
   missingLine: string[];
+  /** Specs actives qui citent une exigence retirée : avertissement, la spec reste à retirer. */
+  retiredCited: { featureDir: string; id: string }[];
   ok: boolean;
 }
 
 const REQUIREMENT_ID = /^[A-Z][A-Z0-9]*-\d+$/;
+const EPIC_ID = /^E\d+$/;
+const JOURNEY_ID = /^E\d+-J\d+$/;
 
-export function parseRequirementIndex(json: string): ProductRequirement[] {
-  const data: unknown = JSON.parse(json);
-  const list = (data as { requirements?: unknown } | null)?.requirements;
-  if (!Array.isArray(list)) {
-    throw new Error('Attendu : { "requirements": [{ "id": "PAY-03", "title": "…" }] }.');
+type Fields = Record<string, unknown>;
+
+function fieldsOf(value: unknown, what: string): Fields {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`${what} : attendu un objet.`);
   }
+  return value as Fields;
+}
+
+function text(fields: Fields, key: string, owner: string): string {
+  const value = fields[key];
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`${owner} : champ ${key} absent ou vide.`);
+  }
+  return value;
+}
+
+function retiredOf(fields: Fields, owner: string): string | undefined {
+  return fields['retired'] === undefined ? undefined : text(fields, 'retired', owner);
+}
+
+function textList(fields: Fields, key: string, owner: string): string[] {
+  const value = fields[key] ?? [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+    throw new Error(`${owner} : ${key} doit être une liste de textes.`);
+  }
+  return value as string[];
+}
+
+function assertUnique(ids: string[], what: string): void {
   const seen = new Set<string>();
-  return list.map((entry: unknown) => {
-    const { id, title } = (entry ?? {}) as { id?: unknown; title?: unknown };
+  for (const id of ids) {
+    if (seen.has(id)) throw new Error(`${what} ${id} apparaît deux fois.`);
+    seen.add(id);
+  }
+}
+
+// Premier cycle trouvé dans le graphe des dépendances, sous la forme E01 → E02 → E01.
+function findCycle(epics: Epic[]): string[] | undefined {
+  const dependsOn = new Map(epics.map((epic) => [epic.id, epic.dependsOn]));
+  const done = new Set<string>();
+  const visit = (id: string, path: string[]): string[] | undefined => {
+    const start = path.indexOf(id);
+    if (start >= 0) return [...path.slice(start), id];
+    if (done.has(id)) return undefined;
+    for (const next of dependsOn.get(id) ?? []) {
+      const cycle = visit(next, [...path, id]);
+      if (cycle) return cycle;
+    }
+    done.add(id);
+    return undefined;
+  };
+  for (const epic of epics) {
+    const cycle = visit(epic.id, []);
+    if (cycle) return cycle;
+  }
+  return undefined;
+}
+
+/** Lit et valide l'index : identifiants, références entre epics et exigences, cycles. */
+export function parseProductIndex(yamlText: string): ProductIndex {
+  let data: unknown;
+  try {
+    data = parseYaml(yamlText);
+  } catch (error) {
+    throw new Error(`YAML invalide : ${(error as Error).message}`);
+  }
+  const root = (data ?? {}) as Fields;
+  if (!Array.isArray(root['requirements'])) {
+    throw new Error('Attendu : requirements: [{ id: PAY-03, title: … }], puis epics (optionnel).');
+  }
+
+  const requirements = (root['requirements'] as unknown[]).map((entry, position) => {
+    const fields = fieldsOf(entry, `Exigence n° ${position + 1}`);
+    const id = fields['id'];
     if (typeof id !== 'string' || !REQUIREMENT_ID.test(id)) {
       throw new Error(`Identifiant d'exigence "${String(id)}" invalide (attendu : PAY-03).`);
     }
-    if (typeof title !== 'string' || title.trim() === '') {
-      throw new Error(`L'exigence ${id} n'a pas de titre.`);
-    }
-    if (seen.has(id)) throw new Error(`L'exigence ${id} apparaît deux fois.`);
-    seen.add(id);
-    return { id, title };
+    return {
+      id,
+      title: text(fields, 'title', `L'exigence ${id}`),
+      retired: retiredOf(fields, `L'exigence ${id}`),
+    };
   });
+  assertUnique(
+    requirements.map((requirement) => requirement.id),
+    "L'exigence",
+  );
+
+  const rawEpics = root['epics'] ?? [];
+  if (!Array.isArray(rawEpics)) throw new Error('epics doit être une liste.');
+  const epics = rawEpics.map((entry: unknown, position): Epic => {
+    const fields = fieldsOf(entry, `Epic n° ${position + 1}`);
+    const id = fields['id'];
+    if (typeof id !== 'string' || !EPIC_ID.test(id)) {
+      throw new Error(`Identifiant d'epic "${String(id)}" invalide (attendu : E03).`);
+    }
+    const owner = `L'epic ${id}`;
+    const epicRequirements = textList(fields, 'requirements', owner);
+    if (epicRequirements.length === 0) {
+      throw new Error(`${owner} : requirements vide (au moins une exigence).`);
+    }
+    const rawJourneys = fields['journeys'] ?? [];
+    if (!Array.isArray(rawJourneys)) throw new Error(`${owner} : journeys doit être une liste.`);
+    const journeys = rawJourneys.map((journeyEntry: unknown, index): Journey => {
+      const journey = fieldsOf(journeyEntry, `${owner}, parcours n° ${index + 1}`);
+      const journeyId = journey['id'];
+      if (typeof journeyId !== 'string' || !JOURNEY_ID.test(journeyId)) {
+        throw new Error(
+          `Identifiant de parcours "${String(journeyId)}" invalide (attendu : ${id}-J1).`,
+        );
+      }
+      if (!journeyId.startsWith(`${id}-J`)) {
+        throw new Error(`Le parcours ${journeyId} de l'epic ${id} doit s'appeler ${id}-J<n>.`);
+      }
+      const journeyOwner = `Le parcours ${journeyId}`;
+      const retired = retiredOf(journey, journeyOwner);
+      const steps = textList(journey, 'steps', journeyOwner);
+      if (!retired && steps.length === 0) {
+        throw new Error(`${journeyOwner} : steps vide (les étapes que le test enchaîne).`);
+      }
+      return { id: journeyId, title: text(journey, 'title', journeyOwner), steps, retired };
+    });
+    return {
+      id,
+      title: text(fields, 'title', owner),
+      goal: text(fields, 'goal', owner),
+      requirements: epicRequirements,
+      dependsOn: textList(fields, 'depends_on', owner),
+      journeys,
+    };
+  });
+  assertUnique(
+    epics.map((epic) => epic.id),
+    "L'epic",
+  );
+  assertUnique(
+    epics.flatMap((epic) => epic.journeys.map((journey) => journey.id)),
+    'Le parcours',
+  );
+
+  const knownRequirements = new Set(requirements.map((requirement) => requirement.id));
+  const knownEpics = new Set(epics.map((epic) => epic.id));
+  const epicOf = new Map<string, string>();
+  for (const epic of epics) {
+    for (const requirement of epic.requirements) {
+      if (!knownRequirements.has(requirement)) {
+        throw new Error(`L'epic ${epic.id} cite ${requirement}, absente de requirements.`);
+      }
+      const other = epicOf.get(requirement);
+      if (other) {
+        throw new Error(`L'exigence ${requirement} est dans deux epics : ${other} et ${epic.id}.`);
+      }
+      epicOf.set(requirement, epic.id);
+    }
+    for (const dependency of epic.dependsOn) {
+      if (!knownEpics.has(dependency)) {
+        throw new Error(`L'epic ${epic.id} dépend de ${dependency}, absent de epics.`);
+      }
+    }
+  }
+  if (epics.length > 0) {
+    const orphan = requirements.find(
+      (requirement) => !requirement.retired && !epicOf.has(requirement.id),
+    );
+    if (orphan) throw new Error(`L'exigence ${orphan.id} n'appartient à aucun epic.`);
+  }
+  const cycle = findCycle(epics);
+  if (cycle) throw new Error(`Dépendances circulaires entre epics : ${cycle.join(' → ')}.`);
+
+  return { requirements, epics };
 }
 
 export function parseRequirementRefs(specMarkdown: string): string[] | undefined {
@@ -263,10 +446,13 @@ export function parseRequirementRefs(specMarkdown: string): string[] | undefined
 const STATE_ORDER: SpecStatus[] = ['Draft', 'Implemented', 'Shipped'];
 
 export function traceRequirements(
-  index: ProductRequirement[] | undefined,
+  index: ProductIndex | undefined,
   specs: SpecRequirementRefs[],
 ): RequirementReport {
-  const known = new Set(index?.map((requirement) => requirement.id));
+  const known = new Set(index?.requirements.map((requirement) => requirement.id));
+  const retired = new Set(
+    index?.requirements.filter((requirement) => requirement.retired).map(({ id }) => id),
+  );
   const unknown = specs
     .flatMap(({ featureDir, refs }) => (refs ?? []).map((id) => ({ featureDir, id })))
     .filter(({ id }) => !known.has(id));
@@ -277,15 +463,21 @@ export function traceRequirements(
         .map((spec) => spec.featureDir)
     : [];
 
-  const rows = (index ?? []).map(({ id, title }) => {
+  const retiredCited = specs
+    .filter((spec) => spec.status !== 'Retired')
+    .flatMap(({ featureDir, refs }) => (refs ?? []).map((id) => ({ featureDir, id })))
+    .filter(({ id }) => retired.has(id));
+
+  const rows = (index?.requirements ?? []).map(({ id, title }) => {
     const cited = specs
       .filter((spec) => spec.refs?.includes(id))
       .map(({ featureDir, status }) => ({ featureDir, status }))
       .sort((a, b) => a.featureDir.localeCompare(b.featureDir));
     const active = cited.filter((spec) => spec.status !== 'Retired');
     // L'exigence n'avance qu'avec sa spec la moins avancée : une v2 en Draft la remet en cours.
-    const state: RequirementState =
-      cited.length === 0
+    const state: RequirementState = retired.has(id)
+      ? 'Retired'
+      : cited.length === 0
         ? 'Unspecified'
         : active.length === 0
           ? 'Retired'
@@ -298,6 +490,128 @@ export function traceRequirements(
     rows,
     unknown,
     missingLine,
+    retiredCited,
     ok: unknown.length === 0 && missingLine.length === 0,
+  };
+}
+
+export interface EpicReport {
+  rows: {
+    id: string;
+    title: string;
+    state: RequirementState;
+    requirements: string[];
+    dependsOn: string[];
+  }[];
+  journeys: { id: string; epicId: string; title: string; retired: boolean; tests: string[] }[];
+  /** Parcours actifs sans test d'un epic terminé (Implemented ou Shipped). */
+  uncovered: string[];
+  orphans: { id: string; path: string }[];
+  retiredCited: { id: string; path: string }[];
+  /** Specs en Draft d'un epic dont une dépendance n'est pas terminée : avertissement. */
+  blocked: { featureDir: string; epicId: string; waitingOn: string[] }[];
+  ok: boolean;
+}
+
+// Du moins avancé au plus avancé : l'état d'un epic est celui de son exigence la moins avancée.
+const PROGRESS: Exclude<RequirementState, 'Retired'>[] = [
+  'Unspecified',
+  'Draft',
+  'Implemented',
+  'Shipped',
+];
+const isDone = (state: RequirementState) => state === 'Implemented' || state === 'Shipped';
+
+/**
+ * `requirementRows` vient de toutes les specs (l'état d'un epic en dépend) ; `specs`, seulement de
+ * celles à vérifier (avertissements de dépendance).
+ */
+export function traceEpics(
+  index: ProductIndex,
+  requirementRows: RequirementReport['rows'],
+  specs: SpecRequirementRefs[],
+  testFiles: TestFile[],
+): EpicReport {
+  const stateOf = new Map(requirementRows.map((row) => [row.id, row.state]));
+  const retiredInIndex = new Set(
+    index.requirements.filter((requirement) => requirement.retired).map(({ id }) => id),
+  );
+  const rows = index.epics.map(({ id, title, requirements, dependsOn }) => {
+    // Seul l'index retire une exigence d'un epic : si toutes ses specs sont retirées alors qu'elle
+    // reste active, elle est à refaire.
+    const states = requirements
+      .filter((requirement) => !retiredInIndex.has(requirement))
+      .map((requirement) => stateOf.get(requirement) ?? 'Unspecified')
+      .map((state) => (state === 'Retired' ? 'Unspecified' : state));
+    const state: RequirementState =
+      states.length === 0
+        ? 'Retired'
+        : (PROGRESS.find((candidate) => states.includes(candidate)) ?? 'Unspecified');
+    return { id, title, state, requirements, dependsOn };
+  });
+  const epicState = new Map(rows.map((row) => [row.id, row.state]));
+
+  const journeyList = index.epics.flatMap((epic) =>
+    epic.journeys.map((journey) => ({ ...journey, epicId: epic.id })),
+  );
+  const known = new Map(journeyList.map((journey) => [journey.id, journey]));
+  const testsById = new Map<string, Set<string>>();
+  const orphans: EpicReport['orphans'] = [];
+  const retiredCited: EpicReport['retiredCited'] = [];
+  for (const file of testFiles) {
+    for (const id of new Set(file.content.match(/\bE\d+-J\d+\b/g) ?? [])) {
+      const journey = known.get(id);
+      if (!journey) {
+        orphans.push({ id, path: file.path });
+        continue;
+      }
+      testsById.set(id, (testsById.get(id) ?? new Set()).add(file.path));
+      if (journey.retired) retiredCited.push({ id, path: file.path });
+    }
+  }
+  const byIdThenPath = (a: { id: string; path: string }, b: { id: string; path: string }) =>
+    a.id.localeCompare(b.id) || a.path.localeCompare(b.path);
+  orphans.sort(byIdThenPath);
+  retiredCited.sort(byIdThenPath);
+
+  const journeys = journeyList.map(({ id, epicId, title, retired }) => ({
+    id,
+    epicId,
+    title,
+    retired: retired !== undefined,
+    tests: [...(testsById.get(id) ?? [])].sort(),
+  }));
+  const uncovered = journeys
+    .filter(
+      (journey) =>
+        !journey.retired &&
+        journey.tests.length === 0 &&
+        isDone(epicState.get(journey.epicId) ?? 'Unspecified'),
+    )
+    .map((journey) => journey.id);
+
+  const epicOf = new Map(
+    index.epics.flatMap((epic) => epic.requirements.map((id) => [id, epic] as const)),
+  );
+  const blocked: EpicReport['blocked'] = [];
+  for (const spec of specs.filter((candidate) => candidate.status === 'Draft')) {
+    const epics = new Set((spec.refs ?? []).flatMap((id) => epicOf.get(id) ?? []));
+    for (const epic of epics) {
+      const waitingOn = epic.dependsOn.filter(
+        (dependency) => !isDone(epicState.get(dependency) ?? 'Unspecified'),
+      );
+      if (waitingOn.length > 0)
+        blocked.push({ featureDir: spec.featureDir, epicId: epic.id, waitingOn });
+    }
+  }
+
+  return {
+    rows,
+    journeys,
+    uncovered,
+    orphans,
+    retiredCited,
+    blocked,
+    ok: uncovered.length === 0 && orphans.length === 0 && retiredCited.length === 0,
   };
 }

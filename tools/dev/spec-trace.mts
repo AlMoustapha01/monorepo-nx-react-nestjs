@@ -6,9 +6,10 @@
  * Chaque scénario d'acceptation actif `NNN-US<story>-AS<n>` doit être cité par au moins un test
  * (`it('003-US1-AS2: …')`) ; une spec en Draft y échappe, sauf si on la vise (mode strict).
  * Aucun test ne doit citer un scénario absent ou retiré. Code de sortie 1 sinon.
- * Si specs/product-requirements.json existe, chaque spec nomme les exigences qu'elle implémente
+ * Si specs/product.yml existe, chaque spec nomme les exigences qu'elle implémente
  * (`**Product Requirements**:`), toutes présentes dans l'index ; sans argument, la commande
- * affiche aussi l'état de chaque exigence.
+ * affiche aussi l'état de chaque epic, de chaque exigence et la couverture des parcours. Un epic
+ * terminé exige un test par parcours (`E03-J1: …`).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -16,21 +17,24 @@ import { join } from 'node:path';
 import {
   driftedFeatures,
   featureIdOf,
-  parseRequirementIndex,
+  type EpicReport,
+  parseProductIndex,
   parseRequirementRefs,
   parseScenarios,
   parseStatus,
-  type ProductRequirement,
+  type ProductIndex,
   type RequirementReport,
   type SpecRequirementRefs,
   type TestFile,
   type TraceReport,
+  traceEpics,
   traceFeature,
   traceRequirements,
 } from './spec-trace-core.mts';
 
 const SPECS_DIR = 'specs';
-const REQUIREMENT_INDEX = join(SPECS_DIR, 'product-requirements.json');
+const REQUIREMENT_INDEX = join(SPECS_DIR, 'product.yml');
+const LEGACY_INDEX = join(SPECS_DIR, 'product-requirements.json');
 const TEST_FILE = /\.spec\.tsx?$/;
 
 function featureDirs(args: string[]): string[] {
@@ -100,12 +104,73 @@ function printRequirements(
       : `et ${REQUIREMENT_INDEX} n'existe pas`;
     console.log(`\nExigence inconnue : ${featureDir}/spec.md cite ${id}, ${where}.`);
   }
+  for (const { featureDir, id } of report.retiredCited) {
+    console.log(
+      `\nAvertissement : ${featureDir}/spec.md cite ${id}, exigence retirée dans ${REQUIREMENT_INDEX} ` +
+        "(retirer la spec, ou la rattacher à l'exigence qui la remplace).",
+    );
+  }
   for (const featureDir of report.missingLine) {
     console.log(
       `\nLigne **Product Requirements** absente de ${featureDir}/spec.md ` +
         `(les exigences de ${REQUIREMENT_INDEX} qu'elle implémente, ou None).`,
     );
   }
+}
+
+function printEpics(report: EpicReport, { showRows }: { showRows: boolean }): void {
+  if (showRows && report.rows.length > 0) {
+    console.log(`\n## Epics (${REQUIREMENT_INDEX}) : ${report.ok ? 'OK' : 'INCOMPLET'}\n`);
+    console.log('| Epic | État | Exigences | Dépend de |');
+    console.log('| ---- | ---- | --------- | --------- |');
+    for (const row of report.rows) {
+      const state = row.state === 'Unspecified' ? '**non spécifié**' : row.state;
+      console.log(
+        `| ${row.id} ${row.title} | ${state} | ${row.requirements.join(', ')} | ${row.dependsOn.join(', ')} |`,
+      );
+    }
+  }
+  if (showRows && report.journeys.length > 0) {
+    console.log('\n| Parcours | Tests |');
+    console.log('| -------- | ----- |');
+    for (const journey of report.journeys) {
+      const tests =
+        journey.tests.length > 0 ? journey.tests.join('<br>') : journey.retired ? '' : '**aucun**';
+      console.log(
+        `| ${journey.id}${journey.retired ? ' (retiré)' : ''} ${journey.title} | ${tests} |`,
+      );
+    }
+  }
+  for (const id of report.uncovered) {
+    console.log(`\nParcours sans test : ${id}, alors que son epic est terminé.`);
+  }
+  for (const orphan of report.orphans) {
+    console.log(
+      `\nTest orphelin : ${orphan.path} cite ${orphan.id}, parcours absent de ${REQUIREMENT_INDEX}.`,
+    );
+  }
+  for (const stale of report.retiredCited) {
+    console.log(`\nTest périmé : ${stale.path} cite ${stale.id}, parcours retiré.`);
+  }
+  for (const { featureDir, epicId, waitingOn } of report.blocked) {
+    console.log(
+      `\nAvertissement : ${featureDir} avance sur ${epicId}, qui dépend de ${waitingOn.join(', ')}, ` +
+        'pas encore terminé (Implemented).',
+    );
+  }
+}
+
+// Exigences citées par toutes les specs de specs/ ; une spec illisible est signalée quand on la
+// vise, et ignorée ici.
+function allRequirementRefs(): SpecRequirementRefs[] {
+  return featureDirs([]).flatMap((featureDir) => {
+    const spec = readFileSync(join(featureDir, 'spec.md'), 'utf8');
+    try {
+      return [{ featureDir, status: parseStatus(spec), refs: parseRequirementRefs(spec) }];
+    } catch {
+      return [];
+    }
+  });
 }
 
 // Tests modifiés depuis la base (commits et fichiers en cours) dont la spec n'a pas bougé.
@@ -144,10 +209,17 @@ if (baseIndex >= 0 && !base) {
 // Viser une feature, c'est vérifier qu'elle est complète : même en Draft, tout scénario a son test.
 const strict = args.length > 0;
 const dirs = featureDirs(args);
-let index: ProductRequirement[] | undefined;
+if (existsSync(LEGACY_INDEX)) {
+  console.error(
+    `${LEGACY_INDEX} n'est plus lu : l'index du produit est ${REQUIREMENT_INDEX} ` +
+      '(mêmes exigences en YAML, plus les epics). Voir docs/guides/spec-kit.md#index-du-produit.',
+  );
+  process.exit(1);
+}
+let index: ProductIndex | undefined;
 if (existsSync(REQUIREMENT_INDEX)) {
   try {
-    index = parseRequirementIndex(readFileSync(REQUIREMENT_INDEX, 'utf8'));
+    index = parseProductIndex(readFileSync(REQUIREMENT_INDEX, 'utf8'));
   } catch (error) {
     console.error(`${REQUIREMENT_INDEX} : ${(error as Error).message}`);
     process.exit(1);
@@ -196,5 +268,12 @@ printRequirements(requirements, {
   showRows: index !== undefined && !strict,
 });
 ok &&= requirements.ok;
+// L'état d'un epic dépend de toutes les specs, même quand on n'en vise qu'une : sinon une v2 en
+// Draft ailleurs passerait inaperçue et l'epic paraîtrait terminé.
+const allRows = strict ? traceRequirements(index, allRequirementRefs()).rows : requirements.rows;
+// Sans index, un test qui cite un parcours reste orphelin.
+const epics = traceEpics(index ?? { requirements: [], epics: [] }, allRows, requirementRefs, files);
+printEpics(epics, { showRows: !strict });
+ok &&= epics.ok;
 if (base) warnDrift(base);
 process.exit(ok ? 0 : 1);

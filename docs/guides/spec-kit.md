@@ -31,24 +31,56 @@ Une fois mergée, `spec.md` décrit le comportement actuel ; `plan.md` et `tasks
 
 `pnpm -s spec:trace specs/<NNN-nom>` limite le contrôle à une spec, en mode strict. En CI, `--base` ajoute un avertissement (annotation de PR, sans échec) quand des tests qui citent une feature changent sans son `spec.md` : un renommage ne change pas le comportement, la revue tranche.
 
-## Index des exigences
+## Index du produit
 
-Quand le produit a un cahier des charges, `specs/product-requirements.json` en liste les exigences, et chaque spec nomme celles qu'elle implémente. On voit ainsi ce qui reste à spécifier et où en est chaque exigence, d'une session à l'autre.
+Quand le produit a un cahier des charges, `specs/product.yml` en liste les exigences, les regroupe en epics et déclare les parcours de bout en bout de chaque epic. Chaque spec nomme les exigences qu'elle implémente. On voit ainsi, d'une session à l'autre, ce qui reste à spécifier, dans quel ordre, et où en est chaque exigence et chaque epic.
 
-```json
-{
-  "requirements": [
-    { "id": "PAY-03", "title": "Payer par mobile money" },
-    { "id": "PAY-04", "title": "Rembourser une commande" }
-  ]
-}
+```yaml
+# specs/product.yml : appartient au produit.
+# Un identifiant ne se renumérote jamais : on le retire (retired: <raison>).
+requirements:
+  - id: ACC-01
+    title: Créer un compte et une organisation
+  - id: PAY-03
+    title: Payer par mobile money
+  - id: PAY-04
+    title: Rembourser une commande
+  - id: PAY-01
+    title: Payer en espèces à la livraison
+    retired: Remplacée par PAY-03
+
+epics:
+  - id: E01
+    title: Accès
+    goal: Un commerçant ouvre sa boutique sans aide.
+    requirements: [ACC-01]
+  - id: E03
+    title: Paiement
+    goal: Un client paie et se fait rembourser sans contacter le support.
+    requirements: [PAY-03, PAY-04, PAY-01]
+    depends_on: [E01]
+    journeys:
+      - id: E03-J1
+        title: Payer puis se faire rembourser
+        steps: [s'inscrire, commander, payer par mobile money, demander le remboursement]
 ```
 
-- Identifiant `<PRÉFIXE>-<numéro>`, celui du cahier des charges ; un titre court. L'index appartient au produit : `/speckit-specify` le lit, ne le modifie pas.
+- **Exigences** : identifiant `<PRÉFIXE>-<numéro>`, celui du cahier des charges, et un titre court. L'index appartient au produit : `/speckit-specify` le lit, ne le modifie pas.
+- **Epics** (optionnels) : identifiant `E<numéro>`, un objectif, les exigences qu'il regroupe, et `depends_on`, les epics à terminer avant. Dès qu'un epic existe, toute exigence active appartient à exactement un epic. Un petit produit peut s'en passer : sans `epics`, l'index reste une liste d'exigences.
+- **Parcours** : un parcours traverse plusieurs fonctionnalités (`E03-J1`), et un test de bout en bout le cite en tête de titre, comme un scénario : `test('E03-J1: pays then gets refunded', …)`. Il va d'ordinaire dans `apps/web-e2e`.
+- **Retrait** : `retired: <raison>` sur une exigence ou un parcours. Son identifiant reste pris ; une exigence retirée n'a plus besoin d'epic, et aucun test ne cite plus un parcours retiré.
 - En tête de spec, `**Product Requirements**: PAY-03, PAY-04`, ou `None` (fonctionnalité technique). `/speckit-specify` la remplit, et pose la question si plusieurs exigences peuvent correspondre.
-- L'état d'une exigence ne s'écrit nulle part, il se déduit du statut de ses specs : « non spécifiée » sans spec, sinon le statut de la spec active la moins avancée (une v2 en `Draft` remet l'exigence en cours), `Retired` si toutes ses specs sont retirées. Comme `spec:trace` refuse une spec `Implemented` ou `Shipped` dont un scénario n'a pas de test, aucun agent ne peut déclarer une exigence terminée sans ces tests.
-- `pnpm -s spec:trace` affiche le tableau exigence → specs → état, et échoue si une spec cite une exigence absente de l'index, ou si l'index existe et qu'une spec non retirée n'a pas la ligne `**Product Requirements**`. Une exigence sans spec n'est pas une erreur : c'est le travail qui reste.
-- Sans index, rien ne change : la ligne vaut `None`.
+- **Aucun état ne s'écrit à la main.** Celui d'une exigence se déduit de ses specs : « non spécifiée » sans spec, sinon le statut de la spec active la moins avancée (une v2 en `Draft` remet l'exigence en cours), `Retired` si toutes ses specs sont retirées ou si l'index la retire. Celui d'un epic est celui de son exigence la moins avancée, hors exigences retirées dans l'index (une exigence active dont toutes les specs sont retirées compte comme non spécifiée) ; il est terminé en `Implemented` ou `Shipped`. Ces états se calculent toujours sur toutes les specs, même quand `spec:trace` n'en vise qu'une. Comme `spec:trace` refuse une spec `Implemented` ou `Shipped` dont un scénario n'a pas de test, aucun agent ne peut déclarer une exigence ou un epic terminé sans ces tests.
+
+`pnpm -s spec:trace` affiche les tableaux exigence → specs → état, epic → état et parcours → tests. Il échoue si :
+
+- l'index est invalide : identifiant mal formé ou en double, epic qui cite une exigence inconnue, exigence dans deux epics ou dans aucun, dépendance vers un epic inconnu, dépendances circulaires (le cycle est nommé) ;
+- une spec cite une exigence absente de l'index, ou l'index existe et une spec non retirée n'a pas la ligne `**Product Requirements**` ;
+- un epic est terminé et l'un de ses parcours actifs n'a pas de test, ou un test cite un parcours absent ou retiré.
+
+Il avertit, sans échouer, quand une spec en `Draft` avance sur un epic dont une dépendance n'est pas terminée, ou quand une spec active cite une exigence retirée. Une exigence sans spec n'est pas une erreur : c'est le travail qui reste. Sans index, rien ne change : la ligne vaut `None`.
+
+L'ancien index `specs/product-requirements.json` n'est plus lu : `spec:trace` refuse de tourner tant qu'il existe. Ses exigences se recopient telles quelles sous `requirements:` dans `specs/product.yml`.
 
 `tasks.md` et l'historique git font office de journal de progression : pas de `progress.md` ni de `feature_list.json` à tenir à côté.
 

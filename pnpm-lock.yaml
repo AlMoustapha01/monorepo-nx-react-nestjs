@@ -358,6 +358,9 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.1
         version: 5.2.7(webpack-cli@7.2.3)(webpack@5.110.3)
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
 packages:
 
