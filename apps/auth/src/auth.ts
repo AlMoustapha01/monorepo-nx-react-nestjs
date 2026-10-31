@@ -14,11 +14,19 @@ export const CLIENT_IP_HEADER = 'x-auth-client-ip';
 /** Schéma Postgres du service : aucune table partagée avec l'API. */
 export const AUTH_SCHEMA = 'auth';
 
+/** Attente maximum d'une connexion (pool plein ou Postgres injoignable) : la requête échoue au lieu de pendre. */
+const CONNECTION_TIMEOUT_MS = 5_000;
+/** Une transaction ouverte sans requête au-delà de ce délai est annulée : elle ne garde plus ses verrous. */
+const IDLE_IN_TRANSACTION_TIMEOUT_MS = 60_000;
+
 export function createPool(env: AuthEnv, logger: Logger): Pool {
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
     max: env.DATABASE_POOL_MAX,
     options: `-c search_path=${AUTH_SCHEMA}`,
+    connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+    statement_timeout: env.DATABASE_STATEMENT_TIMEOUT_MS,
+    idle_in_transaction_session_timeout: IDLE_IN_TRANSACTION_TIMEOUT_MS,
   });
   // Sans écouteur, une connexion inactive coupée par Postgres fait planter le process.
   pool.on('error', (error) => logger.warn({ err: error }, 'Idle Postgres connection lost'));

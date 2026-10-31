@@ -26,11 +26,12 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 
 ### Postgres et Redis
 
-| Variable            | Défaut      | Rôle                                                                                 |
-| ------------------- | ----------- | ------------------------------------------------------------------------------------ |
-| `DATABASE_URL`      | obligatoire | URL Postgres, partagée avec le service d'identité ; aussi lue par `migrate.js`       |
-| `DATABASE_POOL_MAX` | `10`        | connexions maximum par process ; le total des instances reste sous `max_connections` |
-| `REDIS_URL`         | obligatoire | jobs BullMQ et compteurs du rate limiting                                            |
+| Variable                        | Défaut      | Rôle                                                                                                  |
+| ------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                  | obligatoire | URL Postgres, partagée avec le service d'identité ; aussi lue par `migrate.js`                        |
+| `DATABASE_POOL_MAX`             | `10`        | connexions maximum par process ; le total des instances reste sous `max_connections`                  |
+| `DATABASE_STATEMENT_TIMEOUT_MS` | `30000`     | durée maximum d'une requête SQL (`statement_timeout`) ; `0` la désactive. Sans effet sur `migrate.js` |
+| `REDIS_URL`                     | obligatoire | jobs BullMQ et compteurs du rate limiting                                                             |
 
 ### Événements et jobs
 
@@ -89,24 +90,25 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 
 `apps/auth`. Les variables communes avec l'API (`DATABASE_URL`, `AUTH_JWT_ISSUER`…) gardent le même nom : en dev, elles sont dans le `.env` de la racine, le reste dans `apps/auth/.env`.
 
-| Variable              | Défaut                       | Rôle                                                                                                               |
-| --------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `NODE_ENV`            | `development`                | comme pour l'API                                                                                                   |
-| `LOG_LEVEL`           | `info`                       | comme pour l'API                                                                                                   |
-| `AUTH_PORT`           | `3100`                       | port HTTP du service                                                                                               |
-| `BETTER_AUTH_URL`     | obligatoire                  | URL publique du service, vue par le navigateur : liens des emails, origine des cookies                             |
-| `BETTER_AUTH_SECRET`  | obligatoire                  | 32 caractères minimum ; signe les cookies et chiffre les clés privées du JWKS. Le changer rend ces clés illisibles |
-| `AUTH_APP_URL`        | obligatoire                  | URL du front, pour les liens d'invitation                                                                          |
-| `TRUST_PROXY_HOPS`    | `0`                          | comme pour l'API ; sert au compteur anti-brute-force par IP                                                        |
-| `CORS_ORIGINS`        | vide                         | origines du front autorisées (CORS et protection CSRF)                                                             |
-| `SHUTDOWN_DRAIN_MS`   | `0`                          | comme pour l'API                                                                                                   |
-| `SHUTDOWN_TIMEOUT_MS` | `25000`                      | comme pour l'API                                                                                                   |
-| `DATABASE_URL`        | obligatoire                  | la même base que l'API ; tables dans le schéma `auth`                                                              |
-| `DATABASE_POOL_MAX`   | `5`                          | connexions maximum par process                                                                                     |
-| `SMTP_URL`            | absent                       | comme pour l'API : vérification d'email, réinitialisation du mot de passe, invitations. Obligatoire en production  |
-| `MAIL_FROM`           | `Shop <no-reply@shop.local>` | expéditeur des emails                                                                                              |
-| `AUTH_JWT_ISSUER`     | obligatoire                  | `iss` des access tokens émis ; même valeur que l'API                                                               |
-| `AUTH_JWT_AUDIENCE`   | obligatoire                  | `aud` des access tokens émis ; même valeur que l'API                                                               |
+| Variable                        | Défaut                       | Rôle                                                                                                               |
+| ------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`                      | `development`                | comme pour l'API                                                                                                   |
+| `LOG_LEVEL`                     | `info`                       | comme pour l'API                                                                                                   |
+| `AUTH_PORT`                     | `3100`                       | port HTTP du service                                                                                               |
+| `BETTER_AUTH_URL`               | obligatoire                  | URL publique du service, vue par le navigateur : liens des emails, origine des cookies                             |
+| `BETTER_AUTH_SECRET`            | obligatoire                  | 32 caractères minimum ; signe les cookies et chiffre les clés privées du JWKS. Le changer rend ces clés illisibles |
+| `AUTH_APP_URL`                  | obligatoire                  | URL du front, pour les liens d'invitation                                                                          |
+| `TRUST_PROXY_HOPS`              | `0`                          | comme pour l'API ; sert au compteur anti-brute-force par IP                                                        |
+| `CORS_ORIGINS`                  | vide                         | origines du front autorisées (CORS et protection CSRF)                                                             |
+| `SHUTDOWN_DRAIN_MS`             | `0`                          | comme pour l'API                                                                                                   |
+| `SHUTDOWN_TIMEOUT_MS`           | `25000`                      | comme pour l'API                                                                                                   |
+| `DATABASE_URL`                  | obligatoire                  | la même base que l'API ; tables dans le schéma `auth`                                                              |
+| `DATABASE_POOL_MAX`             | `5`                          | connexions maximum par process                                                                                     |
+| `DATABASE_STATEMENT_TIMEOUT_MS` | `30000`                      | comme pour l'API ; les migrations s'en passent                                                                     |
+| `SMTP_URL`                      | absent                       | comme pour l'API : vérification d'email, réinitialisation du mot de passe, invitations. Obligatoire en production  |
+| `MAIL_FROM`                     | `Shop <no-reply@shop.local>` | expéditeur des emails                                                                                              |
+| `AUTH_JWT_ISSUER`               | obligatoire                  | `iss` des access tokens émis ; même valeur que l'API                                                               |
+| `AUTH_JWT_AUDIENCE`             | obligatoire                  | `aud` des access tokens émis ; même valeur que l'API                                                               |
 
 ## Observabilité
 

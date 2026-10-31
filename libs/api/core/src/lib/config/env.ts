@@ -30,6 +30,8 @@ export const envSchema = z.object({
 
   DATABASE_URL: z.url(),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
+  /** Durée maximum d'une requête SQL (`statement_timeout`) ; 0 la désactive. */
+  DATABASE_STATEMENT_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(30_000),
 
   REDIS_URL: z.url(),
   /** false pour un process API sans relais ni worker (ex. workers déployés à part). */

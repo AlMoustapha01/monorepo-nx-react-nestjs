@@ -34,6 +34,8 @@ export const envSchema = z.object({
   /** Même base que l'API ; les tables de Better Auth vivent dans le schéma `auth`. */
   DATABASE_URL: z.url(),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(5),
+  /** Durée maximum d'une requête SQL (`statement_timeout`) ; 0 la désactive. Ignoré par les migrations. */
+  DATABASE_STATEMENT_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(30_000),
 
   /** Absent hors production : les emails sont seulement journalisés. */
   SMTP_URL: z.url().optional(),
