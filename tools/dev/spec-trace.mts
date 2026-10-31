@@ -160,6 +160,19 @@ function printEpics(report: EpicReport, { showRows }: { showRows: boolean }): vo
   }
 }
 
+// Exigences citées par toutes les specs de specs/ ; une spec illisible est signalée quand on la
+// vise, et ignorée ici.
+function allRequirementRefs(): SpecRequirementRefs[] {
+  return featureDirs([]).flatMap((featureDir) => {
+    const spec = readFileSync(join(featureDir, 'spec.md'), 'utf8');
+    try {
+      return [{ featureDir, status: parseStatus(spec), refs: parseRequirementRefs(spec) }];
+    } catch {
+      return [];
+    }
+  });
+}
+
 // Tests modifiés depuis la base (commits et fichiers en cours) dont la spec n'a pas bougé.
 function warnDrift(base: string): void {
   const git = (args: string[]) =>
@@ -255,13 +268,11 @@ printRequirements(requirements, {
   showRows: index !== undefined && !strict,
 });
 ok &&= requirements.ok;
+// L'état d'un epic dépend de toutes les specs, même quand on n'en vise qu'une : sinon une v2 en
+// Draft ailleurs passerait inaperçue et l'epic paraîtrait terminé.
+const allRows = strict ? traceRequirements(index, allRequirementRefs()).rows : requirements.rows;
 // Sans index, un test qui cite un parcours reste orphelin.
-const epics = traceEpics(
-  index ?? { requirements: [], epics: [] },
-  requirements.rows,
-  requirementRefs,
-  files,
-);
+const epics = traceEpics(index ?? { requirements: [], epics: [] }, allRows, requirementRefs, files);
 printEpics(epics, { showRows: !strict });
 ok &&= epics.ok;
 if (base) warnDrift(base);

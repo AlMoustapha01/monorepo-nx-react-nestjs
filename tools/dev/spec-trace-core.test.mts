@@ -593,6 +593,16 @@ describe('traceEpics', () => {
     );
   });
 
+  it('counts as still to do a requirement active in the index whose specs are all retired', () => {
+    const report = trace([
+      ['specs/002-pay', 'Shipped', ['PAY-03']],
+      ['specs/003-refund', 'Retired', ['PAY-04']],
+    ]);
+
+    assert.equal(report.rows.find((row) => row.id === 'E03')?.state, 'Unspecified');
+    assert.deepEqual(report.uncovered, []);
+  });
+
   it('maps each journey to the tests that cite it', () => {
     const report = trace(
       [],

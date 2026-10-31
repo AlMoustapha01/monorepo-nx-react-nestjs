@@ -522,6 +522,10 @@ const PROGRESS: Exclude<RequirementState, 'Retired'>[] = [
 ];
 const isDone = (state: RequirementState) => state === 'Implemented' || state === 'Shipped';
 
+/**
+ * `requirementRows` vient de toutes les specs (l'état d'un epic en dépend) ; `specs`, seulement de
+ * celles à vérifier (avertissements de dépendance).
+ */
 export function traceEpics(
   index: ProductIndex,
   requirementRows: RequirementReport['rows'],
@@ -529,10 +533,16 @@ export function traceEpics(
   testFiles: TestFile[],
 ): EpicReport {
   const stateOf = new Map(requirementRows.map((row) => [row.id, row.state]));
+  const retiredInIndex = new Set(
+    index.requirements.filter((requirement) => requirement.retired).map(({ id }) => id),
+  );
   const rows = index.epics.map(({ id, title, requirements, dependsOn }) => {
+    // Seul l'index retire une exigence d'un epic : si toutes ses specs sont retirées alors qu'elle
+    // reste active, elle est à refaire.
     const states = requirements
+      .filter((requirement) => !retiredInIndex.has(requirement))
       .map((requirement) => stateOf.get(requirement) ?? 'Unspecified')
-      .filter((state): state is Exclude<RequirementState, 'Retired'> => state !== 'Retired');
+      .map((state) => (state === 'Retired' ? 'Unspecified' : state));
     const state: RequirementState =
       states.length === 0
         ? 'Retired'
