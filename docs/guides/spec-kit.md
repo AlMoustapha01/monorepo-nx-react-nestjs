@@ -43,33 +43,33 @@ Le récit du produit (vision, utilisateurs, problèmes, périmètre et non-objec
 Aucune des deux n'écrit d'état ni ne modifie une spec. Elles commitent seulement `specs/prd.md` et `specs/product.yml`.
 
 ```yaml
-# specs/product.yml : appartient au produit.
+# specs/product.yml : appartient au produit, rédigé en anglais comme les specs.
 # Un identifiant ne se renumérote jamais : on le retire (retired: <raison>).
 requirements:
   - id: ACC-01
-    title: Créer un compte et une organisation
+    title: Create an account and an organization
   - id: PAY-03
-    title: Payer par mobile money
+    title: Pay by mobile money
   - id: PAY-04
-    title: Rembourser une commande
+    title: Refund an order
   - id: PAY-01
-    title: Payer en espèces à la livraison
-    retired: Remplacée par PAY-03
+    title: Pay cash on delivery
+    retired: replaced by PAY-03
 
 epics:
   - id: E01
-    title: Accès
-    goal: Un commerçant ouvre sa boutique sans aide.
+    title: Access
+    goal: A shop owner opens their shop without help.
     requirements: [ACC-01]
   - id: E03
-    title: Paiement
-    goal: Un client paie et se fait rembourser sans contacter le support.
+    title: Payment
+    goal: A customer pays and gets refunded without contacting support.
     requirements: [PAY-03, PAY-04, PAY-01]
     depends_on: [E01]
     journeys:
       - id: E03-J1
-        title: Payer puis se faire rembourser
-        steps: [s'inscrire, commander, payer par mobile money, demander le remboursement]
+        title: Pay, then get refunded
+        steps: [sign up, order, pay by mobile money, ask for a refund]
 ```
 
 - **Exigences** : identifiant `<PRÉFIXE>-<numéro>`, celui du cahier des charges, et un titre court. L'index appartient au produit : `/speckit-specify` le lit, ne le modifie pas.
