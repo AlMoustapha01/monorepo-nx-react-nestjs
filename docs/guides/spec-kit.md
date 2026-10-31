@@ -35,6 +35,13 @@ Une fois mergée, `spec.md` décrit le comportement actuel ; `plan.md` et `tasks
 
 Quand le produit a un cahier des charges, `specs/product.yml` en liste les exigences, les regroupe en epics et déclare les parcours de bout en bout de chaque epic. Chaque spec nomme les exigences qu'elle implémente. On voit ainsi, d'une session à l'autre, ce qui reste à spécifier, dans quel ordre, et où en est chaque exigence et chaque epic.
 
+Le récit du produit (vision, utilisateurs, problèmes, périmètre et non-objectifs, contraintes, indicateurs de succès) est dans `specs/prd.md`, qui cite les mêmes identifiants. Deux commandes du preset les rédigent avec vous, sur une branche `docs/product-*` :
+
+- `/speckit-prd <description, ou chemin du cahier des charges>` : pose au plus 5 questions, propose les exigences (identifiants du cahier des charges s'il en a), puis écrit `specs/prd.md` (template `prd-template`) et la liste `requirements`, une fois le brouillon validé. En révision, il retire au lieu de renuméroter et liste les specs qui citent une exigence retirée ou changée.
+- `/speckit-epics` : regroupe les exigences en epics (un résultat pour l'utilisateur, pas une couche technique), propose les dépendances, l'ordre de livraison et les parcours, puis écrit la liste `epics` une fois la proposition validée. Il termine par le premier epic débloqué : `/speckit-specify E01`.
+
+Aucune des deux n'écrit d'état ni ne modifie une spec. Elles commitent seulement `specs/prd.md` et `specs/product.yml`.
+
 ```yaml
 # specs/product.yml : appartient au produit.
 # Un identifiant ne se renumérote jamais : on le retire (retired: <raison>).

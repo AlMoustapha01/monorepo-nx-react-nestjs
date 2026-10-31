@@ -21,7 +21,7 @@ git diff && pnpm check
 
 Rien d'autre à changer : ni le lockfile, ni les noms de projets Nx (`api`, `web`, `api-core`… n'ont pas de scope), ni le Dockerfile, la CI, les configs Vite, Vitest et Lingui ou les catalogues `.po`.
 
-À adapter à la main selon le produit : `MAIL_FROM` dans `.env.example`, les comptes et l'organisation de démo (`tools/dev`), l'utilisateur et la base Postgres `app`, le titre du README, les propriétaires de `.github/CODEOWNERS` (`@AlMoustapha01` → votre équipe), l'index du produit si le produit a un cahier des charges (`specs/product.yml` : exigences, epics, parcours ; voir [Spec Kit](spec-kit.md#index-du-produit)), et `author` et `repository` dans `tools/spec-kit/preset/preset.yml` (puis `specify preset update`, voir [Spec Kit](spec-kit.md#personnaliser-les-templates-ou-les-règles-tdd)).
+À adapter à la main selon le produit : `MAIL_FROM` dans `.env.example`, les comptes et l'organisation de démo (`tools/dev`), l'utilisateur et la base Postgres `app`, le titre du README, les propriétaires de `.github/CODEOWNERS` (`@AlMoustapha01` → votre équipe), l'index du produit si le produit a un cahier des charges (`specs/product.yml` : exigences, epics, parcours, rédigé avec `/speckit-prd` puis `/speckit-epics` ; voir [Spec Kit](spec-kit.md#index-du-produit)), et `author` et `repository` dans `tools/spec-kit/preset/preset.yml` (puis `specify preset update`, voir [Spec Kit](spec-kit.md#personnaliser-les-templates-ou-les-règles-tdd)).
 
 ## 2. Retirer les exemples
 

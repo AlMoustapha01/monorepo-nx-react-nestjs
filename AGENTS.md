@@ -4,31 +4,32 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 
 ## Commandes
 
-| Besoin                                                                        | Commande                                                                                                             |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                     |
-| Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                       |
-| Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, doc (Scalar) sur `/api/docs`, OpenAPI sur `/api/docs-json`       |
-| Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)    |
-| Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                      |
-| Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                         |
-| Nouvelle lib feature front : lib vide, config de test et alias câblés         | `pnpm new:web-feature <nom>`, puis les écrans en TDD ; voir [`libs/web/AGENTS.md`](libs/web/AGENTS.md)               |
-| Données de démo (API démarrée)                                                | `pnpm dev:seed`                                                                                                      |
-| Token pour appeler l'API (doc, curl)                                          | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                       |
-| Lancer le service d'identité (Better Auth)                                    | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                |
-| Voir les emails envoyés en local                                              | http://localhost:8025 (Mailpit)                                                                                      |
-| Appliquer les migrations                                                      | `pnpm nx run api:db-migrate`                                                                                         |
-| Explorer la base (Drizzle Studio, tables des schémas Drizzle seulement)       | `pnpm nx run api:db-studio` → https://local.drizzle.studio                                                           |
-| Générer une migration après un changement de schéma                           | `pnpm nx run api:db-generate --name=<sujet>`                                                                         |
-| Tout vérifier, comme la CI (format, lint, types, tests, code mort)            | `pnpm check`                                                                                                         |
-| Parcours navigateur (Playwright) contre la vraie stack, Docker requis         | `pnpm nx run web-e2e:e2e` (`pnpm exec playwright install chromium` la première fois)                                 |
-| Seulement ce qui a changé                                                     | `pnpm nx affected -t lint typecheck test`                                                                            |
-| Formater                                                                      | `pnpm format`                                                                                                        |
-| Traces en local (Grafana sur http://localhost:3001)                           | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env` |
-| Vérifier la topologie de prod en local (images, migrations, services)         | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                    |
-| Développer une fonctionnalité (Spec Kit, dans Claude Code)                    | `/speckit-specify <description>`, puis la suite du cycle (voir [plus bas](#développer-une-fonctionnalité-spec-kit))  |
-| Matrice scénario → tests, et état des exigences du cahier des charges         | `pnpm -s spec:trace` (toutes) ou `… specs/<NNN-nom>` (stricte) ; voir « Specs à jour » plus bas                      |
-| Régénérer la référence des codes d'erreur après en avoir ajouté un            | `pnpm docs:errors` ; voir [Codes d'erreur](docs/reference/codes-erreur.md)                                           |
+| Besoin                                                                        | Commande                                                                                                                             |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                                     |
+| Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                                       |
+| Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, doc (Scalar) sur `/api/docs`, OpenAPI sur `/api/docs-json`                       |
+| Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)                    |
+| Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                                      |
+| Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                                         |
+| Nouvelle lib feature front : lib vide, config de test et alias câblés         | `pnpm new:web-feature <nom>`, puis les écrans en TDD ; voir [`libs/web/AGENTS.md`](libs/web/AGENTS.md)                               |
+| Données de démo (API démarrée)                                                | `pnpm dev:seed`                                                                                                                      |
+| Token pour appeler l'API (doc, curl)                                          | `pnpm -s dev:token` (client) ou `--staff` ; aussi `--new-tenant`, `--no-email`, `--expires 1h`                                       |
+| Lancer le service d'identité (Better Auth)                                    | `pnpm nx serve auth` → http://localhost:3100/api/auth                                                                                |
+| Voir les emails envoyés en local                                              | http://localhost:8025 (Mailpit)                                                                                                      |
+| Appliquer les migrations                                                      | `pnpm nx run api:db-migrate`                                                                                                         |
+| Explorer la base (Drizzle Studio, tables des schémas Drizzle seulement)       | `pnpm nx run api:db-studio` → https://local.drizzle.studio                                                                           |
+| Générer une migration après un changement de schéma                           | `pnpm nx run api:db-generate --name=<sujet>`                                                                                         |
+| Tout vérifier, comme la CI (format, lint, types, tests, code mort)            | `pnpm check`                                                                                                                         |
+| Parcours navigateur (Playwright) contre la vraie stack, Docker requis         | `pnpm nx run web-e2e:e2e` (`pnpm exec playwright install chromium` la première fois)                                                 |
+| Seulement ce qui a changé                                                     | `pnpm nx affected -t lint typecheck test`                                                                                            |
+| Formater                                                                      | `pnpm format`                                                                                                                        |
+| Traces en local (Grafana sur http://localhost:3001)                           | `docker compose --profile observability up -d`, puis `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` dans `.env`                 |
+| Vérifier la topologie de prod en local (images, migrations, services)         | `BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build`                                    |
+| Cadrer le produit : PRD, puis epics ordonnés (Spec Kit, dans Claude Code)     | `/speckit-prd <description ou cahier des charges>`, puis `/speckit-epics` ; voir [plus bas](#développer-une-fonctionnalité-spec-kit) |
+| Développer une fonctionnalité (Spec Kit, dans Claude Code)                    | `/speckit-specify <description>`, puis la suite du cycle (voir [plus bas](#développer-une-fonctionnalité-spec-kit))                  |
+| Matrice scénario → tests, et état des exigences du cahier des charges         | `pnpm -s spec:trace` (toutes) ou `… specs/<NNN-nom>` (stricte) ; voir « Specs à jour » plus bas                                      |
+| Régénérer la référence des codes d'erreur après en avoir ajouté un            | `pnpm docs:errors` ; voir [Codes d'erreur](docs/reference/codes-erreur.md)                                                           |
 
 Variables d'environnement en dev : un `.env` commun à la racine (infra, base, SMTP, contrat des tokens, OTEL, Sentry ; lu aussi par docker compose) et un fichier par app, `apps/api/.env`, `apps/auth/.env` et `apps/web/.env` (port, secrets, flags, `VITE_*`). L'API et le service d'auth lisent leur fichier puis le commun, le premier défini l'emporte ; Vite ne lit que `apps/web/.env`. `pnpm dev:setup` les crée depuis leurs `.env.example` et répartit un ancien `.env` unique. Détail : [Variables d'environnement](docs/reference/variables-environnement.md).
 
@@ -157,8 +158,14 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 
 <!-- example:end -->
 
+- **Cadrage du produit**, une fois au départ puis à chaque révision du cahier des charges (branche `docs/product-*`, une PR) :
+  - `/speckit-prd <description ou chemin du cahier des charges>` : `specs/prd.md` (vision, utilisateurs, périmètre, contraintes, exigences) et la liste `requirements` de `specs/product.yml` ;
+  - `/speckit-epics` : regroupe les exigences en epics, ordonnés par leurs dépendances, avec leurs parcours de bout en bout.
+
+  L'agent propose, l'humain valide avant toute écriture. Les specs se font ensuite une à la fois, juste avant leur implémentation, jamais toutes d'avance.
+
 - **Cycle**, dans Claude Code :
-  1. `/speckit-specify <description>` : crée la branche `NNN-<nom>` (arbre propre, depuis `main`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;
+  1. `/speckit-specify <description>` (ou `/speckit-specify E03`, qui part des exigences de l'epic qu'aucune spec ne couvre) : crée la branche `NNN-<nom>` (arbre propre, depuis `main`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;
   2. `/speckit-clarify` : questions sur les `[NEEDS CLARIFICATION]`, jusqu'à ce qu'il n'en reste plus ;
   3. `/speckit-plan` : domaines, feature flag, événements, migrations, règles d'accès, stratégie de test (un test par scénario d'acceptation) ;
   4. `/speckit-tasks`, puis `/speckit-analyze` (cohérence spec, plan, tâches) ; `/speckit-checklist` en option ;
