@@ -42,3 +42,4 @@
 
 # Produit : exigences, epics et leur ordre, décidés par l'humain (un agent le lit, ne l'écrit pas)
 /specs/product.yml                            @AlMoustapha01
+/specs/prd.md                                 @AlMoustapha01
