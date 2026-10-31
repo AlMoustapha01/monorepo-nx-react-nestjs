@@ -38,3 +38,7 @@
 /.claude/settings.json                        @AlMoustapha01
 /.claude/agents/                              @AlMoustapha01
 /tools/dev/stop-check*.mts                    @AlMoustapha01
+/tools/dev/spec-trace*.mts                    @AlMoustapha01
+
+# Produit : exigences, epics et leur ordre, décidés par l'humain (un agent le lit, ne l'écrit pas)
+/specs/product.yml                            @AlMoustapha01
