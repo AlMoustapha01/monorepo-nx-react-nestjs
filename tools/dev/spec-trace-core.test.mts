@@ -8,6 +8,7 @@ import {
   parseScenarios,
   parseStatus,
   traceEpics,
+  epicCells,
   traceFeature,
   traceRequirements,
 } from './spec-trace-core.mts';
@@ -591,6 +592,52 @@ describe('traceEpics', () => {
         ['E03', 'Unspecified'],
       ],
     );
+  });
+
+  it('counts the specified and done requirements of an epic, retired ones excluded', () => {
+    const progressOf = (list: Parameters<typeof trace>[0]) =>
+      trace(list).rows.find((row) => row.id === 'E03')?.progress;
+
+    // PAY-04 sans spec : l'epic reste non spécifié, mais il est commencé.
+    assert.deepEqual(progressOf([['specs/002-pay', 'Implemented', ['PAY-03']]]), {
+      total: 2,
+      specified: 1,
+      done: 1,
+    });
+    assert.deepEqual(
+      progressOf([
+        ['specs/002-pay', 'Draft', ['PAY-03']],
+        ['specs/003-refund', 'Shipped', ['PAY-04']],
+      ]),
+      { total: 2, specified: 2, done: 1 },
+    );
+    // Une exigence active dont toutes les specs sont retirées est à refaire.
+    assert.deepEqual(progressOf([['specs/003-refund', 'Retired', ['PAY-04']]]), {
+      total: 2,
+      specified: 0,
+      done: 0,
+    });
+  });
+
+  it('shows a started epic as in progress, with its progress', () => {
+    const row = (state: 'Unspecified' | 'Draft' | 'Retired', specified: number) => ({
+      state,
+      progress: { total: 4, specified, done: 0 },
+    });
+
+    assert.deepEqual(epicCells(row('Unspecified', 0)), {
+      state: '**non spécifié**',
+      progress: '0/4 spécifiées, 0/4 terminées',
+    });
+    assert.deepEqual(epicCells(row('Unspecified', 3)), {
+      state: '**en cours**',
+      progress: '3/4 spécifiées, 0/4 terminées',
+    });
+    assert.deepEqual(epicCells(row('Draft', 4)), {
+      state: 'Draft',
+      progress: '4/4 spécifiées, 0/4 terminées',
+    });
+    assert.deepEqual(epicCells(row('Retired', 0)), { state: 'Retired', progress: '' });
   });
 
   it('counts as still to do a requirement active in the index whose specs are all retired', () => {

@@ -500,6 +500,8 @@ export interface EpicReport {
     id: string;
     title: string;
     state: RequirementState;
+    /** Exigences actives de l'epic : combien ont une spec, combien sont terminées. */
+    progress: { total: number; specified: number; done: number };
     requirements: string[];
     dependsOn: string[];
   }[];
@@ -521,6 +523,20 @@ const PROGRESS: Exclude<RequirementState, 'Retired'>[] = [
   'Shipped',
 ];
 const isDone = (state: RequirementState) => state === 'Implemented' || state === 'Shipped';
+
+/**
+ * Cellules État et Avancement du tableau des epics. L'état reste celui de l'exigence la moins
+ * avancée ; un epic commencé ne s'affiche pas pour autant comme non spécifié.
+ */
+export function epicCells({
+  state,
+  progress: { total, specified, done },
+}: Pick<EpicReport['rows'][number], 'state' | 'progress'>): { state: string; progress: string } {
+  if (state === 'Retired') return { state, progress: '' };
+  const label =
+    state !== 'Unspecified' ? state : specified > 0 ? '**en cours**' : '**non spécifié**';
+  return { state: label, progress: `${specified}/${total} spécifiées, ${done}/${total} terminées` };
+}
 
 /**
  * `requirementRows` vient de toutes les specs (l'état d'un epic en dépend) ; `specs`, seulement de
@@ -547,7 +563,12 @@ export function traceEpics(
       states.length === 0
         ? 'Retired'
         : (PROGRESS.find((candidate) => states.includes(candidate)) ?? 'Unspecified');
-    return { id, title, state, requirements, dependsOn };
+    const progress = {
+      total: states.length,
+      specified: states.filter((candidate) => candidate !== 'Unspecified').length,
+      done: states.filter(isDone).length,
+    };
+    return { id, title, state, progress, requirements, dependsOn };
   });
   const epicState = new Map(rows.map((row) => [row.id, row.state]));
 

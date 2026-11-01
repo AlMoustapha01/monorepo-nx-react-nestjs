@@ -16,6 +16,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   driftedFeatures,
+  epicCells,
   featureIdOf,
   type EpicReport,
   parseProductIndex,
@@ -121,12 +122,12 @@ function printRequirements(
 function printEpics(report: EpicReport, { showRows }: { showRows: boolean }): void {
   if (showRows && report.rows.length > 0) {
     console.log(`\n## Epics (${REQUIREMENT_INDEX}) : ${report.ok ? 'OK' : 'INCOMPLET'}\n`);
-    console.log('| Epic | État | Exigences | Dépend de |');
-    console.log('| ---- | ---- | --------- | --------- |');
+    console.log('| Epic | État | Avancement | Exigences | Dépend de |');
+    console.log('| ---- | ---- | ---------- | --------- | --------- |');
     for (const row of report.rows) {
-      const state = row.state === 'Unspecified' ? '**non spécifié**' : row.state;
+      const { state, progress } = epicCells(row);
       console.log(
-        `| ${row.id} ${row.title} | ${state} | ${row.requirements.join(', ')} | ${row.dependsOn.join(', ')} |`,
+        `| ${row.id} ${row.title} | ${state} | ${progress} | ${row.requirements.join(', ')} | ${row.dependsOn.join(', ')} |`,
       );
     }
   }
