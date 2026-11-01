@@ -42,6 +42,8 @@ Le récit du produit (vision, utilisateurs, problèmes, périmètre et non-objec
 
 Aucune des deux n'écrit d'état ni ne modifie une spec. Elles commitent seulement `specs/prd.md` et `specs/product.yml`.
 
+Entre les deux, `/speckit-design` fixe le cadrage design du produit (voir [Design](#design)).
+
 ```yaml
 # specs/product.yml : appartient au produit, rédigé en anglais comme les specs.
 # Un identifiant ne se renumérote jamais : on le retire (retired: <raison>).
@@ -102,6 +104,17 @@ L'ancien index `specs/product-requirements.json` n'est plus lu : `spec:trace` re
 Ensuite, chaque commande qui écrit des fichiers commite son résultat sur cette branche : `specify`, `clarify`, `plan`, `tasks`, `checklist`, `analyze`, `implement`, `converge` et `constitution` (hooks `after_*`, skill `/speckit-git-commit`). L'agent rédige un message [Conventional Commits](https://www.conventionalcommits.org/) en anglais à partir de la diff (`docs(specs): add announcements spec`). Le commit prend tout l'arbre (`git add .`) : d'où l'arbre propre exigé au départ. `/speckit-analyze` ne modifie rien lui-même ; s'il est suivi de corrections (que vous avez acceptées), son hook les commite, et sans changement il ne fait rien.
 
 Le reste se règle dans `.specify/extensions/git/git-config.yml` : format du nom de branche (préfixe, auteur), commandes qui commitent (`auto_commit`), style des messages (`commit_style: fixed` pour des messages fixes). L'extension propose d'autres hooks (initialisation du repo, commit avant chaque commande), volontairement absents de `.specify/extensions.yml` : `specify extension update git` les remet, il faut alors les retirer.
+
+## Design
+
+Deux commandes du preset donnent un volet produit et UX au cycle. Toutes deux font produire l'agent `designer`, puis relire à froid par le `relecteur-design`, avant de vous montrer le résultat :
+
+- `/speckit-design`, après `/speckit-prd` et sur la même branche `docs/product-*` : pose au plus 5 questions (appareils, image du produit, marque existante, accessibilité), puis, une fois la proposition validée, écrit `specs/design.md` (template `design-template`) et règle le thème de l'app (`libs/web/ui/src/lib/styles/theme.css`, et une police `@fontsource` s'il en faut une). Rien d'autre dans le code : le mode sombre et ce que le thème ne porte pas vont dans la section `Deferred`, pour une fonctionnalité. Relancée, elle signale les prototypes que le nouveau thème rend périmés.
+- `/speckit-prototype`, en option, entre `/speckit-clarify` et `/speckit-plan`, sur la branche de la fonctionnalité : les parcours écran par écran (`prototypes/journeys.md`, template `journeys-template`), que vous validez, puis une maquette en pages HTML statiques (une par écran, `index.html` en entrée), que vous validez aussi. `pnpm prototype specs/<NNN-nom> --capture` compile leur `styles.css` depuis le vrai thème et prend les captures desktop (1440 px) et mobile (390 px) dans `prototypes/captures/` ; la maquette s'ouvre dans le navigateur sans serveur. Ce qu'elle révèle est proposé comme modification de `spec.md`. Son code est jetable : les écrans se construisent ensuite dans le cycle normal.
+
+`/speckit-plan` cite les captures à côté des écrans à construire, prévoit l'ajout à `libs/web/ui` des composants que la maquette a dû dessiner, et vous avertit quand les captures sont plus anciennes que `specs/design.md`.
+
+Les consignes, portables, sont dans [`docs/agents/designer.md`](../agents/designer.md) (standards d'un SaaS moderne, contraintes du dépôt, livrables par mode) et [`docs/agents/relecteur-design.md`](../agents/relecteur-design.md) (grille : couverture des scénarios, cohérence avec le cadrage, accessibilité, mobile) ; les sous-agents Claude Code (`.claude/agents/`) les lisent. Le relecteur ne reçoit que les fichiers, jamais l'avis du designer ; un écart bloquant repart une fois au designer, puis vous tranchez. Avec un autre agent, la commande vous demande de lancer chacun dans une nouvelle session et d'en coller le rapport.
 
 ## Relecture indépendante
 
