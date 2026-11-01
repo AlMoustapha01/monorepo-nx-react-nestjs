@@ -525,6 +525,20 @@ const PROGRESS: Exclude<RequirementState, 'Retired'>[] = [
 const isDone = (state: RequirementState) => state === 'Implemented' || state === 'Shipped';
 
 /**
+ * Cellules État et Avancement du tableau des epics. L'état reste celui de l'exigence la moins
+ * avancée ; un epic commencé ne s'affiche pas pour autant comme non spécifié.
+ */
+export function epicCells({
+  state,
+  progress: { total, specified, done },
+}: Pick<EpicReport['rows'][number], 'state' | 'progress'>): { state: string; progress: string } {
+  if (state === 'Retired') return { state, progress: '' };
+  const label =
+    state !== 'Unspecified' ? state : specified > 0 ? '**en cours**' : '**non spécifié**';
+  return { state: label, progress: `${specified}/${total} spécifiées, ${done}/${total} terminées` };
+}
+
+/**
  * `requirementRows` vient de toutes les specs (l'état d'un epic en dépend) ; `specs`, seulement de
  * celles à vérifier (avertissements de dépendance).
  */

@@ -8,6 +8,7 @@ import {
   parseScenarios,
   parseStatus,
   traceEpics,
+  epicCells,
   traceFeature,
   traceRequirements,
 } from './spec-trace-core.mts';
@@ -616,6 +617,27 @@ describe('traceEpics', () => {
       specified: 0,
       done: 0,
     });
+  });
+
+  it('shows a started epic as in progress, with its progress', () => {
+    const row = (state: 'Unspecified' | 'Draft' | 'Retired', specified: number) => ({
+      state,
+      progress: { total: 4, specified, done: 0 },
+    });
+
+    assert.deepEqual(epicCells(row('Unspecified', 0)), {
+      state: '**non spécifié**',
+      progress: '0/4 spécifiées, 0/4 terminées',
+    });
+    assert.deepEqual(epicCells(row('Unspecified', 3)), {
+      state: '**en cours**',
+      progress: '3/4 spécifiées, 0/4 terminées',
+    });
+    assert.deepEqual(epicCells(row('Draft', 4)), {
+      state: 'Draft',
+      progress: '4/4 spécifiées, 0/4 terminées',
+    });
+    assert.deepEqual(epicCells(row('Retired', 0)), { state: 'Retired', progress: '' });
   });
 
   it('counts as still to do a requirement active in the index whose specs are all retired', () => {

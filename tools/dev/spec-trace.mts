@@ -16,6 +16,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   driftedFeatures,
+  epicCells,
   featureIdOf,
   type EpicReport,
   parseProductIndex,
@@ -124,19 +125,7 @@ function printEpics(report: EpicReport, { showRows }: { showRows: boolean }): vo
     console.log('| Epic | État | Avancement | Exigences | Dépend de |');
     console.log('| ---- | ---- | ---------- | --------- | --------- |');
     for (const row of report.rows) {
-      const { total, specified, done } = row.progress;
-      // L'état reste celui de l'exigence la moins avancée ; un epic commencé ne s'affiche pas
-      // pour autant comme non spécifié.
-      const state =
-        row.state !== 'Unspecified'
-          ? row.state
-          : specified > 0
-            ? '**en cours**'
-            : '**non spécifié**';
-      const progress =
-        row.state === 'Retired'
-          ? ''
-          : `${specified}/${total} spécifiées, ${done}/${total} terminées`;
+      const { state, progress } = epicCells(row);
       console.log(
         `| ${row.id} ${row.title} | ${state} | ${progress} | ${row.requirements.join(', ')} | ${row.dependsOn.join(', ')} |`,
       );
