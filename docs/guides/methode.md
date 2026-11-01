@@ -21,7 +21,7 @@ Quatre principes traversent les phases. Les deux premiers sont des règles d'`AG
 | Construire  | `/speckit-implement` : tests vus en échec, puis code ; commit par commande ; hook de fin de tour (format, lint, types)                                                      | `pnpm nx affected -t lint typecheck test e2e` au vert à la fin de la story                                     |
 | Vérifier    | `/speckit-converge` : `spec:trace`, puis le [relecteur indépendant](spec-kit.md#relecture-indépendante)                                                                     | « Converged » : aucun manque, aucun écart bloquant ouvert                                                      |
 | Intégrer    | PR d'une user story, [CI](ci.md), relecture humaine des chemins de [`.github/CODEOWNERS`](../../.github/CODEOWNERS)                                                         | CI au vert, PR mergée                                                                                          |
-| Jardiner    | Specs tenues à jour ([cycle de vie](spec-kit.md#garder-une-spec-à-jour)), grille du relecteur ajustée, Renovate                                                             | `spec:trace` au vert sur `main` ; aucune doc périmée connue                                                    |
+| Jardiner    | Specs tenues à jour ([cycle de vie](spec-kit.md#garder-une-spec-à-jour)), grille du relecteur ajustée, Renovate                                                             | `spec:trace` au vert sur `dev` ; aucune doc périmée connue                                                     |
 
 ## Connaissance, contrôle, mémoire
 

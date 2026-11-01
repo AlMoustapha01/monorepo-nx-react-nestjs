@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [dev, main]
 
 # Un nouveau push sur une PR annule la vérification précédente, devenue inutile.
 concurrency:
@@ -12,7 +12,7 @@ concurrency:
 
 permissions:
   contents: read
-  # nx-set-shas lit les runs précédents pour trouver le dernier commit vert de main.
+  # nx-set-shas lit les runs précédents pour trouver le dernier commit vert de la branche poussée.
   actions: read
 
 jobs:
@@ -38,6 +38,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
+        with:
+          # Sur une PR, la base est la branche ciblée ; sur un push, la branche poussée (dev ou main).
+          main-branch-name: ${{ github.ref_name }}
 
       - name: Format
         run: pnpm format:check
@@ -84,6 +87,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
+        with:
+          # Sur une PR, la base est la branche ciblée ; sur un push, la branche poussée (dev ou main).
+          main-branch-name: ${{ github.ref_name }}
 
       - name: Projets e2e affectés
         id: affected

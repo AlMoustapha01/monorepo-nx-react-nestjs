@@ -1,12 +1,13 @@
 name: Audit des dépendances
 
 # Une faille publiée aujourd'hui touche du code qui n'a pas changé : en plus des PR qui modifient
-# les dépendances, l'audit tourne chaque jour sur main (un échec notifie les mainteneurs).
+# les dépendances, l'audit tourne chaque jour sur dev, la branche par défaut (un échec notifie les
+# mainteneurs).
 on:
   pull_request:
     paths: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, .pnpmfile.cjs]
   push:
-    branches: [main]
+    branches: [dev, main]
     paths: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, .pnpmfile.cjs]
   schedule:
     - cron: '17 5 * * *'

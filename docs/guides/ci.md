@@ -1,6 +1,6 @@
 # Intégration continue
 
-Ce que vérifie la CI, comment reproduire un échec en local, et comment la faire évoluer. Les workflows sont dans `.github/workflows/` : `ci.yml` pour chaque PR et chaque push sur `main`, `audit.yml` pour les failles de dépendances ([Dépendances et failles](dependances.md)).
+Ce que vérifie la CI, comment reproduire un échec en local, et comment la faire évoluer. Les workflows sont dans `.github/workflows/` : `ci.yml` pour chaque PR et chaque push sur `dev` ou `main` ([Branches et releases](branches.md)), `audit.yml` pour les failles de dépendances ([Dépendances et failles](dependances.md)).
 
 ## Les jobs de `ci.yml`
 
@@ -20,7 +20,7 @@ Docker est disponible sur les runners : les tests d'intégration et e2e y démar
 | Étape                              | Commande en CI                                                               | En local                                       |
 | ---------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------- |
 | Format                             | `pnpm format:check`                                                          | `pnpm format` corrige                          |
-| Lint, types, tests, build          | `pnpm nx affected -t lint typecheck test build i18n-check size --parallel=3` | la même, avec `--base=origin/main`             |
+| Lint, types, tests, build          | `pnpm nx affected -t lint typecheck test build i18n-check size --parallel=3` | la même, avec `--base=origin/dev`              |
 | Scripts de dev                     | `pnpm typecheck:tools && pnpm test:tools`                                    | la même                                        |
 | Specs à jour                       | `pnpm -s spec:trace --base "$NX_BASE"`                                       | `pnpm -s spec:trace` ([Spec Kit](spec-kit.md)) |
 | Codes d'erreur documentés          | `pnpm -s docs:errors --check`                                                | `pnpm docs:errors` régénère la page            |
@@ -73,12 +73,12 @@ Un projet est **affecté** si un de ses fichiers a changé entre deux commits, o
 
 Les deux commits viennent de l'action `nx-set-shas` (variables `NX_BASE` et `NX_HEAD`) :
 
-- sur une PR : le point de départ de la branche sur `main`, et le dernier commit de la PR ;
-- sur `main` : le dernier commit de `main` dont la CI est passée, et le nouveau. Si un push casse `main`, le suivant revérifie aussi ses changements.
+- sur une PR : le point de départ de la branche sur la branche ciblée (`dev`, ou `main` pour une release ou un hotfix), et le dernier commit de la PR ;
+- sur un push sur `dev` ou `main` : le dernier commit de cette branche dont la CI est passée, et le nouveau (`main-branch-name: ${{ github.ref_name }}`). Si un push casse la branche, le suivant revérifie aussi ses changements.
 
 D'où le `fetch-depth: 0` du checkout : sans l'historique complet, Nx ne trouve pas la base.
 
-En local, `nx affected` compare à la branche `main` locale. Si elle est en retard, il relance des projets déjà vérifiés : `git fetch`, puis `--base=origin/main`.
+En local, `nx affected` compare à la branche `main` locale (`defaultBase` de `nx.json`). Une branche partie de `dev` y trouverait tout ce qui n'est pas encore en production : `git fetch`, puis `--base=origin/dev`.
 
 ## Conventions du workflow
 
@@ -97,12 +97,13 @@ En local, `nx affected` compare à la branche `main` locale. Si elle est en reta
 
 ## Rendre les vérifications obligatoires
 
-Rien n'empêche aujourd'hui de merger une PR en échec : la protection de branche de `main` est à configurer sur GitHub (Settings → Branches, ou Rules), une fois par dépôt :
+Rien n'empêche aujourd'hui de merger une PR en échec : la protection des branches `dev` et `main` est à configurer sur GitHub (Settings → Branches, ou Rules), une fois par dépôt :
 
 - exiger les checks `check`, `e2e`, `strip-examples` et `image` ; `e2e` peut l'être, il réussit quand il n'a rien à lancer ;
 - ne pas exiger `audit` : il ne tourne que si les dépendances changent, et un check exigé qui ne tourne pas bloque la PR ;
 - exiger la revue des propriétaires de code (« Require review from Code Owners ») pour les chemins sensibles de [`.github/CODEOWNERS`](../../.github/CODEOWNERS), **seulement à partir de deux mainteneurs** : GitHub ne compte pas l'approbation de l'auteur d'une PR, un mainteneur seul ne pourrait plus merger ses propres PR. D'ici là, CODEOWNERS sert de liste : le relecteur la cite, et la revue humaine reste une règle d'équipe ;
-- en option, exiger une branche à jour avec `main` avant le merge : deux PR vertes chacune peuvent casser `main` une fois réunies, mais chaque merge oblige alors à remettre les autres PR à jour.
+- sur `main`, n'autoriser que le merge commit, pour que `dev` et `main` gardent un historique commun ([Branches et releases](branches.md)) ;
+- en option, exiger une branche à jour avec sa cible avant le merge : deux PR vertes chacune peuvent casser `dev` une fois réunies, mais chaque merge oblige alors à remettre les autres PR à jour.
 
 Référence : [About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) (GitHub).
 

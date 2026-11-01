@@ -95,7 +95,7 @@ L'ancien index `specs/product-requirements.json` n'est plus lu : `spec:trace` re
 
 `/speckit-specify` commence par créer la branche de la fonctionnalité et s'y placer : c'est le hook `before_specify` de l'extension `git` de Spec Kit (`.specify/extensions.yml`, skill `/speckit-git-feature`). Les règles ajoutées par le preset (`tools/spec-kit/preset/commands/speckit.specify.md`) :
 
-- l'agent s'arrête si l'arbre a des modifications non commitées, et demande avant de partir d'une autre branche que `main` ;
+- l'agent s'arrête si l'arbre a des modifications non commitées, part de `dev` (depuis `main`, il bascule sur `dev` à jour), et demande avant de partir d'une autre branche ;
 - la branche se nomme `NNN-<nom>`, numérotée après les dossiers de `specs/` et toutes les branches locales et distantes : deux fonctionnalités en cours n'ont jamais le même numéro ;
 - le dossier de la spec porte le même nom (`specs/NNN-<nom>`).
 
@@ -108,7 +108,7 @@ Le reste se règle dans `.specify/extensions/git/git-config.yml` : format du nom
 Un agent juge généreusement son propre travail. Avant de rendre une story, `/speckit-converge` la fait relire par un relecteur qui ne l'a pas écrite (preset, section « Independent Review ») :
 
 - la grille, portable, est dans [`docs/agents/relecteur.md`](../agents/relecteur.md) ; l'adaptateur Claude Code est le sous-agent `.claude/agents/relecteur.md`, qui la lit ;
-- le relecteur ne reçoit que la base (`origin/main`) et le dossier de la spec, jamais le résumé de l'auteur ;
+- le relecteur ne reçoit que la base (`origin/dev`) et le dossier de la spec, jamais le résumé de l'auteur ;
 - il ne signale que les écarts d'exigence, de correction et de principe, preuve à l'appui, et laisse ses doutes « à vérifier par un humain » ;
 - chaque écart bloquant devient une tâche ajoutée à `tasks.md` ; un écart que l'agent conteste figure dans son rapport, avec la preuve, et reste ouvert : pas de « Converged » tant que vous n'avez pas tranché.
 
@@ -118,7 +118,7 @@ Quand le jugement du relecteur diverge du vôtre (trop sévère, ou il laisse pa
 
 ## Vérification de fin de tour
 
-Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/stop-check.mts` à chaque fin de tour : format (`oxfmt --check`) des fichiers changés depuis `origin/main` (commits, modifications, nouveaux fichiers), puis `nx affected -t lint typecheck` sur ces fichiers et les fichiers supprimés : supprimer un fichier encore importé ailleurs fait échouer le typecheck du projet qui l'importe. Rien de changé : il ne fait rien. En échec, l'agent reprend la main avec l'erreur ; s'il échoue encore au tour suivant, vous êtes seulement averti, pour éviter une boucle.
+Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/stop-check.mts` à chaque fin de tour : format (`oxfmt --check`) des fichiers changés depuis `origin/dev` (ou `origin/main` si `dev` n'existe pas ; commits, modifications, nouveaux fichiers), puis `nx affected -t lint typecheck` sur ces fichiers et les fichiers supprimés : supprimer un fichier encore importé ailleurs fait échouer le typecheck du projet qui l'importe. Rien de changé : il ne fait rien. En échec, l'agent reprend la main avec l'erreur ; s'il échoue encore au tour suivant, vous êtes seulement averti, pour éviter une boucle.
 
 - `STOP_CHECK=off` le désactive, par exemple quand une autre session modifie le même arbre : ses fichiers en cours feraient échouer la vérification.
 - Il ne lance pas les tests (trop lents à chaque tour) : `/speckit-implement`, `pnpm check` et la CI s'en chargent.
