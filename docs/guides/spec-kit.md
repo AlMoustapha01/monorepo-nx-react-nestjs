@@ -132,7 +132,7 @@ La source est `tools/spec-kit/preset/`. Après une modification :
 uvx --from specify-cli==1.2.2 specify preset update boilerplate --dev tools/spec-kit/preset
 ```
 
-Seule la date d'installation change dans `.specify/presets/.registry`. Ne jamais éditer `.specify/presets/` ni `.claude/skills/speckit-*` à la main : ils sont regénérés.
+Dans `.specify/presets/.registry`, seule la date d'installation change, plus `manifest_hash` et `registered_commands` quand `preset.yml` change. Ne jamais éditer `.specify/presets/` ni `.claude/skills/speckit-*` à la main : ils sont regénérés.
 
 ## Utiliser un autre agent
 
@@ -158,4 +158,4 @@ uvx --from specify-cli==<version> specify init --here --force --non-interactive 
 uvx --from specify-cli==<version> specify preset update boilerplate --dev tools/spec-kit/preset
 ```
 
-Puis remplacer `1.2.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{tasks,implement,converge}/SKILL.md` gardent leur section « (boilerplate) ».
+Puis remplacer `1.2.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{specify,plan,tasks,implement,converge}/SKILL.md` gardent leurs sections « (boilerplate) ».

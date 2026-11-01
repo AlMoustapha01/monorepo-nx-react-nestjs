@@ -167,7 +167,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - **Cycle**, dans Claude Code :
   1. `/speckit-specify <description>` (ou `/speckit-specify E03`, qui part des exigences de l'epic qu'aucune spec ne couvre) : crée la branche `NNN-<nom>` (arbre propre, depuis `main`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;
   2. `/speckit-clarify` : questions sur les `[NEEDS CLARIFICATION]`, jusqu'à ce qu'il n'en reste plus ;
-  3. `/speckit-plan` : domaines, feature flag, événements, migrations, règles d'accès, stratégie de test (un test par scénario d'acceptation) ;
+  3. `/speckit-plan` : domaines, feature flag, événements, migrations, règles d'accès, stratégie de test (un test par scénario d'acceptation). Il s'arrête pour vous faire trancher les dérogations à la constitution ou à ce fichier, les chemins sensibles, une nouvelle infrastructure et les choix difficiles à défaire (section « Decisions for the User » du plan) ;
   4. `/speckit-tasks`, puis `/speckit-analyze` (cohérence spec, plan, tâches) ; `/speckit-checklist` en option ;
   5. `/speckit-implement`, puis `/speckit-converge`, à répéter jusqu'à « Converged ». Quand une story n'a plus de manque, `/speckit-converge` la fait relire par le relecteur indépendant avant de conclure.
 - **Sans spec** : ce qui ne change aucun comportement observable (`refactor`, `chore`, `docs`, dépendances, performance), et le `fix` qui rétablit un comportement déjà spécifié. Un bug qui révèle un comportement non spécifié ajoute son scénario à la spec, avec son test. Le reste part d'une spec.
