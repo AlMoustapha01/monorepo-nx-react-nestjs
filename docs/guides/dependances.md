@@ -2,7 +2,7 @@
 
 ## Audit
 
-`.github/workflows/audit.yml` tourne sur les PR qui touchent les dépendances et chaque jour sur `main`. Il bloque :
+`.github/workflows/audit.yml` tourne sur les PR qui touchent les dépendances et chaque jour sur `dev`, la branche par défaut. Il bloque :
 
 - toute faille connue d'une dépendance de production (`pnpm audit --prod --audit-level=moderate`) ;
 - les failles hautes et critiques des outils de dev (`pnpm audit --audit-level=high`).
@@ -21,6 +21,7 @@ Pas de `.pnpmfile.cjs` : Renovate l'ignore (`--ignore-pnpmfile`), et ses lockfil
 
 `renovate.json` configure l'application GitHub Renovate, à installer sur le repo :
 
+- PR ouvertes sur la branche par défaut, `dev` ([Branches et releases](branches.md)) ;
 - PR groupées (`nx`, `nestjs`…) le lundi matin, et maintenance du lockfile au même moment ;
 - versions publiées depuis au moins 3 jours ;
 - failles corrigées sans attendre, avec le label `security` ;

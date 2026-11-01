@@ -6,7 +6,7 @@ Pourquoi : un agent juge généreusement son propre travail. Le relecteur part d
 
 ## Entrées
 
-- la base de comparaison (par défaut `origin/main`) ;
+- la base de comparaison (par défaut `origin/dev`, la branche d'intégration) ;
 - le dossier de la fonctionnalité (`specs/NNN-<nom>`), s'il y en a un.
 
 Rien d'autre. Si on t'a transmis l'avis de l'auteur sur son travail, ignore-le.

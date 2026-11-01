@@ -37,10 +37,14 @@ Quand le produit a un cahier des charges, `specs/product.yml` en liste les exige
 
 Le récit du produit (vision, utilisateurs, problèmes, périmètre et non-objectifs, contraintes, indicateurs de succès) est dans `specs/prd.md`, qui cite les mêmes identifiants. Deux commandes du preset les rédigent avec vous, sur une branche `docs/product-*` :
 
-- `/speckit-prd <description, ou chemin du cahier des charges>` : pose au plus 5 questions, propose les exigences (identifiants du cahier des charges s'il en a), puis écrit `specs/prd.md` (template `prd-template`) et la liste `requirements`, une fois le brouillon validé. En révision, il retire au lieu de renuméroter et liste les specs qui citent une exigence retirée ou changée.
-- `/speckit-epics` : regroupe les exigences en epics (un résultat pour l'utilisateur, pas une couche technique), propose les dépendances, l'ordre de livraison et les parcours, puis écrit la liste `epics` une fois la proposition validée. Il termine par le premier epic débloqué : `/speckit-specify E01`.
+- `/speckit-prd <description, ou chemin du cahier des charges>` : pose au plus 5 questions, propose les exigences (identifiants du cahier des charges s'il en a), puis écrit en brouillon `specs/prd.md` (template `prd-template`) et la liste `requirements`, et ne les commite qu'une fois le brouillon validé. En révision, il retire au lieu de renuméroter et liste les specs qui citent une exigence retirée ou changée.
+- `/speckit-epics` : regroupe les exigences en epics (un résultat pour l'utilisateur, pas une couche technique), propose les dépendances, l'ordre de livraison et les parcours, puis écrit en brouillon la liste `epics`, et ne la commite qu'une fois la proposition validée. Il termine par le premier epic débloqué : `/speckit-specify E01`.
 
 Aucune des deux n'écrit d'état ni ne modifie une spec. Elles commitent seulement `specs/prd.md` et `specs/product.yml`.
+
+L'agent y tient le rôle de PO : il mène les questions et les propositions lui-même, parce que le cadrage se fait en conversation, avec une grille explicite, [`docs/agents/po.md`](../agents/po.md) (une exigence est une capacité testable, un epic un résultat démontrable, rien de la source ne disparaît en silence). Il écrit son brouillon dans les fichiers, puis le fait relire à froid par le sous-agent `relecteur-produit` ([`docs/agents/relecteur-produit.md`](../agents/relecteur-produit.md)), qui ne reçoit que les chemins et la source, jamais les notes de l'agent ni vos réponses. Un écart bloquant est corrigé une fois ou contesté avec sa preuve ; vous voyez ensuite le brouillon et les écarts restants, et tranchez. Si vous refusez, les fichiers sont restaurés. Avec un autre agent, la commande vous demande de lancer la relecture dans une nouvelle session et d'en coller le rapport.
+
+Entre les deux, `/speckit-design` fixe le cadrage design du produit (voir [Design](#design)).
 
 ```yaml
 # specs/product.yml : appartient au produit, rédigé en anglais comme les specs.
@@ -95,7 +99,7 @@ L'ancien index `specs/product-requirements.json` n'est plus lu : `spec:trace` re
 
 `/speckit-specify` commence par créer la branche de la fonctionnalité et s'y placer : c'est le hook `before_specify` de l'extension `git` de Spec Kit (`.specify/extensions.yml`, skill `/speckit-git-feature`). Les règles ajoutées par le preset (`tools/spec-kit/preset/commands/speckit.specify.md`) :
 
-- l'agent s'arrête si l'arbre a des modifications non commitées, et demande avant de partir d'une autre branche que `main` ;
+- l'agent s'arrête si l'arbre a des modifications non commitées, part de `dev` (depuis `main`, il bascule sur `dev` à jour), et demande avant de partir d'une autre branche ;
 - la branche se nomme `NNN-<nom>`, numérotée après les dossiers de `specs/` et toutes les branches locales et distantes : deux fonctionnalités en cours n'ont jamais le même numéro ;
 - le dossier de la spec porte le même nom (`specs/NNN-<nom>`).
 
@@ -103,12 +107,23 @@ Ensuite, chaque commande qui écrit des fichiers commite son résultat sur cette
 
 Le reste se règle dans `.specify/extensions/git/git-config.yml` : format du nom de branche (préfixe, auteur), commandes qui commitent (`auto_commit`), style des messages (`commit_style: fixed` pour des messages fixes). L'extension propose d'autres hooks (initialisation du repo, commit avant chaque commande), volontairement absents de `.specify/extensions.yml` : `specify extension update git` les remet, il faut alors les retirer.
 
+## Design
+
+Deux commandes du preset donnent un volet produit et UX au cycle. Toutes deux font produire l'agent `designer`, puis relire à froid par le `relecteur-design`, avant de vous montrer le résultat :
+
+- `/speckit-design`, après `/speckit-prd` et sur la même branche `docs/product-*` : pose au plus 5 questions (appareils, image du produit, marque existante, accessibilité), puis, une fois la proposition validée, écrit `specs/design.md` (template `design-template`) et règle le thème de l'app (`libs/web/ui/src/lib/styles/theme.css`, et une police `@fontsource` s'il en faut une). Rien d'autre dans le code : le mode sombre et ce que le thème ne porte pas vont dans la section `Deferred`, pour une fonctionnalité. Relancée, elle signale les prototypes que le nouveau thème rend périmés.
+- `/speckit-prototype`, en option, entre `/speckit-clarify` et `/speckit-plan`, sur la branche de la fonctionnalité : les parcours écran par écran (`prototypes/journeys.md`, template `journeys-template`), que vous validez, puis une maquette en pages HTML statiques (une par écran, `index.html` en entrée), que vous validez aussi. `pnpm prototype specs/<NNN-nom> --capture` compile leur `styles.css` depuis le vrai thème et prend les captures desktop (1440 px) et mobile (390 px) dans `prototypes/captures/` ; la maquette s'ouvre dans le navigateur sans serveur. Ce qu'elle révèle est proposé comme modification de `spec.md`. Son code est jetable : les écrans se construisent ensuite dans le cycle normal.
+
+`/speckit-plan` cite les captures à côté des écrans à construire, prévoit l'ajout à `libs/web/ui` des composants que la maquette a dû dessiner, et vous avertit quand les captures sont plus anciennes que `specs/design.md`.
+
+Les consignes, portables, sont dans [`docs/agents/designer.md`](../agents/designer.md) (standards d'un SaaS moderne, contraintes du dépôt, livrables par mode) et [`docs/agents/relecteur-design.md`](../agents/relecteur-design.md) (grille : couverture des scénarios, cohérence avec le cadrage, accessibilité, mobile) ; les sous-agents Claude Code (`.claude/agents/`) les lisent. Le relecteur ne reçoit que les fichiers, jamais l'avis du designer ; un écart bloquant repart une fois au designer, puis vous tranchez. Avec un autre agent, la commande vous demande de lancer chacun dans une nouvelle session et d'en coller le rapport.
+
 ## Relecture indépendante
 
 Un agent juge généreusement son propre travail. Avant de rendre une story, `/speckit-converge` la fait relire par un relecteur qui ne l'a pas écrite (preset, section « Independent Review ») :
 
 - la grille, portable, est dans [`docs/agents/relecteur.md`](../agents/relecteur.md) ; l'adaptateur Claude Code est le sous-agent `.claude/agents/relecteur.md`, qui la lit ;
-- le relecteur ne reçoit que la base (`origin/main`) et le dossier de la spec, jamais le résumé de l'auteur ;
+- le relecteur ne reçoit que la base (`origin/dev`) et le dossier de la spec, jamais le résumé de l'auteur ;
 - il ne signale que les écarts d'exigence, de correction et de principe, preuve à l'appui, et laisse ses doutes « à vérifier par un humain » ;
 - chaque écart bloquant devient une tâche ajoutée à `tasks.md` ; un écart que l'agent conteste figure dans son rapport, avec la preuve, et reste ouvert : pas de « Converged » tant que vous n'avez pas tranché.
 
@@ -118,7 +133,7 @@ Quand le jugement du relecteur diverge du vôtre (trop sévère, ou il laisse pa
 
 ## Vérification de fin de tour
 
-Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/stop-check.mts` à chaque fin de tour : format (`oxfmt --check`) des fichiers changés depuis `origin/main` (commits, modifications, nouveaux fichiers), puis `nx affected -t lint typecheck` sur ces fichiers et les fichiers supprimés : supprimer un fichier encore importé ailleurs fait échouer le typecheck du projet qui l'importe. Rien de changé : il ne fait rien. En échec, l'agent reprend la main avec l'erreur ; s'il échoue encore au tour suivant, vous êtes seulement averti, pour éviter une boucle.
+Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/stop-check.mts` à chaque fin de tour : format (`oxfmt --check`) des fichiers changés depuis `origin/dev` (ou `origin/main` si `dev` n'existe pas ; commits, modifications, nouveaux fichiers), puis `nx affected -t lint typecheck` sur ces fichiers et les fichiers supprimés : supprimer un fichier encore importé ailleurs fait échouer le typecheck du projet qui l'importe. Rien de changé : il ne fait rien. En échec, l'agent reprend la main avec l'erreur ; s'il échoue encore au tour suivant, vous êtes seulement averti, pour éviter une boucle.
 
 - `STOP_CHECK=off` le désactive, par exemple quand une autre session modifie le même arbre : ses fichiers en cours feraient échouer la vérification.
 - Il ne lance pas les tests (trop lents à chaque tour) : `/speckit-implement`, `pnpm check` et la CI s'en chargent.

@@ -4,14 +4,16 @@
     "boilerplate": {
       "version": "1.0.0",
       "source": "local",
-      "manifest_hash": "sha256:44b24c2f24741f2eb58b0342b0accdfd11462ebb7a5c4885432f45c286384c62",
+      "manifest_hash": "sha256:8bcbd229b2c74f69433f93c62ac6a9d77d2bff685ca8735b261571efe07f530b",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
         "claude": [
           "speckit.prd",
+          "speckit.design",
           "speckit.epics",
           "speckit.specify",
+          "speckit.prototype",
           "speckit.plan",
           "speckit.tasks",
           "speckit.analyze",
@@ -22,8 +24,10 @@
       "registered_skills": {
         "claude": [
           "speckit-prd",
+          "speckit-design",
           "speckit-epics",
           "speckit-specify",
+          "speckit-prototype",
           "speckit-plan",
           "speckit-tasks",
           "speckit-analyze",
@@ -31,7 +35,7 @@
           "speckit-converge"
         ]
       },
-      "installed_at": "2026-11-01T17:33:29.212908+00:00"
+      "installed_at": "2026-11-01T20:15:12.683691+00:00"
     }
   }
 }

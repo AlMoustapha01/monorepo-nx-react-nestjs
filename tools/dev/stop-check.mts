@@ -1,7 +1,7 @@
 /**
  * Hook `Stop` de Claude Code (.claude/settings.json) : à chaque fin de tour, format, lint et types
- * des fichiers changés sur la branche depuis origin/main, suppressions comprises. En échec, l'agent reprend la main avec
- * l'erreur (code 2) ; une seconde fois de suite, l'utilisateur est seulement averti.
+ * des fichiers changés sur la branche depuis origin/dev (la branche d'intégration), suppressions comprises. En échec,
+ * l'agent reprend la main avec l'erreur (code 2) ; une seconde fois de suite, l'utilisateur est seulement averti.
  *   STOP_CHECK=off  → désactivé (ex. arbre partagé avec une autre session en cours)
  * Les tests restent à la charge de /speckit-implement et de la CI : trop lents pour chaque tour.
  */
@@ -27,7 +27,7 @@ function hookInput(): { stop_hook_active?: boolean } {
 }
 
 function baseRef(): string {
-  for (const ref of ['origin/main', 'main']) {
+  for (const ref of ['origin/dev', 'dev', 'origin/main', 'main']) {
     try {
       return git(['merge-base', ref, 'HEAD']).trim();
     } catch {

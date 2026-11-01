@@ -17,6 +17,7 @@
     "strip:examples": "node tools/dev/strip-examples.mts",
     "new:domain": "node tools/dev/new-domain.mts",
     "new:web-feature": "node tools/dev/new-web-feature.mts",
+    "prototype": "node tools/dev/prototype.mts",
     "spec:trace": "node tools/dev/spec-trace.mts",
     "docs:errors": "node tools/dev/error-codes.mts",
     "test:tools": "node --test 'tools/dev/*.test.mts'"
@@ -96,6 +97,7 @@
     "@size-limit/file": "^14.2.0",
     "@storybook/react-vite": "^10.6.3",
     "@swc/helpers": "~0.5.18",
+    "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.47",
     "@testcontainers/postgresql": "^12.2.1",

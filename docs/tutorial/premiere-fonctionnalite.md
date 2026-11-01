@@ -21,13 +21,13 @@ Les specs, plans et tâches sont en anglais, même si vous décrivez la fonction
 
 ## 1. Spécifier : le quoi et le pourquoi
 
-Partez de `main` à jour, arbre propre :
+Partez de `dev` à jour, arbre propre ([Branches et releases](../guides/branches.md)) :
 
 ```
 /speckit-specify Annonces : le staff d'une organisation publie des annonces courtes (titre, texte) ; tous les membres de l'organisation voient les annonces publiées sur la page d'accueil, la plus récente en premier. Le staff peut retirer une annonce.
 ```
 
-La commande crée d'abord la branche `001-announcements` et s'y place (hook de l'extension `git` de Spec Kit) : elle s'arrête si l'arbre a des modifications non commitées, et demande confirmation si vous n'êtes pas sur `main`. Le numéro suit les specs et les branches existantes, locales et distantes. Elle écrit ensuite `specs/001-announcements/spec.md`, du même nom que la branche, et une checklist de qualité. La fonctionnalité en cours est mémorisée dans `.specify/feature.json` (ignoré par git) : les commandes suivantes la retrouvent sans argument.
+La commande crée d'abord la branche `001-announcements` et s'y place (hook de l'extension `git` de Spec Kit) : elle s'arrête si l'arbre a des modifications non commitées, et demande confirmation si vous n'êtes pas sur `dev`. Le numéro suit les specs et les branches existantes, locales et distantes. Elle écrit ensuite `specs/001-announcements/spec.md`, du même nom que la branche, et une checklist de qualité. La fonctionnalité en cours est mémorisée dans `.specify/feature.json` (ignoré par git) : les commandes suivantes la retrouvent sans argument.
 
 Elle peut déjà poser jusqu'à trois questions (`[NEEDS CLARIFICATION]`) quand un point bloque l'écriture ; ici, la longueur maximale du titre et du texte, et si une annonce retirée peut être restaurée.
 
