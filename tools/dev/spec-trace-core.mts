@@ -500,6 +500,8 @@ export interface EpicReport {
     id: string;
     title: string;
     state: RequirementState;
+    /** Exigences actives de l'epic : combien ont une spec, combien sont terminées. */
+    progress: { total: number; specified: number; done: number };
     requirements: string[];
     dependsOn: string[];
   }[];
@@ -547,7 +549,12 @@ export function traceEpics(
       states.length === 0
         ? 'Retired'
         : (PROGRESS.find((candidate) => states.includes(candidate)) ?? 'Unspecified');
-    return { id, title, state, requirements, dependsOn };
+    const progress = {
+      total: states.length,
+      specified: states.filter((candidate) => candidate !== 'Unspecified').length,
+      done: states.filter(isDone).length,
+    };
+    return { id, title, state, progress, requirements, dependsOn };
   });
   const epicState = new Map(rows.map((row) => [row.id, row.state]));
 

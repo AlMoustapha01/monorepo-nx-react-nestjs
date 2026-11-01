@@ -593,6 +593,31 @@ describe('traceEpics', () => {
     );
   });
 
+  it('counts the specified and done requirements of an epic, retired ones excluded', () => {
+    const progressOf = (list: Parameters<typeof trace>[0]) =>
+      trace(list).rows.find((row) => row.id === 'E03')?.progress;
+
+    // PAY-04 sans spec : l'epic reste non spécifié, mais il est commencé.
+    assert.deepEqual(progressOf([['specs/002-pay', 'Implemented', ['PAY-03']]]), {
+      total: 2,
+      specified: 1,
+      done: 1,
+    });
+    assert.deepEqual(
+      progressOf([
+        ['specs/002-pay', 'Draft', ['PAY-03']],
+        ['specs/003-refund', 'Shipped', ['PAY-04']],
+      ]),
+      { total: 2, specified: 2, done: 1 },
+    );
+    // Une exigence active dont toutes les specs sont retirées est à refaire.
+    assert.deepEqual(progressOf([['specs/003-refund', 'Retired', ['PAY-04']]]), {
+      total: 2,
+      specified: 0,
+      done: 0,
+    });
+  });
+
   it('counts as still to do a requirement active in the index whose specs are all retired', () => {
     const report = trace([
       ['specs/002-pay', 'Shipped', ['PAY-03']],

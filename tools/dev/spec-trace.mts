@@ -121,12 +121,24 @@ function printRequirements(
 function printEpics(report: EpicReport, { showRows }: { showRows: boolean }): void {
   if (showRows && report.rows.length > 0) {
     console.log(`\n## Epics (${REQUIREMENT_INDEX}) : ${report.ok ? 'OK' : 'INCOMPLET'}\n`);
-    console.log('| Epic | État | Exigences | Dépend de |');
-    console.log('| ---- | ---- | --------- | --------- |');
+    console.log('| Epic | État | Avancement | Exigences | Dépend de |');
+    console.log('| ---- | ---- | ---------- | --------- | --------- |');
     for (const row of report.rows) {
-      const state = row.state === 'Unspecified' ? '**non spécifié**' : row.state;
+      const { total, specified, done } = row.progress;
+      // L'état reste celui de l'exigence la moins avancée ; un epic commencé ne s'affiche pas
+      // pour autant comme non spécifié.
+      const state =
+        row.state !== 'Unspecified'
+          ? row.state
+          : specified > 0
+            ? '**en cours**'
+            : '**non spécifié**';
+      const progress =
+        row.state === 'Retired'
+          ? ''
+          : `${specified}/${total} spécifiées, ${done}/${total} terminées`;
       console.log(
-        `| ${row.id} ${row.title} | ${state} | ${row.requirements.join(', ')} | ${row.dependsOn.join(', ')} |`,
+        `| ${row.id} ${row.title} | ${state} | ${progress} | ${row.requirements.join(', ')} | ${row.dependsOn.join(', ')} |`,
       );
     }
   }
