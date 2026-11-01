@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   captureTargets,
+  capturesViewportOnly,
   entryCss,
+  linkProblems,
   localUrls,
   packageImports,
   pageFiles,
@@ -83,5 +85,29 @@ describe('localUrls', () => {
       '@font-face{src:url("./files/inter-greek.woff2")}' +
       '.a{background:url(./files/inter-latin.woff2)}.b{background:url(https://cdn.test/x.png)}.c{background:url(data:image/png;base64,AA)}';
     assert.deepEqual(localUrls(css), ['./files/inter-latin.woff2', './files/inter-greek.woff2']);
+  });
+});
+
+describe('linkProblems', () => {
+  it('finds the links to a page that does not exist, and the pages no other page links to', () => {
+    const pages = {
+      'index.html':
+        '<a href="cart.html">Cart</a> <a href="#top">Top</a> <a href="https://acme.test">Site</a>',
+      'cart.html':
+        '<a href="pay.html?step=1#form">Pay</a> <a href="index.html">Back</a> <a href="gone.html">Gone</a>',
+      'pay.html': '<a href="cart.html">Back</a>',
+      'lost.html': '<a href="index.html">Home</a>',
+    };
+    assert.deepEqual(linkProblems(pages), {
+      dead: ['cart.html → gone.html'],
+      orphans: ['lost.html'],
+    });
+  });
+});
+
+describe('capturesViewportOnly', () => {
+  it('captures only the window of a page marked data-capture="viewport" (open dialog, toast)', () => {
+    assert.equal(capturesViewportOnly('<html lang="fr" data-capture="viewport">'), true);
+    assert.equal(capturesViewportOnly('<html lang="fr">'), false);
   });
 });

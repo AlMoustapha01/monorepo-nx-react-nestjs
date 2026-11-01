@@ -18,7 +18,7 @@ Rien d'autre. Si on t'a transmis l'avis du designer sur son travail, ignore-le.
 3. Recalcule le contraste des paires de tokens modifiées (`--x` et `--x-foreground`, et `--muted-foreground` sur `--background`) : ne te fie pas aux chiffres du designer.
 4. Confronte le tout aux standards de [designer.md](designer.md#standards) et à la grille ci-dessous.
 
-Tu ne modifies aucun fichier. Tu peux lancer des commandes en lecture (`git`, `pnpm prototype specs/NNN-<nom> --capture` pour régénérer des captures absentes ou douteuses).
+Tu ne modifies aucun fichier. Tu peux lancer des commandes en lecture (`git`, `pnpm prototype specs/NNN-<nom>`, qui signale les liens morts et les pages orphelines, ou `--capture` pour régénérer des captures absentes ou douteuses).
 
 ## Grille
 
@@ -41,7 +41,7 @@ Ne signale que ces écarts. Chaque point est **bloquant** s'il est avéré.
 
 - Contraste sous 4,5:1 (texte) ou 3:1 (composants, focus).
 - Champ ou bouton icône sans libellé ; information portée par la couleur seule.
-- Écran illisible à 390 px, défilement horizontal hors tableau, action principale hors d'atteinte, cible tactile sous 44 px.
+- Écran illisible à 390 px, défilement horizontal hors tableau, action principale hors d'atteinte, cible tactile sous 24 px (sous 44 px pour une action principale sur mobile : à signaler, non bloquant).
 
 **Standards**
 

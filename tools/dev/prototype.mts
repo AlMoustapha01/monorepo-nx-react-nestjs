@@ -21,7 +21,9 @@ import { chromium } from '@playwright/test';
 import {
   VIEWPORTS,
   captureTargets,
+  capturesViewportOnly,
   entryCss,
+  linkProblems,
   localUrls,
   packageImports,
   pageFiles,
@@ -45,6 +47,16 @@ try {
       ? `${featurePath} n'a pas de dossier prototypes/.`
       : (error as Error).message;
   console.error(`Usage : pnpm prototype <specs/NNN-nom> [--capture]\n${message}`);
+  process.exit(1);
+}
+
+const html = Object.fromEntries(pages.map((page) => [page, readFileSync(join(dir, page), 'utf8')]));
+const { dead, orphans } = linkProblems(html);
+if (orphans.length > 0) {
+  console.warn(`Pages vers lesquelles aucune autre ne mène : ${orphans.join(', ')}`);
+}
+if (dead.length > 0) {
+  console.error(`Liens vers des pages absentes :\n  ${dead.join('\n  ')}`);
   process.exit(1);
 }
 
@@ -97,7 +109,10 @@ if (capture) {
     for (const target of captureTargets(pages)) {
       const page = await browser.newPage({ viewport: VIEWPORTS[target.viewport] });
       await page.goto(pathToFileURL(resolve(dir, target.page)).href);
-      await page.screenshot({ path: join(dir, target.file), fullPage: true });
+      await page.screenshot({
+        path: join(dir, target.file),
+        fullPage: !capturesViewportOnly(html[target.page]),
+      });
       await page.close();
     }
   } finally {

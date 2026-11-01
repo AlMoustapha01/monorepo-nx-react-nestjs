@@ -24,7 +24,7 @@ Ce sont aussi les standards du relecteur design.
 - **Formulaires** : libellé visible au-dessus de chaque champ (jamais le placeholder seul), erreur sous le champ concerné et erreur globale en tête (`FormField`, `FormError`), bouton d'envoi qui dit ce qu'il fait, valeurs par défaut sensées.
 - **États** : chaque écran prévoit vide (avec l'action qui le remplit), chargement, erreur (ce qui s'est passé, quoi faire) et succès ; chaque action a un retour (toast, changement visible).
 - **Textes d'interface** : verbes d'action (« Créer le produit », pas « Valider »), vocabulaire de l'utilisateur, pas de jargon technique, ton de `specs/design.md`.
-- **Responsive** : chaque écran fonctionne à 390 px de large ; mobile d'abord pour les parcours qui se font sur téléphone ; cibles tactiles d'au moins 44 px ; pas de défilement horizontal hors tableaux.
+- **Responsive** : chaque écran fonctionne à 390 px de large ; mobile d'abord pour les parcours qui se font sur téléphone ; cibles tactiles d'au moins 24 px (WCAG 2.2 AA), et 44 px pour les actions principales sur mobile : un composant de `web-ui` plus petit s'agrandit sur mobile (`h-11 md:h-9`) et se signale dans les composants à ajouter ; pas de défilement horizontal hors tableaux.
 - **Accessibilité** (WCAG 2.2 AA) : contraste d'au moins 4,5:1 pour le texte et 3:1 pour les composants et le focus ; focus visible ; ordre de tabulation logique ; libellé pour tout champ et tout bouton icône ; l'information ne passe jamais par la couleur seule.
 
 ## Contraintes du dépôt
@@ -47,11 +47,13 @@ Ce sont aussi les standards du relecteur design.
 
 ### Mode `maquette`
 
-- Des pages HTML à plat dans `specs/NNN-<nom>/prototypes/`, une par écran, `index.html` comme point d'entrée (la liste des parcours et leur premier écran). Chaque page a `<meta charset="utf-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, `<link rel="stylesheet" href="styles.css">` et la classe `bg-background text-foreground` sur `body`. Pas de JavaScript, sauf quelques lignes pour un état qu'on ne peut pas montrer autrement (ouvrir une modale).
-- Un cadre d'app simplifié (en-tête, navigation) reproduit sur chaque page, pour voir l'écran dans son contexte.
+- Des pages HTML à plat dans `specs/NNN-<nom>/prototypes/`, une par écran et par état, `index.html` comme point d'entrée (la liste des parcours, leurs écrans et leurs états). Un écran se nomme comme dans `journeys.md` (`members.html`), un état `<écran>-<état>.html` (`members-empty.html`, `members-invite-invalid.html`) ; un dialogue ouvert ou un toast est un état de l'écran qu'il recouvre. Chaque page a `<meta charset="utf-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, `<link rel="stylesheet" href="styles.css">` et la classe `bg-background text-foreground` sur `body`. Pas de JavaScript, sauf quelques lignes pour un état qu'on ne peut pas montrer autrement (ouvrir une modale).
+- Les textes dans la langue source de l'app (`sourceLocale` de `apps/web/lingui.config.ts`), même si `journeys.md` est en anglais.
+- Un cadre d'app simplifié (en-tête, navigation) reproduit sur chaque page, pour voir l'écran dans son contexte. Le copier d'une page à l'autre est normal ; gardez-le identique partout (un script jetable, hors du dépôt, peut générer les pages).
+- Une page dont l'état tient dans la fenêtre (dialogue ouvert, toast) porte `data-capture="viewport"` sur `<html>` : elle se capture sans défiler, et un voile `fixed` couvre toute la capture.
 - Des données factices réalistes : de vrais noms, des montants plausibles, assez de lignes pour juger la densité ; les états vides et d'erreur sur leurs propres pages (`cart-empty.html`).
 - Des liens entre les pages qui suivent les parcours.
-- Puis `pnpm prototype specs/NNN-<nom> --capture` : compile `styles.css` et prend les captures desktop et mobile. Regarde les captures et corrige ce qui ne va pas avant de rendre ton rapport.
+- Puis `pnpm prototype specs/NNN-<nom> --capture` : il refuse un lien vers une page absente, signale les pages vers lesquelles rien ne mène, compile `styles.css` (et copie les polices du thème dans `files/`) et prend les captures desktop et mobile. Regarde les captures et corrige ce qui ne va pas avant de rendre ton rapport.
 
 ## Rapport
 

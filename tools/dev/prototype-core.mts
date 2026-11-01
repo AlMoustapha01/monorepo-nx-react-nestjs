@@ -66,3 +66,31 @@ export function localUrls(css: string): string[] {
   const urls = [...css.matchAll(/url\(\s*['"]?(\.\/[^'")]+)['"]?\s*\)/g)].map((match) => match[1]);
   return [...new Set(urls)];
 }
+
+/**
+ * Liens entre les pages : `dead`, un lien vers une page absente (`cart.html → gone.html`) ;
+ * `orphans`, une page vers laquelle aucune autre ne mène (index.html est l'entrée, jamais orpheline).
+ * Ancres, URL externes et liens vers autre chose qu'une page HTML sont ignorés.
+ */
+export function linkProblems(pages: Record<string, string>): { dead: string[]; orphans: string[] } {
+  const dead: string[] = [];
+  const linked = new Set<string>();
+  for (const [page, html] of Object.entries(pages)) {
+    for (const match of html.matchAll(/href\s*=\s*['"]([^'"]+)['"]/g)) {
+      const target = match[1].split(/[?#]/)[0];
+      if (!/^[\w.-]+\.html$/.test(target)) continue;
+      if (target in pages) {
+        if (target !== page) linked.add(target);
+      } else {
+        dead.push(`${page} → ${target}`);
+      }
+    }
+  }
+  const orphans = Object.keys(pages).filter((page) => page !== 'index.html' && !linked.has(page));
+  return { dead, orphans };
+}
+
+/** Une page marquée `data-capture="viewport"` (dialogue ouvert, toast) se capture sans défiler. */
+export function capturesViewportOnly(html: string): boolean {
+  return /data-capture\s*=\s*['"]viewport['"]/.test(html);
+}
