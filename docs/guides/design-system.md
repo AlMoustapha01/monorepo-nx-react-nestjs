@@ -42,9 +42,11 @@ Tout le thème est dans `libs/web/ui/src/lib/styles/theme.css`, importé par l'a
 
 **On n'écrit jamais une couleur en dur** (`bg-blue-600`, `#2563eb`) : on utilise un token, sinon le thème sombre et un changement de marque ne suivent pas.
 
-**Changer l'identité visuelle** d'un projet : modifier les valeurs de `:root` et `.dark`, rien d'autre. Les composants ne changent pas. La page [Theming](https://ui.shadcn.com/docs/theming) de shadcn décrit chaque token et donne des palettes toutes faites, à recopier en gardant les noms existants.
+**Changer l'identité visuelle** d'un projet : `/speckit-design` le fait depuis le cadrage design du produit (`specs/design.md`, voir [Spec Kit](spec-kit.md#design)). À la main : modifier les valeurs de `:root` et `.dark`, rien d'autre. Les composants ne changent pas. La page [Theming](https://ui.shadcn.com/docs/theming) de shadcn décrit chaque token et donne des palettes toutes faites, à recopier en gardant les noms existants.
 
 **Ajouter un token** (par exemple `--success`) : sa valeur dans `:root` et dans `.dark`, puis sa ligne `--color-success: var(--success);` dans `@theme inline`. La classe `bg-success` existe ensuite.
+
+**Prototypes** : les maquettes de `/speckit-prototype` (`specs/NNN-<nom>/prototypes/`) importent ce même fichier, compilé par `pnpm prototype` : elles suivent le thème sans copie.
 
 **Classes générées** : Tailwind ne génère que les classes qu'il trouve dans les fichiers scannés. `styles.css` de l'app scanne `apps/web/src` et tout `libs/web` (`@source`) : une nouvelle lib sous `libs/web` est couverte sans rien changer. Une classe construite par concaténation (`` `bg-${tone}` ``) n'est pas trouvée : écrire les classes en entier, comme le font les variantes `cva`.
 
