@@ -158,4 +158,4 @@ uvx --from specify-cli==<version> specify init --here --force --non-interactive 
 uvx --from specify-cli==<version> specify preset update boilerplate --dev tools/spec-kit/preset
 ```
 
-Puis remplacer `1.2.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{specify,plan,tasks,implement,converge}/SKILL.md` gardent leurs sections « (boilerplate) ».
+Puis remplacer `1.2.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{specify,plan,tasks,analyze,implement,converge}/SKILL.md` gardent leurs sections « (boilerplate) ».
