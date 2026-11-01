@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { captureTargets, entryCss, pageFiles, prototypesDir } from './prototype-core.mts';
+
+describe('prototypesDir', () => {
+  it('finds the prototypes folder of a feature, given its folder or the prototypes folder', () => {
+    for (const path of [
+      'specs/004-checkout',
+      'specs/004-checkout/',
+      'specs/004-checkout/prototypes',
+    ]) {
+      assert.equal(prototypesDir(path), 'specs/004-checkout/prototypes');
+    }
+  });
+
+  it('refuses a path that is not a feature folder', () => {
+    for (const path of ['specs/prd.md', 'libs/web', 'specs/checkout']) {
+      assert.throws(() => prototypesDir(path), /specs\/NNN-<name>/);
+    }
+  });
+});
+
+describe('entryCss', () => {
+  it('imports the real theme and scans the pages of the prototype', () => {
+    assert.equal(
+      entryCss('../../../libs/web/ui/src/lib/styles/theme.css'),
+      "@import '../../../libs/web/ui/src/lib/styles/theme.css';\n@source './*.html';\n",
+    );
+  });
+});
+
+describe('pageFiles', () => {
+  it('keeps the HTML pages, index.html first, then in alphabetical order', () => {
+    assert.deepEqual(pageFiles(['pay.html', 'styles.css', 'index.html', 'captures', 'cart.html']), [
+      'index.html',
+      'cart.html',
+      'pay.html',
+    ]);
+  });
+
+  it('refuses a prototype without pages or without index.html', () => {
+    assert.throws(() => pageFiles(['styles.css']), /index\.html/);
+    assert.throws(() => pageFiles(['cart.html']), /index\.html/);
+  });
+});
+
+describe('captureTargets', () => {
+  it('captures every page on desktop then on mobile, named after the page', () => {
+    const targets = captureTargets(['index.html', 'cart.html']);
+    assert.equal(targets.length, 4);
+    assert.deepEqual(targets[0], {
+      page: 'index.html',
+      viewport: 'desktop',
+      file: 'captures/index-desktop.png',
+    });
+    assert.deepEqual(targets[3], {
+      page: 'cart.html',
+      viewport: 'mobile',
+      file: 'captures/cart-mobile.png',
+    });
+  });
+});
