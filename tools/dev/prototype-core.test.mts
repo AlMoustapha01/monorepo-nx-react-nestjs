@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { captureTargets, entryCss, pageFiles, prototypesDir } from './prototype-core.mts';
+import {
+  captureTargets,
+  entryCss,
+  localUrls,
+  packageImports,
+  pageFiles,
+  prototypesDir,
+} from './prototype-core.mts';
 
 describe('prototypesDir', () => {
   it('finds the prototypes folder of a feature, given its folder or the prototypes folder', () => {
@@ -58,5 +65,23 @@ describe('captureTargets', () => {
       viewport: 'mobile',
       file: 'captures/cart-mobile.png',
     });
+  });
+});
+
+describe('packageImports', () => {
+  it('lists the packages the theme imports, not its relative imports', () => {
+    const theme =
+      "@import 'tailwindcss';\n@import \"@fontsource-variable/inter\";\n@import './local.css';\n";
+    assert.deepEqual(packageImports(theme), ['tailwindcss', '@fontsource-variable/inter']);
+  });
+});
+
+describe('localUrls', () => {
+  it('lists once each local file the compiled stylesheet points to', () => {
+    const css =
+      "@font-face{src:url(./files/inter-latin.woff2) format('woff2')}" +
+      '@font-face{src:url("./files/inter-greek.woff2")}' +
+      '.a{background:url(./files/inter-latin.woff2)}.b{background:url(https://cdn.test/x.png)}.c{background:url(data:image/png;base64,AA)}';
+    assert.deepEqual(localUrls(css), ['./files/inter-latin.woff2', './files/inter-greek.woff2']);
   });
 });

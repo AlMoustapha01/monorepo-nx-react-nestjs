@@ -5,14 +5,25 @@
  * Affiche l'URL de index.html, à ouvrir dans le navigateur : aucun serveur.
  */
 import { execFileSync } from 'node:child_process';
-import { readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 import {
   VIEWPORTS,
   captureTargets,
   entryCss,
+  localUrls,
+  packageImports,
   pageFiles,
   prototypesDir,
 } from './prototype-core.mts';
@@ -50,6 +61,26 @@ try {
   );
 } finally {
   rmSync(entry, { force: true });
+}
+
+// Les fichiers d'un paquet importé par le thème (polices @fontsource) restent visés en relatif
+// (`url(./files/…)`) : on les copie à côté de styles.css, sinon la page retombe sur une autre police.
+const requireFromTheme = createRequire(resolve(THEME));
+const packageDirs = packageImports(readFileSync(THEME, 'utf8')).flatMap((name) => {
+  try {
+    return [dirname(requireFromTheme.resolve(name))];
+  } catch {
+    return [];
+  }
+});
+for (const url of localUrls(readFileSync(join(dir, 'styles.css'), 'utf8'))) {
+  const source = packageDirs
+    .map((packageDir) => join(packageDir, url))
+    .find((path) => existsSync(path));
+  if (source) {
+    mkdirSync(dirname(join(dir, url)), { recursive: true });
+    copyFileSync(source, join(dir, url));
+  }
 }
 
 if (capture) {

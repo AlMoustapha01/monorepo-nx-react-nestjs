@@ -50,3 +50,19 @@ export function captureTargets(
     })),
   );
 }
+
+/** Paquets importés par le thème (`@import '@fontsource-variable/inter'`), sans les imports relatifs. */
+export function packageImports(themeCss: string): string[] {
+  return [...themeCss.matchAll(/@import\s+['"]([^'"]+)['"]/g)]
+    .map((match) => match[1])
+    .filter((path) => !path.startsWith('.') && !path.startsWith('/'));
+}
+
+/**
+ * Fichiers locaux visés par la feuille compilée (`url(./files/inter-latin.woff2)`). Tailwind laisse
+ * ces chemins relatifs au paquet importé : ils sont à copier à côté de styles.css.
+ */
+export function localUrls(css: string): string[] {
+  const urls = [...css.matchAll(/url\(\s*['"]?(\.\/[^'")]+)['"]?\s*\)/g)].map((match) => match[1]);
+  return [...new Set(urls)];
+}
