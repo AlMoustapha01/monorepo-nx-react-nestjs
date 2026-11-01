@@ -4,7 +4,7 @@
     "boilerplate": {
       "version": "1.0.0",
       "source": "local",
-      "manifest_hash": "sha256:c153c43e2fbf31e2784595bbe2a2e02b78f978d8167489b12dd37b6a3f09d54b",
+      "manifest_hash": "sha256:26c319c30134943ac0a18ed31a681d1c1de681c9ed5a06a73a011d59b5fc08d5",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -13,6 +13,7 @@
           "speckit.design",
           "speckit.epics",
           "speckit.specify",
+          "speckit.prototype",
           "speckit.plan",
           "speckit.tasks",
           "speckit.analyze",
@@ -26,6 +27,7 @@
           "speckit-design",
           "speckit-epics",
           "speckit-specify",
+          "speckit-prototype",
           "speckit-plan",
           "speckit-tasks",
           "speckit-analyze",
@@ -33,7 +35,7 @@
           "speckit-converge"
         ]
       },
-      "installed_at": "2026-11-01T18:54:47.932433+00:00"
+      "installed_at": "2026-11-01T18:55:27.161099+00:00"
     }
   }
 }
