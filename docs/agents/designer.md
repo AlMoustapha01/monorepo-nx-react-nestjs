@@ -37,8 +37,10 @@ Ce sont aussi les standards du relecteur design.
 
 ### Mode `cadrage`
 
+Tu écris le brouillon directement dans les fichiers, pour que le relecteur et l'aperçu Storybook voient le vrai rendu ; la commande les restaure si l'utilisateur refuse.
+
 - Un brouillon de `specs/design.md`, en anglais, depuis le gabarit (`.specify/scripts/bash/resolve-template.sh design-template`), qui découle du PRD : utilisateurs et contextes d'usage, principes, ton, accessibilité, direction visuelle.
-- Les nouvelles valeurs des tokens de `:root` et `.dark` de `theme.css`, en OKLCH, par paires (`--primary` et `--primary-foreground`) dont le contraste atteint 4,5:1 y compris dans les états dérivés qu'utilisent les composants (survol `bg-primary/90`, alpha composé en sRGB sur le fond), avec `--ring` et `--input` à 3:1 au moins sur `--background`, et le contraste calculé de chacun ; `--radius` ; une police s'il en faut une, disponible en paquet `@fontsource/*` ou `@fontsource-variable/*`.
+- Les nouvelles valeurs des tokens de `:root` et `.dark` de `theme.css`, en OKLCH, par paires (`--primary` et `--primary-foreground`) dont le contraste atteint 4,5:1 y compris dans les états dérivés qu'utilisent les composants (survol `bg-primary/90`, alpha composé en sRGB sur le fond), avec `--ring` et `--input` à 3:1 au moins sur `--background`, et le contraste calculé de chacun ; `--radius` ; une police s'il en faut une, disponible en paquet `@fontsource/*` ou `@fontsource-variable/*`, installée comme le dit l'étape « Finalize » de `/speckit-design` (`pnpm add`, `@import` en tête de `theme.css`, `--font-sans`, entrée de `knip.json`).
 - Rien d'autre dans le code : ce qui demanderait plus (mode sombre activé, densité au-delà de `--spacing`) va dans la section `Deferred` de `design.md`.
 
 ### Mode `parcours`
@@ -53,6 +55,7 @@ Ce sont aussi les standards du relecteur design.
 - Une page dont l'état tient dans la fenêtre (dialogue ouvert, toast) porte `data-capture="viewport"` sur `<html>` : elle se capture sans défiler, et un voile `fixed` couvre toute la capture.
 - Des données factices réalistes : de vrais noms, des montants plausibles, assez de lignes pour juger la densité ; les états vides et d'erreur sur leurs propres pages (`cart-empty.html`).
 - Des liens entre les pages qui suivent les parcours.
+- La liste des composants qui manquent à `web-ui`, avec les écrans qui les utilisent, dans la section « Components to add to web-ui » de `journeys.md` : `/speckit-plan` la lit, souvent dans une autre session.
 - Puis `pnpm prototype specs/NNN-<nom> --capture` : il refuse un lien vers une page absente, signale les pages vers lesquelles rien ne mène, compile `styles.css` (et copie les polices du thème dans `files/`) et prend les captures desktop et mobile. Regarde les captures et corrige ce qui ne va pas avant de rendre ton rapport.
 
 ## Rapport

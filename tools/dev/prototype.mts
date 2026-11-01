@@ -11,11 +11,12 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 import {
@@ -96,31 +97,41 @@ for (const url of localUrls(readFileSync(join(dir, 'styles.css'), 'utf8'))) {
 }
 
 if (capture) {
-  // Les captures d'une page retirée ne doivent pas survivre.
-  rmSync(join(dir, 'captures'), { recursive: true, force: true });
   let browser;
   try {
     browser = await chromium.launch();
-  } catch {
-    console.error('Chromium manquant : pnpm exec playwright install chromium');
+  } catch (error) {
+    const missing = /Executable doesn't exist/.test((error as Error).message);
+    console.error(
+      missing
+        ? 'Chromium manquant : pnpm exec playwright install chromium'
+        : (error as Error).message,
+    );
     process.exit(1);
   }
+  // Les captures s'écrivent à part, puis remplacent les anciennes d'un coup : un échec garde les
+  // anciennes, et celles d'une page retirée ne survivent pas.
+  const captures = join(dir, 'captures');
+  const fresh = join(dir, '.captures.tmp');
+  rmSync(fresh, { recursive: true, force: true });
+  mkdirSync(fresh);
   try {
     for (const target of captureTargets(pages)) {
       const page = await browser.newPage({ viewport: VIEWPORTS[target.viewport] });
       await page.goto(pathToFileURL(resolve(dir, target.page)).href);
       await page.screenshot({
-        path: join(dir, target.file),
+        path: join(fresh, basename(target.file)),
         fullPage: !capturesViewportOnly(html[target.page]),
       });
       await page.close();
     }
+    rmSync(captures, { recursive: true, force: true });
+    renameSync(fresh, captures);
   } finally {
+    rmSync(fresh, { recursive: true, force: true });
     await browser.close();
   }
-  console.log(
-    `${pages.length * Object.keys(VIEWPORTS).length} captures dans ${join(dir, 'captures')}/`,
-  );
+  console.log(`${pages.length * Object.keys(VIEWPORTS).length} captures dans ${captures}/`);
 }
 
 console.log(pathToFileURL(resolve(dir, 'index.html')).href);

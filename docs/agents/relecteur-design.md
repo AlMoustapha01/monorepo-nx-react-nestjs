@@ -19,7 +19,7 @@ Rien d'autre. Si on t'a transmis l'avis du designer sur son travail, ignore-le.
 4. Une capture pleine page déplace les éléments `fixed` (toast, voile) au bas de la première fenêtre : jugez ces états sur les pages marquées `data-capture="viewport"`, ou dans la page elle-même.
 5. Confronte le tout aux standards de [designer.md](designer.md#standards) et à la grille ci-dessous.
 
-Tu ne modifies aucun fichier. Tu peux lancer des commandes en lecture (`git`, `pnpm prototype specs/NNN-<nom>`, qui signale les liens morts et les pages orphelines, ou `--capture` pour régénérer des captures absentes ou douteuses).
+Tu ne modifies aucun fichier, à une exception près : `pnpm prototype specs/NNN-<nom>`, qui signale les liens morts et les pages orphelines, régénère `styles.css`, et avec `--capture` les captures, si elles manquent ou semblent périmées. Sinon, des commandes en lecture seulement (`git`).
 
 ## Grille
 

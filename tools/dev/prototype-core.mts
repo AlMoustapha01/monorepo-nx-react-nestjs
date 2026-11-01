@@ -77,7 +77,7 @@ export function linkProblems(pages: Record<string, string>): { dead: string[]; o
   const linked = new Set<string>();
   for (const [page, html] of Object.entries(pages)) {
     for (const match of html.matchAll(/href\s*=\s*['"]([^'"]+)['"]/g)) {
-      const target = match[1].split(/[?#]/)[0];
+      const target = match[1].split(/[?#]/)[0].replace(/^\.\//, '');
       if (!/^[\w.-]+\.html$/.test(target)) continue;
       if (target in pages) {
         if (target !== page) linked.add(target);

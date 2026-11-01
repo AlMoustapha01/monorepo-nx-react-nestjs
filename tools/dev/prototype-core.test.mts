@@ -103,6 +103,14 @@ describe('linkProblems', () => {
       orphans: ['lost.html'],
     });
   });
+
+  it('reads a link written ./page.html like page.html', () => {
+    const pages = {
+      'index.html': '<a href="./cart.html">Cart</a> <a href="./gone.html">Gone</a>',
+      'cart.html': '',
+    };
+    assert.deepEqual(linkProblems(pages), { dead: ['index.html → gone.html'], orphans: [] });
+  });
 });
 
 describe('capturesViewportOnly', () => {
