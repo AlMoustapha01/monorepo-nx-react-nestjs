@@ -2,7 +2,7 @@
  * Matrice scénario → tests des specs Spec Kit.
  *   pnpm -s spec:trace                      → toutes les features de specs/ (CI)
  *   pnpm -s spec:trace specs/003-order-note → une seule, en mode strict
- *   pnpm -s spec:trace --base origin/main   → avertit en plus des tests modifiés sans leur spec
+ *   pnpm -s spec:trace --base origin/dev    → avertit en plus des tests modifiés sans leur spec
  * Chaque scénario d'acceptation actif `NNN-US<story>-AS<n>` doit être cité par au moins un test
  * (`it('003-US1-AS2: …')`) ; une spec en Draft y échappe, sauf si on la vise (mode strict).
  * Aucun test ne doit citer un scénario absent ou retiré. Code de sortie 1 sinon.
@@ -204,7 +204,7 @@ const args = process.argv.slice(2);
 const baseIndex = args.indexOf('--base');
 const base = baseIndex >= 0 ? args.splice(baseIndex, 2)[1] : undefined;
 if (baseIndex >= 0 && !base) {
-  console.error('--base attend une référence git (ex. origin/main).');
+  console.error('--base attend une référence git (ex. origin/dev).');
   process.exit(1);
 }
 // Viser une feature, c'est vérifier qu'elle est complète : même en Draft, tout scénario a son test.

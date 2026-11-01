@@ -35,11 +35,13 @@ Variables d'environnement en dev : un `.env` commun à la racine (infra, base, S
 
 Port déjà pris sur votre machine (un autre Postgres, un autre Redis…) : changez `POSTGRES_PORT`, `REDIS_PORT`, `MAILPIT_SMTP_PORT` ou `MAILPIT_UI_PORT` dans `.env`, ou `PORT` dans `apps/api/.env`, et le port de l'URL correspondante (`DATABASE_URL`, `REDIS_URL`, `SMTP_URL`). `pnpm dev:setup` refuse des valeurs incohérentes et nomme la variable en conflit.
 
-`nx affected` compare à la branche `main` locale : si elle est en retard sur le dépôt (copie de travail jamais mise à jour), il relance des projets déjà mergés. `git fetch`, puis `--base=origin/main`.
+Branches : `dev` intègre (branche par défaut, cible des PR de fonctionnalités, de correctifs et de Renovate), `main` est la production. Toute branche part de `dev` ; `main` ne reçoit que des PR de release `dev` → `main`, fusionnées par merge commit, et des hotfix, reportés ensuite sur `dev`. Détail : [Branches et releases](docs/guides/branches.md).
+
+`nx affected` compare à la branche `main` locale (`defaultBase`) : sur une branche partie de `dev`, passer `--base=origin/dev` (après `git fetch`), sinon il relance des projets déjà mergés.
 
 Les tests d'intégration (`*.int.spec.ts`) et e2e (`apps/api/tests`) démarrent Postgres, Redis (et Mailpit pour l'email) via Testcontainers : Docker doit tourner.
 
-La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage et tests des scripts de `tools/dev`, matrice des specs (`spec:trace`), puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build. Lire un échec, reproduire un job en local : [Intégration continue](docs/guides/ci.md).
+La CI (`.github/workflows/ci.yml`) tourne sur chaque PR et sur `dev` et `main` : format, puis lint, types, tests et build des seuls projets affectés (`nx affected`), typage et tests des scripts de `tools/dev`, matrice des specs (`spec:trace`), puis knip. Un job à part lance les parcours navigateur (`web-e2e`) quand le front, l'API ou le service d'auth ont changé ; en échec, il publie rapport, traces et journaux. Les actions sont épinglées par SHA. Les scripts de `tools/dev` sont du TypeScript exécuté directement par Node 24, sans build. Lire un échec, reproduire un job en local : [Intégration continue](docs/guides/ci.md).
 
 Dépendances : audit bloquant en CI (`pnpm audit --prod` en local), Renovate ; corriger une faille par mise à jour, override ciblée ou exception justifiée : voir [Dépendances et failles](docs/guides/dependances.md).
 
@@ -165,7 +167,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
   L'agent propose, l'humain valide avant toute écriture. Les specs se font ensuite une à la fois, juste avant leur implémentation, jamais toutes d'avance.
 
 - **Cycle**, dans Claude Code :
-  1. `/speckit-specify <description>` (ou `/speckit-specify E03`, qui part des exigences de l'epic qu'aucune spec ne couvre) : crée la branche `NNN-<nom>` (arbre propre, depuis `main`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;
+  1. `/speckit-specify <description>` (ou `/speckit-specify E03`, qui part des exigences de l'epic qu'aucune spec ne couvre) : crée la branche `NNN-<nom>` (arbre propre, depuis `dev`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;
   2. `/speckit-clarify` : questions sur les `[NEEDS CLARIFICATION]`, jusqu'à ce qu'il n'en reste plus ;
   3. `/speckit-plan` : domaines, feature flag, événements, migrations, règles d'accès, stratégie de test (un test par scénario d'acceptation). Il s'arrête pour vous faire trancher les dérogations à la constitution ou à ce fichier, les chemins sensibles, une nouvelle infrastructure et les choix difficiles à défaire (section « Decisions for the User » du plan) ;
   4. `/speckit-tasks`, puis `/speckit-analyze` (cohérence spec, plan, tâches) ; `/speckit-checklist` en option ;
