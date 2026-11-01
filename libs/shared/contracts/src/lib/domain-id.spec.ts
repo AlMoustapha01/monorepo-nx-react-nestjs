@@ -3,11 +3,11 @@ import { domainIdSchema } from './domain-id';
 describe('domainIdSchema', () => {
   const orderId = domainIdSchema('ORD');
 
-  it('accepte un ID au bon format', () => {
+  it('accepts a well-formed ID', () => {
     expect(orderId.safeParse('ORD-01jb4x7k2m9qwfzp3hd8').success).toBe(true);
   });
 
-  it('refuse un autre préfixe, une autre longueur ou un caractère hors alphabet', () => {
+  it('rejects another prefix, another length or a character outside the alphabet', () => {
     for (const invalid of [
       'PRD-01jb4x7k2m9qwfzp3hd8',
       'ORD-01jb4x7k2m9qwfzp3hd',
@@ -20,7 +20,7 @@ describe('domainIdSchema', () => {
     }
   });
 
-  it('refuse un préfixe mal formé à la déclaration', () => {
+  it('rejects a malformed prefix at declaration', () => {
     expect(() => domainIdSchema('ord')).toThrow('Invalid domain id prefix');
   });
 });

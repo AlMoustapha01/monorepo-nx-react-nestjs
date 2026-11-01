@@ -172,7 +172,7 @@ beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterAll(() => server.close());
 afterEach(() => server.resetHandlers());
 
-it('004-US1-AS1: ouvre un ticket et le montre dans la liste', async () => {
+it('004-US1-AS1: opens a ticket and shows it in the list', async () => {
   const items: TicketResponse[] = [];
   server.use(
     http.get(`${API}/tickets`, () => HttpResponse.json({ items, nextCursor: null })),
@@ -228,7 +228,7 @@ pnpm nx run web:i18n-check                         # comme la CI ; committer les
 La page entre dans `apps/web-e2e/src/accessibility.spec.ts` (axe, WCAG 2.1 AA), formulaire en erreur compris, et son flag dans `E2E_FEATURE_FLAGS` (`apps/web-e2e/src/stack.ts`). Après `signIn`, attendre la page d'accueil avant de naviguer :
 
 ```ts
-test('la page des tickets est accessible', async ({ page }) => {
+test('the tickets page is accessible', async ({ page }) => {
   const account = await createAccount('a11y-tickets');
   await createOrganization(account, 'Atelier');
   await page.goto('/connexion');

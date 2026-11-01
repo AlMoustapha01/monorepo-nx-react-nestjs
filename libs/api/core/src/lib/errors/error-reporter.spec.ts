@@ -7,7 +7,7 @@ import { CoreError } from './app-error';
 import { reportError } from './error-reporter';
 import { ProblemDetailsFilter } from './problem-details.filter';
 
-describe('signalement des erreurs à Sentry', () => {
+describe('error reporting to Sentry', () => {
   const telemetry = startTestTelemetry();
   const sent: ErrorEvent[] = [];
   afterEach(() => {
@@ -29,7 +29,7 @@ describe('signalement des erreurs à Sentry', () => {
     await telemetry.stop();
   });
 
-  it('envoie l’erreur avec ses tags, l’ID utilisateur et le trace_id de la requête', () => {
+  it('sends the error with its tags, the user ID and the request trace_id', () => {
     const traceId = trace.getTracer('test').startActiveSpan('POST /api/v1/orders', (span) => {
       reportError(new Error('boom'), {
         tags: { request_id: 'req-1', tenant_id: undefined },
@@ -70,7 +70,7 @@ describe('signalement des erreurs à Sentry', () => {
       } as unknown as ArgumentsHost;
     };
 
-    it('envoie une erreur inattendue avec la route et l’utilisateur', () => {
+    it('sends an unexpected error with the route and the user', () => {
       context.runAs(principal, () => filter.catch(new Error('bug'), hostFor()));
       expect(sent).toEqual([
         expect.objectContaining({
@@ -83,7 +83,7 @@ describe('signalement des erreurs à Sentry', () => {
       ]);
     });
 
-    it('n’envoie ni une erreur métier ni un 5xx levé exprès', () => {
+    it('sends neither a business error nor a deliberately thrown 5xx', () => {
       context.runAs(principal, () => {
         filter.catch(new CoreError('FORBIDDEN', 'nope'), hostFor());
         filter.catch(new ServiceUnavailableException('Shutting down'), hostFor());

@@ -3,14 +3,14 @@ import { render } from '@testing-library/react';
 import { Stack } from './stack';
 
 describe('Stack', () => {
-  it('rend une div en colonne avec un écart de 4 par défaut', () => {
+  it('renders a column div with a gap of 4 by default', () => {
     const { container } = render(<Stack>contenu</Stack>);
     const el = container.firstElementChild;
     expect(el?.tagName).toBe('DIV');
     expect(el).toHaveClass('flex', 'flex-col', 'gap-4');
   });
 
-  it('applique la balise, la direction et l’écart demandés', () => {
+  it('applies the requested tag, direction and gap', () => {
     const { container } = render(
       <Stack as="ul" direction="row" gap={2}>
         <li>a</li>
@@ -22,7 +22,7 @@ describe('Stack', () => {
     expect(el).not.toHaveClass('flex-col');
   });
 
-  it('transmet role et aria-* à l’élément rendu', () => {
+  it('passes role and aria-* to the rendered element', () => {
     const { container } = render(
       <Stack role="alert" aria-label="x">
         contenu

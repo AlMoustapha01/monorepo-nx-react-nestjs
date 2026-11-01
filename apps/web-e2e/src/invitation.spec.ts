@@ -9,7 +9,7 @@ import {
   uniqueEmail,
 } from './support';
 
-test('une personne invitée crée son compte et rejoint l’organisation', async ({ page }) => {
+test('an invited person creates an account and joins the organization', async ({ page }) => {
   const owner = await createAccount('owner');
   const organizationId = await createOrganization(owner, 'Boutique des Lilas');
   const email = uniqueEmail('invitee');
@@ -35,7 +35,7 @@ test('une personne invitée crée son compte et rejoint l’organisation', async
   await expect(page.getByText('Boutique des Lilas')).toBeVisible();
 });
 
-test('une invitation adressée à quelqu’un d’autre est refusée', async ({ page }) => {
+test('an invitation addressed to someone else is refused', async ({ page }) => {
   const owner = await createAccount('owner');
   const organizationId = await createOrganization(owner, 'Boutique');
   const intended = uniqueEmail('intended');

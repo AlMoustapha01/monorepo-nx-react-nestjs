@@ -33,18 +33,18 @@ describe('HealthController', () => {
     );
   const controller = controllerWith(true);
 
-  it('ne dépend de Redis que si le process exécute les jobs', async () => {
+  it('depends on Redis only if the process runs jobs', async () => {
     await controllerWith(false).readiness();
     expect(checked).toEqual(['database']);
     await controllerWith(true).readiness();
     expect(checked).toEqual(['database', 'redis']);
   });
 
-  it('vérifie les dépendances tant que le process sert du trafic', async () => {
+  it('checks dependencies while the process serves traffic', async () => {
     await expect(controller.readiness()).resolves.toBe(healthy);
   });
 
-  it('répond 503 dès le début de l’arrêt, sans vérifier les dépendances ; /health reste à 200', async () => {
+  it('responds 503 as soon as shutdown begins, without checking dependencies; /health stays at 200', async () => {
     checks = 0;
     state.startDraining();
 

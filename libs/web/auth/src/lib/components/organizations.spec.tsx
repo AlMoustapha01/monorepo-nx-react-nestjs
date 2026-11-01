@@ -18,7 +18,7 @@ const invitation = {
 };
 
 describe('CreateOrganizationPage', () => {
-  it('crée l’organisation', async () => {
+  it('creates the organization', async () => {
     server.use(
       http.post(`${AUTH}/organization/create`, () =>
         HttpResponse.json({ id: 'o1', name: 'Boutique', slug: 'boutique-abc123' }),
@@ -34,7 +34,7 @@ describe('CreateOrganizationPage', () => {
 });
 
 describe('AcceptInvitationPage', () => {
-  it('affiche l’organisation et accepte l’invitation', async () => {
+  it('shows the organization and accepts the invitation', async () => {
     let accepted: unknown;
     server.use(
       http.get(`${AUTH}/organization/get-invitation`, () => HttpResponse.json(invitation)),
@@ -53,7 +53,7 @@ describe('AcceptInvitationPage', () => {
     expect(accepted).toEqual({ invitationId: 'i1' });
   });
 
-  it('explique une invitation destinée à une autre adresse', async () => {
+  it('explains an invitation meant for another address', async () => {
     server.use(
       http.get(`${AUTH}/organization/get-invitation`, () =>
         betterAuthError(403, 'YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION'),
@@ -74,7 +74,7 @@ describe('AccountMenu', () => {
     { id: 'o2', name: 'Atelier', slug: 'atelier' },
   ];
 
-  it('change d’organisation', async () => {
+  it('switches organization', async () => {
     let activated: unknown;
     server.use(
       http.get(`${AUTH}/organization/list`, () => HttpResponse.json(organizations)),
@@ -99,7 +99,7 @@ describe('AccountMenu', () => {
     expect(activated).toEqual({ organizationId: 'o2' });
   });
 
-  it('affiche l’organisation seule sans sélecteur, et déconnecte', async () => {
+  it('shows a single organization without a selector, and signs out', async () => {
     server.use(
       http.get(`${AUTH}/organization/list`, () => HttpResponse.json([organizations[0]])),
       http.post(`${AUTH}/sign-out`, () => HttpResponse.json({ success: true })),

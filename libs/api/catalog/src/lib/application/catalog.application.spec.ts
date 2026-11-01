@@ -34,8 +34,8 @@ const input = (sku: string): CreateProductInput => ({
   price: { amountMinor: 1990, currency: 'EUR' },
 });
 
-describe('catalogue (couche application)', () => {
-  it('crée un produit en brouillon dans le tenant courant', () =>
+describe('catalog (application layer)', () => {
+  it('creates a draft product in the current tenant', () =>
     context.runAs(tenantA, async () => {
       const { createProduct, getProduct } = setup();
       const created = await createProduct.execute(input('TEE-01'));
@@ -44,7 +44,7 @@ describe('catalogue (couche application)', () => {
       expect(found).toMatchObject({ sku: 'TEE-01', status: 'draft', tenantId: tenantA.tenantId });
     }));
 
-  it('refuse un SKU déjà utilisé dans le même tenant', () =>
+  it('rejects a SKU already used in the same tenant', () =>
     context.runAs(tenantA, async () => {
       const { createProduct } = setup();
       await createProduct.execute(input('TEE-01'));
@@ -53,7 +53,7 @@ describe('catalogue (couche application)', () => {
       });
     }));
 
-  it('isole les tenants : un produit étranger est introuvable', async () => {
+  it('isolates tenants: a product from another tenant is not found', async () => {
     const { createProduct, getProduct } = setup();
     const created = await context.runAs(tenantA, () => createProduct.execute(input('TEE-01')));
 
@@ -66,7 +66,7 @@ describe('catalogue (couche application)', () => {
     });
   });
 
-  it('pagine par curseur sans doublon ni trou', () =>
+  it('paginates by cursor with no duplicates or gaps', () =>
     context.runAs(tenantA, async () => {
       const { createProduct, listProducts } = setup();
       for (const sku of ['SKU-1', 'SKU-2', 'SKU-3', 'SKU-4', 'SKU-5']) {
@@ -85,7 +85,7 @@ describe('catalogue (couche application)', () => {
       expect(new Set(seen).size).toBe(5);
     }));
 
-  it('persiste les changements de prix et la publication', () =>
+  it('persists price changes and publication', () =>
     context.runAs(tenantA, async () => {
       const { createProduct, changePrice, publish, getProduct } = setup();
       const { id } = await createProduct.execute(input('TEE-01'));
@@ -98,7 +98,7 @@ describe('catalogue (couche application)', () => {
       expect(product.isPurchasable).toBe(true);
     }));
 
-  it('expose aux autres domaines des snapshots, sans doublon', () =>
+  it('exposes snapshots to other domains, without duplicates', () =>
     context.runAs(tenantA, async () => {
       const { createProduct, publish, facade } = setup();
       const { id } = await createProduct.execute(input('TEE-01'));
@@ -116,7 +116,7 @@ describe('catalogue (couche application)', () => {
       ]);
     }));
 
-  it('ne montre à un client que les produits publiés, en liste comme à l’unité', async () => {
+  it('shows a customer only published products, in lists as well as individually', async () => {
     const { createProduct, publish, getProduct, listProducts } = setup();
     const { draftId, activeId } = await context.runAs(tenantA, async () => {
       const draft = await createProduct.execute(input('DRAFT-01'));
@@ -138,7 +138,7 @@ describe('catalogue (couche application)', () => {
     expect(staffView.items).toHaveLength(2);
   });
 
-  it('verrou optimiste : 412 si la version lue par le client n’est plus la bonne', () =>
+  it('optimistic locking: 412 if the version read by the client is no longer current', () =>
     context.runAs(tenantA, async () => {
       const { createProduct, changePrice } = setup();
       const { id, version } = await createProduct.execute(input('IFMATCH-01'));

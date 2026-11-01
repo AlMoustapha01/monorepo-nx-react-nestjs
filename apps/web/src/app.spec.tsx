@@ -131,7 +131,7 @@ describe('ErrorZone', () => {
   });
 });
 
-describe('authentification', () => {
+describe('authentication', () => {
   let current: unknown;
 
   beforeEach(() => {
@@ -160,7 +160,7 @@ describe('authentification', () => {
     return events;
   }
 
-  it('renvoie vers la connexion, puis vers la page demandée', async () => {
+  it('redirects to sign-in, then back to the requested page', async () => {
     const router = renderAt('/?onglet=2', { devMode: false });
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
     expect(router.state.location.search).toEqual({ redirect: '/?onglet=2' });
@@ -171,13 +171,13 @@ describe('authentification', () => {
     expect(screen.getByRole('button', { name: 'Se déconnecter' })).toBeTruthy();
   });
 
-  it('ne suit pas une redirection vers un autre site', async () => {
+  it('does not follow a redirect to another site', async () => {
     const router = renderAt('/connexion?redirect=//evil.example/phish', { devMode: false });
     await signIn();
     await vi.waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });
 
-  it('demande de créer une organisation à un utilisateur qui n’en a pas', async () => {
+  it('asks a user without an organization to create one', async () => {
     current = { user, session: { activeOrganizationId: null } };
     renderAt('/', { devMode: false });
     expect(
@@ -185,7 +185,7 @@ describe('authentification', () => {
     ).toBeTruthy();
   });
 
-  it('déconnecte et revient à la connexion', async () => {
+  it('signs out and returns to sign-in', async () => {
     current = { user, session: { activeOrganizationId: 'o1' } };
     renderAt('/', { devMode: false });
     expect(await screen.findByText('ada@shop.test')).toBeTruthy();
@@ -194,7 +194,7 @@ describe('authentification', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeTruthy();
   });
 
-  it('revient à l’accueil avec la session du nouveau tenant au changement d’organisation', async () => {
+  it('returns to the home page with the new tenant session when switching organization', async () => {
     serveTwoOrganizations(server);
     const router = renderSignedIn('/?onglet=2');
     const organization = () =>
@@ -208,7 +208,7 @@ describe('authentification', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Accueil' })).toBeTruthy();
   });
 
-  it('envoie à l’API le token du service d’auth', async () => {
+  it('sends the auth service token to the API', async () => {
     current = { user, session: { activeOrganizationId: 'o1' } };
     const seen: (string | null)[] = [];
     const token = fakeToken({ exp: Math.floor(Date.now() / 1000) + 900 });

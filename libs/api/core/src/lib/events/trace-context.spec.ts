@@ -16,17 +16,17 @@ const job = (traceContext?: Record<string, string>): IntegrationEventJob => ({
   traceContext,
 });
 
-describe('contexte de trace des événements', () => {
+describe('event trace context', () => {
   const tracing = startTestTelemetry();
   const tracer = trace.getTracer('test');
   afterEach(() => tracing.spans.reset());
   afterAll(() => tracing.stop());
 
-  it('ne capture rien hors d’un span', () => {
+  it('captures nothing outside a span', () => {
     expect(captureTraceContext()).toBeNull();
   });
 
-  it('exécute le handler dans un span enfant de la requête qui a publié l’événement', async () => {
+  it('runs the handler in a child span of the request that published the event', async () => {
     const { carrier, requestSpanId, traceId } = tracer.startActiveSpan('request', (span) => {
       span.end();
       const { spanId, traceId } = span.spanContext();
@@ -49,7 +49,7 @@ describe('contexte de trace des événements', () => {
     });
   });
 
-  it('marque le span en erreur et laisse remonter l’exception', async () => {
+  it('marks the span as errored and lets the exception propagate', async () => {
     await expect(
       inHandlerSpan(job(), async () => {
         throw new Error('boom');

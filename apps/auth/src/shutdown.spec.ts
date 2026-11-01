@@ -25,7 +25,7 @@ describe('gracefulShutdown', () => {
     server.close();
   });
 
-  it('passe en arrêt dès le signal, mais sert encore pendant le drain', async () => {
+  it('enters shutdown on the signal, but keeps serving during the drain', async () => {
     const exit = vi.fn<(code: number) => void>();
     const shutdown = gracefulShutdown({
       server,
@@ -44,7 +44,7 @@ describe('gracefulShutdown', () => {
     expect(exit).not.toHaveBeenCalled();
   });
 
-  it('ferme le serveur après le drain, puis les ressources, et sort en succès', async () => {
+  it('closes the server after the drain, then the resources, and exits successfully', async () => {
     const exit = vi.fn<(code: number) => void>();
     const close = vi.fn<() => Promise<void>>(async () => undefined);
     const shutdown = gracefulShutdown({
@@ -63,7 +63,7 @@ describe('gracefulShutdown', () => {
     expect(exit).toHaveBeenCalledWith(0);
   });
 
-  it('sort en erreur si la fermeture dépasse le délai', async () => {
+  it('exits with an error if closing exceeds the timeout', async () => {
     const exit = vi.fn<(code: number) => void>();
     const shutdown = gracefulShutdown({
       server,
@@ -80,7 +80,7 @@ describe('gracefulShutdown', () => {
     expect(exit).toHaveBeenCalledWith(1);
   });
 
-  it('ignore un second signal', async () => {
+  it('ignores a second signal', async () => {
     const exit = vi.fn<(code: number) => void>();
     const close = vi.fn<() => Promise<void>>(async () => undefined);
     const shutdown = gracefulShutdown({

@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { prunePaths, stripExampleBlocks } from './strip-examples-core.mts';
 
 describe('stripExampleBlocks', () => {
-  it('retire chaque bloc, lignes des marqueurs comprises', () => {
+  it('removes each block, marker lines included', () => {
     const source = [
       'import { a } from "a";',
       '// example:start',
@@ -21,7 +21,7 @@ describe('stripExampleBlocks', () => {
     });
   });
 
-  it('reconnaît les marqueurs JSX, shell/YAML et Markdown', () => {
+  it('recognizes JSX, shell/YAML and Markdown markers', () => {
     for (const [start, end] of [
       ['{/* example:start */}', '{/* example:end */}'],
       ['# example:start', '# example:end'],
@@ -32,12 +32,12 @@ describe('stripExampleBlocks', () => {
     }
   });
 
-  it("ignore un marqueur cité au milieu d'une ligne", () => {
+  it('ignores a marker quoted in the middle of a line', () => {
     const source = 'entre `// example:start` et `// example:end`\n';
     assert.deepEqual(stripExampleBlocks(source, 'f.md'), { text: source, blocks: 0 });
   });
 
-  it('refuse un bloc non fermé, une fin sans début et un bloc imbriqué, avec fichier et ligne', () => {
+  it('rejects an unclosed block, an end without a start and a nested block, with file and line', () => {
     assert.throws(() => stripExampleBlocks('a\n// example:start\nb\n', 'f.ts'), /f\.ts:2 /);
     assert.throws(() => stripExampleBlocks('a\n// example:end\n', 'f.ts'), /f\.ts:2 /);
     assert.throws(
@@ -58,7 +58,7 @@ describe('prunePaths', () => {
 }
 `;
 
-  it("retire les alias dont aucune cible n'existe plus", () => {
+  it('removes the aliases with no remaining target', () => {
     const result = prunePaths(tsconfig, (path) => path.includes('/core/'));
     assert.deepEqual(result.removed, ['@x/api-catalog']);
     assert.deepEqual(JSON.parse(result.text).compilerOptions.paths, {
@@ -66,7 +66,7 @@ describe('prunePaths', () => {
     });
   });
 
-  it('ne réécrit rien quand toutes les cibles existent', () => {
+  it('rewrites nothing when every target exists', () => {
     assert.deepEqual(
       prunePaths(tsconfig, () => true),
       { text: tsconfig, removed: [] },

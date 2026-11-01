@@ -17,7 +17,7 @@ async function fill(email: string, password: string) {
 }
 
 describe('SignInPage', () => {
-  it('connecte l’utilisateur', async () => {
+  it('signs the user in', async () => {
     let body: unknown;
     server.use(
       http.post(`${AUTH}/sign-in/email`, async ({ request }) => {
@@ -34,7 +34,7 @@ describe('SignInPage', () => {
     expect(body).toEqual({ email: 'ada@shop.test', password: 'secret-password' });
   });
 
-  it('signale les champs invalides sans appeler le service', async () => {
+  it('flags invalid fields without calling the service', async () => {
     await renderWithProviders(
       <SignInPage
         auth={auth}
@@ -47,7 +47,7 @@ describe('SignInPage', () => {
     expect(screen.getByLabelText('Adresse email').getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('affiche une erreur d’identifiants', async () => {
+  it('shows an invalid credentials error', async () => {
     server.use(
       http.post(`${AUTH}/sign-in/email`, () => betterAuthError(401, 'INVALID_EMAIL_OR_PASSWORD')),
     );
@@ -62,7 +62,7 @@ describe('SignInPage', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('Email ou mot de passe incorrect.');
   });
 
-  it('propose de renvoyer le lien quand l’email n’est pas confirmé', async () => {
+  it('offers to resend the link when the email is not confirmed', async () => {
     let resent: unknown;
     server.use(
       http.post(`${AUTH}/sign-in/email`, () => betterAuthError(403, 'EMAIL_NOT_VERIFIED')),
@@ -86,7 +86,7 @@ describe('SignInPage', () => {
     expect(resent).toEqual({ email: 'ada@shop.test', callbackURL: callback });
   });
 
-  it('signale le rate limiting', async () => {
+  it('reports rate limiting', async () => {
     server.use(http.post(`${AUTH}/sign-in/email`, () => new HttpResponse(null, { status: 429 })));
     await renderWithProviders(
       <SignInPage

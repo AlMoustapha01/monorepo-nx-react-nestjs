@@ -26,13 +26,13 @@ const message = {
 };
 
 describe('createMailer', () => {
-  it('envoie en SMTP quand SMTP_URL est défini', () => {
+  it('sends over SMTP when SMTP_URL is set', () => {
     expect(
       createMailer({ smtpUrl: 'smtp://localhost:1025', from: 'App <no-reply@app.test>' }),
     ).toBeInstanceOf(SmtpMailer);
   });
 
-  it('journalise seulement sans SMTP_URL (dev, tests)', () => {
+  it('only logs without SMTP_URL (dev, tests)', () => {
     expect(createMailer({ smtpUrl: undefined, from: 'App <no-reply@app.test>' })).toBeInstanceOf(
       LoggingMailer,
     );
@@ -40,7 +40,7 @@ describe('createMailer', () => {
 });
 
 describe('SmtpMailer', () => {
-  it('borne chaque étape de la connexion par un timeout et fixe l’expéditeur', () => {
+  it('bounds each connection step with a timeout and sets the sender', () => {
     new SmtpMailer('smtp://localhost:1025', 'App <no-reply@app.test>');
 
     expect(createTransport).toHaveBeenLastCalledWith(
@@ -54,7 +54,7 @@ describe('SmtpMailer', () => {
     );
   });
 
-  it('garde le même Message-ID d’un envoi à l’autre : la clé d’idempotence, au domaine de l’expéditeur', async () => {
+  it('keeps the same Message-ID from one send to the next: the idempotency key, on the sender domain', async () => {
     const mailer = new SmtpMailer('smtp://localhost:1025', 'App <no-reply@app.test>');
     const transport = vi.mocked(createTransport).mock.results.at(-1)?.value as FakeTransport;
 
@@ -74,7 +74,7 @@ describe('SmtpMailer', () => {
 });
 
 describe('LoggingMailer', () => {
-  it('journalise le destinataire et le sujet sans rien envoyer', async () => {
+  it('logs the recipient and subject without sending anything', async () => {
     const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
 
     await new LoggingMailer().send(message);
@@ -87,7 +87,7 @@ describe('LoggingMailer', () => {
 });
 
 describe('mailerProvider', () => {
-  it('fournit le Mailer choisi d’après SMTP_URL et MAIL_FROM', async () => {
+  it('provides the Mailer chosen from SMTP_URL and MAIL_FROM', async () => {
     const config = new AppConfig({
       SMTP_URL: 'smtp://localhost:1025',
       MAIL_FROM: 'App <a@app.test>',

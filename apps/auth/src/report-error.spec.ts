@@ -28,7 +28,7 @@ describe('reportError', () => {
     await sdk.shutdown();
   });
 
-  it('envoie l’erreur avec ses tags et le trace_id de la requête', () => {
+  it('sends the error with its tags and the trace_id of the request', () => {
     const traceId = trace.getTracer('test').startActiveSpan('POST /api/auth/sign-in', (span) => {
       reportError(new Error('boom'), { operation: 'api', ignored: undefined });
       span.end();

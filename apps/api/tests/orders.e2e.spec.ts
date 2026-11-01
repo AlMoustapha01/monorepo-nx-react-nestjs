@@ -15,7 +15,7 @@ import {
 import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 
-describe('API commandes (e2e)', () => {
+describe('Orders API (e2e)', () => {
   let database: TestDatabase;
   let redis: TestRedis;
   let app: INestApplication;
@@ -77,7 +77,7 @@ describe('API commandes (e2e)', () => {
       .set('Idempotency-Key', idempotencyKey)
       .send({ lines });
 
-  it('passe une commande depuis le catalogue, puis l’annule', async () => {
+  it('places an order from the catalog, then cancels it', async () => {
     const tee = await catalogProduct('ORD-TEE', 1990);
     const mug = await catalogProduct('ORD-MUG', 900);
 
@@ -103,7 +103,7 @@ describe('API commandes (e2e)', () => {
       .expect(({ body }) => expect(body.status).toBe('cancelled'));
   });
 
-  it('met à jour les ventes du catalogue de façon asynchrone, annulation comprise', async () => {
+  it('updates catalog sales asynchronously, cancellation included', async () => {
     const tee = await catalogProduct('ORD-SOLD', 1000);
     const soldCount = async () =>
       (
@@ -127,7 +127,7 @@ describe('API commandes (e2e)', () => {
     expect(await soldCount()).toBe(3);
   });
 
-  it('fige le prix payé malgré un changement au catalogue', async () => {
+  it('freezes the price paid despite a catalog change', async () => {
     const tee = await catalogProduct('ORD-FROZEN', 1000);
     const { body } = await placeOrder([{ productId: tee, quantity: 1 }]).expect(201);
 
@@ -144,7 +144,7 @@ describe('API commandes (e2e)', () => {
       .expect(({ body: order }) => expect(order.total.amountMinor).toBe(1000));
   });
 
-  it('renvoie 422 pour un produit non publié ou d’un autre tenant', async () => {
+  it('returns 422 for an unpublished product or one from another tenant', async () => {
     const draft = await catalogProduct('ORD-DRAFT', 1000, false);
     await placeOrder([{ productId: draft, quantity: 1 }])
       .expect(422)
@@ -157,7 +157,7 @@ describe('API commandes (e2e)', () => {
       .expect(({ body }) => expect(body.code).toBe('PRODUCT_UNAVAILABLE'));
   });
 
-  it('valide la requête et isole les commandes par tenant', async () => {
+  it('validates the request and isolates orders by tenant', async () => {
     await placeOrder([])
       .expect(400)
       .expect(({ body }) => expect(body.code).toBe('VALIDATION_FAILED'));
@@ -172,7 +172,7 @@ describe('API commandes (e2e)', () => {
       .expect(({ body: problem }) => expect(problem.code).toBe('ORDER_NOT_FOUND'));
   });
 
-  it('un client ne voit que ses commandes ; le staff voit celles de tout le tenant', async () => {
+  it('a customer sees only their own orders; staff see those of the whole tenant', async () => {
     const tee = await catalogProduct('ORD-OWNER', 1000);
     const { body } = await placeOrder([{ productId: tee, quantity: 1 }]).expect(201);
     const neighbour = await signTestToken({ userId: randomUUID(), tenantId: customer.tenantId });
@@ -202,7 +202,7 @@ describe('API commandes (e2e)', () => {
     const myOrders = async (as: string) =>
       (await api().get('/api/v1/orders').auth(as, { type: 'bearer' }).expect(200)).body.items;
 
-    it('refuse une commande sans clé', async () => {
+    it('rejects an order without a key', async () => {
       const tee = await catalogProduct('IDEM-NOKEY', 1000);
       await api()
         .post('/api/v1/orders')
@@ -212,7 +212,7 @@ describe('API commandes (e2e)', () => {
         .expect(({ body }) => expect(body.code).toBe('IDEMPOTENCY_KEY_REQUIRED'));
     });
 
-    it('rejoue la réponse d’origine sans créer de seconde commande', async () => {
+    it('replays the original response without creating a second order', async () => {
       const tee = await catalogProduct('IDEM-REPLAY', 1000);
       const buyer = await freshCustomer();
       const key = randomUUID();
@@ -226,7 +226,7 @@ describe('API commandes (e2e)', () => {
       expect(await myOrders(buyer)).toHaveLength(1);
     });
 
-    it('traite une seule fois des requêtes simultanées avec la même clé', async () => {
+    it('processes concurrent requests with the same key only once', async () => {
       const tee = await catalogProduct('IDEM-RACE', 1000);
       const buyer = await freshCustomer();
       const key = randomUUID();
@@ -240,7 +240,7 @@ describe('API commandes (e2e)', () => {
       expect(await myOrders(buyer)).toHaveLength(1);
     });
 
-    it('refuse la même clé pour une requête différente, en 422', async () => {
+    it('rejects the same key for a different request, with 422', async () => {
       const tee = await catalogProduct('IDEM-REUSE', 1000);
       const buyer = await freshCustomer();
       const key = randomUUID();
@@ -251,7 +251,7 @@ describe('API commandes (e2e)', () => {
         .expect(({ body }) => expect(body.code).toBe('IDEMPOTENCY_KEY_REUSED'));
     });
 
-    it('ne réserve pas la clé quand la requête échoue', async () => {
+    it('does not reserve the key when the request fails', async () => {
       const draft = await catalogProduct('IDEM-LATER', 1000, false);
       const buyer = await freshCustomer();
       const key = randomUUID();
@@ -266,7 +266,7 @@ describe('API commandes (e2e)', () => {
       expect(await myOrders(buyer)).toHaveLength(1);
     });
 
-    it('isole les clés par utilisateur', async () => {
+    it('isolates keys per user', async () => {
       const tee = await catalogProduct('IDEM-USERS', 1000);
       const [alice, bob] = await Promise.all([freshCustomer(), freshCustomer()]);
       const key = randomUUID();
@@ -276,7 +276,7 @@ describe('API commandes (e2e)', () => {
       expect(forBob.body.id).not.toBe(forAlice.body.id);
     });
 
-    it('refuse une clé mal formée', async () => {
+    it('rejects a malformed key', async () => {
       const tee = await catalogProduct('IDEM-BADKEY', 1000);
       await placeOrder([{ productId: tee, quantity: 1 }], token, 'clé avec espaces')
         .expect(400)
@@ -284,7 +284,7 @@ describe('API commandes (e2e)', () => {
     });
   });
 
-  it('des annulations simultanées ne retirent les ventes qu’une fois', async () => {
+  it('concurrent cancellations remove the sales only once', async () => {
     const tee = await catalogProduct('ORD-RACE-CANCEL', 1000);
     const soldCount = async () =>
       (
@@ -315,7 +315,7 @@ describe('API commandes (e2e)', () => {
   });
 
   describe('feature flags', () => {
-    it('masque l’annulation quand son flag est désactivé, même pour le staff', async () => {
+    it('hides cancellation when its flag is disabled, even for staff', async () => {
       const tee = await catalogProduct('ORD-FLAG', 1000);
       const { body: order } = await placeOrder([{ productId: tee, quantity: 1 }]).expect(201);
 

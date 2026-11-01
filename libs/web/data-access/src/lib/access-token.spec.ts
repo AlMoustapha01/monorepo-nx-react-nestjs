@@ -8,7 +8,7 @@ describe('createAccessTokenSource', () => {
   let now = 1_000_000_000_000;
   const clock = () => now;
 
-  it('garde le token jusqu’à une minute de son expiration', async () => {
+  it('keeps the token until one minute before it expires', async () => {
     const fetchToken = vi.fn<() => Promise<string>>().mockResolvedValue(jwt(now / 1000 + 900));
     const source = createAccessTokenSource(fetchToken, clock);
     const first = await source.getToken({ refresh: false });
@@ -20,7 +20,7 @@ describe('createAccessTokenSource', () => {
     expect(fetchToken).toHaveBeenCalledTimes(2);
   });
 
-  it('partage un seul renouvellement entre appels simultanés', async () => {
+  it('shares a single refresh between concurrent calls', async () => {
     const fetchToken = vi.fn<() => Promise<string>>().mockResolvedValue(jwt(now / 1000 + 900));
     const source = createAccessTokenSource(fetchToken, clock);
     await Promise.all([
@@ -31,7 +31,7 @@ describe('createAccessTokenSource', () => {
     expect(fetchToken).toHaveBeenCalledTimes(1);
   });
 
-  it('renouvelle sur demande et après clear()', async () => {
+  it('refreshes on demand and after clear()', async () => {
     const fetchToken = vi.fn<() => Promise<string>>().mockResolvedValue(jwt(now / 1000 + 900));
     const source = createAccessTokenSource(fetchToken, clock);
     await source.getToken({ refresh: false });

@@ -21,11 +21,11 @@ describe('FeatureFlagsController', () => {
   const controller = new FeatureFlagsController(flags);
   afterEach(() => flags.reset());
 
-  it('expose les flags client avec leur valeur par défaut, pas les flags internes', async () => {
+  it('exposes client flags with their default value, not internal flags', async () => {
     await expect(controller.list()).resolves.toEqual({ flags: { 'test.client': true } });
   });
 
-  it('expose la valeur évaluée pour la requête', async () => {
+  it('exposes the value evaluated for the request', async () => {
     flags.set('test.client' as unknown as FeatureFlag, false);
     await expect(controller.list()).resolves.toEqual({ flags: { 'test.client': false } });
   });

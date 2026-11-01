@@ -36,7 +36,7 @@ describe('API feature flags (e2e)', () => {
     await Promise.all([database?.stop(), redis?.stop()]);
   });
 
-  it('expose au front les flags client avec leur valeur, pas les flags internes', async () => {
+  it('exposes client flags with their value to the front end, not internal flags', async () => {
     const token = await signTestToken({ userId: randomUUID(), tenantId: randomUUID() });
     const { body } = await request(app.getHttpServer())
       .get('/api/v1/feature-flags')
@@ -51,7 +51,7 @@ describe('API feature flags (e2e)', () => {
     expect(body).toEqual({ flags: expected });
   });
 
-  it('exige un token', async () => {
+  it('requires a token', async () => {
     const { body } = await request(app.getHttpServer()).get('/api/v1/feature-flags').expect(401);
     expect(body).toMatchObject({ status: 401 });
   });

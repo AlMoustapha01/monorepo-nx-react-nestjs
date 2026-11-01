@@ -29,7 +29,7 @@ describe('DatabaseModule', () => {
     delete process.env['DATABASE_STATEMENT_TIMEOUT_MS'];
   });
 
-  it('annule une requête plus longue que DATABASE_STATEMENT_TIMEOUT_MS', async () => {
+  it('cancels a query that runs longer than DATABASE_STATEMENT_TIMEOUT_MS', async () => {
     const db = app.get<Database>(DATABASE);
 
     const error = await db.execute(sql`select pg_sleep(1)`).catch((caught: unknown) => caught);

@@ -30,7 +30,7 @@ const event = (customerEmail: string | null): IntegrationEvent<typeof OrderPlace
 });
 
 describe('SendOrderConfirmation', () => {
-  it('envoie la confirmation au client, avec l’ID de l’événement comme clé d’idempotence', async () => {
+  it('sends the confirmation to the customer, with the event ID as the idempotency key', async () => {
     const mailer = new RecordingMailer();
     await new SendOrderConfirmation(mailer, new StaticFeatureFlags()).handle(
       event('ada@example.com'),
@@ -45,13 +45,13 @@ describe('SendOrderConfirmation', () => {
     ]);
   });
 
-  it('n’envoie rien quand l’email du client est inconnu', async () => {
+  it('sends nothing when the customer email is unknown', async () => {
     const mailer = new RecordingMailer();
     await new SendOrderConfirmation(mailer, new StaticFeatureFlags()).handle(event(null));
     expect(mailer.sent).toEqual([]);
   });
 
-  it('n’envoie rien quand le coupe-circuit est activé', async () => {
+  it('sends nothing when the kill switch is on', async () => {
     const mailer = new RecordingMailer();
     const flags = new StaticFeatureFlags().set('notifications.order-confirmation-email', false);
     await new SendOrderConfirmation(mailer, flags).handle(event('ada@example.com'));

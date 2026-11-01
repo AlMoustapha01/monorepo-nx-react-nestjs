@@ -3,24 +3,24 @@ import { describe, it } from 'node:test';
 import { BOILERPLATE_NAME, projectNameProblem, renameProject } from './init-project-core.mts';
 
 describe('projectNameProblem', () => {
-  it('accepte un nom en minuscules, chiffres et tirets', () => {
+  it('accepts a name of lowercase letters, digits and hyphens', () => {
     assert.equal(projectNameProblem('acme'), undefined);
     assert.equal(projectNameProblem('acme-shop2'), undefined);
   });
 
-  it('refuse un nom vide, avec @, majuscule, espace ou tiret initial', () => {
+  it('rejects an empty name, or one with @, an uppercase letter, a space or a leading hyphen', () => {
     for (const name of ['', '@acme', 'Acme', 'acme shop', '-acme', 'acme/web']) {
       assert.ok(projectNameProblem(name), name);
     }
   });
 
-  it('refuse le nom du boilerplate', () => {
+  it('rejects the boilerplate name', () => {
     assert.ok(projectNameProblem(BOILERPLATE_NAME));
   });
 });
 
 describe('renameProject', () => {
-  it('renomme le scope des imports et des alias', () => {
+  it('renames the scope of imports and aliases', () => {
     const source = [
       "import { CoreModule } from '@nx-react-nestjs/api-core';",
       '"@nx-react-nestjs/contracts": ["./libs/shared/contracts/src/index.ts"],',
@@ -34,7 +34,7 @@ describe('renameProject', () => {
     });
   });
 
-  it('renomme le projet et les images de docker compose', () => {
+  it('renames the docker compose project and images', () => {
     const compose = 'name: nx-react-nestjs-prod\n    image: nx-react-nestjs-api\n';
     assert.deepEqual(renameProject(compose, 'acme'), {
       text: 'name: acme-prod\n    image: acme-api\n',
@@ -42,7 +42,7 @@ describe('renameProject', () => {
     });
   });
 
-  it('laisse le reste intact, y compris le nom seul (titre, URL du repo)', () => {
+  it('leaves the rest intact, including the bare name (title, repo URL)', () => {
     const text = [
       '# nx-react-nestjs',
       'repository: https://github.com/x/monorepo-nx-react-nestjs',

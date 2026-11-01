@@ -92,7 +92,7 @@ class NotifyPing implements IntegrationEventHandler<typeof Pinged> {
 @Module({ providers: [RecordPing, CountPing, NotifyPing] })
 class TestHandlersModule {}
 
-describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)', () => {
+describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', () => {
   const principal = { userId: randomUUID(), tenantId: randomUUID() };
   let database: TestDatabase;
   let redis: TestRedis;
@@ -122,7 +122,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
   const publish = (n: number) =>
     context.runAs(principal, () => transactions.transaction(() => outbox.publish(Pinged, { n })));
 
-  it('livre l’événement au handler, dans le contexte du tenant et de l’auteur', async () => {
+  it('delivers the event to the handler, in the context of the tenant and the author', async () => {
     await publish(1);
 
     await eventually(() => expect(recorder.numbers()).toContain(1));
@@ -136,7 +136,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     expect(tenantInContext).toBe(principal.tenantId);
   });
 
-  it('exécute le handler dans la trace de la requête qui a publié l’événement', async () => {
+  it('runs the handler in the trace of the request that published the event', async () => {
     const traceId = await trace.getTracer('test').startActiveSpan('POST /pings', async (span) => {
       await publish(20);
       span.end();
@@ -147,7 +147,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     expect(recorder.received.find((r) => r.event.payload.n === 20)?.traceId).toBe(traceId);
   });
 
-  it('livre chaque événement à chacun de ses handlers', async () => {
+  it('delivers each event to each of its handlers', async () => {
     await publish(2);
     await eventually(() => {
       expect(recorder.numbers()).toContain(2);
@@ -155,7 +155,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     });
   });
 
-  it('n’émet rien si la transaction métier est annulée', async () => {
+  it('emits nothing if the business transaction is rolled back', async () => {
     await expect(
       context.runAs(principal, () =>
         transactions.transaction(async () => {
@@ -170,13 +170,13 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     expect(recorder.numbers()).not.toContain(3);
   });
 
-  it('refuse de publier hors transaction', async () => {
+  it('refuses to publish outside a transaction', async () => {
     await expect(
       context.runAs(principal, () => outbox.publish(Pinged, { n: 5 })),
     ).rejects.toMatchObject({ code: 'OUTBOX_REQUIRES_TRANSACTION' });
   });
 
-  it('refuse un payload qui ne respecte pas le contrat', async () => {
+  it('rejects a payload that does not match the contract', async () => {
     await expect(
       context.runAs(principal, () =>
         transactions.transaction(() => outbox.publish(Pinged, { n: 1.5 })),
@@ -184,14 +184,14 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     ).rejects.toThrow(z.ZodError);
   });
 
-  it('réessaie un handler en échec', async () => {
+  it('retries a failing handler', async () => {
     recorder.failuresBeforeSuccess = 1;
     await publish(6);
     await eventually(() => expect(recorder.numbers()).toContain(6));
     expect(recorder.failuresBeforeSuccess).toBe(0);
   });
 
-  it('ignore un événement déjà traité par le même handler', async () => {
+  it('ignores an event already processed by the same handler', async () => {
     const worker = app.get(IntegrationEventWorker);
     const job = {
       name: 'test.record-ping',
@@ -214,10 +214,10 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     expect(recorder.numbers().filter((n) => n === 7)).toHaveLength(1);
   });
 
-  describe('métriques', () => {
+  describe('metrics', () => {
     const pointsOf = async (name: string) => (await telemetry.collectMetrics())[name] ?? [];
 
-    it('mesure la durée des handlers, l’outbox et la file', async () => {
+    it('measures handler duration, the outbox and the queue', async () => {
       await publish(30);
       await eventually(() => expect(recorder.numbers()).toContain(30));
 
@@ -236,7 +236,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
       );
     });
 
-    it('compte un job abandonné, sans retry pour un payload invalide', async () => {
+    it('counts an exhausted job, with no retry for an invalid payload', async () => {
       const queue = app.get<Queue<IntegrationEventJob>>(INTEGRATION_EVENTS_QUEUE);
       await queue.add('test.record-ping', {
         handler: 'test.record-ping',
@@ -261,7 +261,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
     });
   });
 
-  describe('handler non transactionnel', () => {
+  describe('non-transactional handler', () => {
     const jobFor = (n: number, eventId: string) => ({
       name: 'test.notify-ping',
       data: {
@@ -277,14 +277,14 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
       },
     });
 
-    it('s’exécute hors transaction, au nom du tenant', async () => {
+    it('runs outside a transaction, on behalf of the tenant', async () => {
       await publish(8);
       const notifier = app.get(NotifyPing);
       await eventually(() => expect(notifier.succeeded(8)).toBe(1));
       expect(notifier.calls.find((call) => call.n === 8)?.inTransaction).toBe(false);
     });
 
-    it('ignore un événement déjà traité', async () => {
+    it('ignores an already processed event', async () => {
       const worker = app.get(IntegrationEventWorker);
       const job = jobFor(9, 'EVT-01jb4x7k2m9qwfzp3hd9');
       await worker.process(job);
@@ -292,7 +292,7 @@ describe('messagerie : outbox → BullMQ → handlers (Postgres et Redis réels)
       expect(app.get(NotifyPing).succeeded(9)).toBe(1);
     });
 
-    it('ne marque pas l’événement en cas d’échec : le retry le retraite', async () => {
+    it('does not mark the event on failure: the retry processes it again', async () => {
       const worker = app.get(IntegrationEventWorker);
       const notifier = app.get(NotifyPing);
       const job = jobFor(10, 'EVT-01jb4x7k2m9qwfzp3hda');
