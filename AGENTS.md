@@ -203,7 +203,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - Argent : entier en unités mineures (`amountMinor`) + devise ISO. Jamais de flottant.
 - Pagination : par curseur (`limit`, `cursor` → `items`, `nextCursor`), triée par `(created_at, id)` décroissants.
 - API versionnée par URI : `/api/v1/...`. `/health` et `/ready` restent hors préfixe.
-- Tests : unitaires sur `domain/` et `application/` (fake en mémoire, pas de mock d'ORM), intégration sur un vrai Postgres, e2e via `configureApp` + supertest.
+- Tests : unitaires sur `domain/` et `application/` (fake en mémoire, pas de mock d'ORM), intégration sur un vrai Postgres, e2e via `configureApp` + supertest. Titres des tests en anglais, comme les specs (`it('003-US1-AS2: refuses to cancel a shipped order')`) ; les titres en français des tests existants se traduisent dans une PR à part, pas au passage.
 
 ## Pièges connus
 
