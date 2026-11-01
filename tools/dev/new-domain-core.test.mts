@@ -46,12 +46,12 @@ export class AppModule {}
 `;
 
 describe('domainNameProblem', () => {
-  it('accepte un nom en minuscules, chiffres et tirets', () => {
+  it('accepts a name of lowercase letters, digits and hyphens', () => {
     assert.equal(domainNameProblem('billing'), undefined);
     assert.equal(domainNameProblem('loyalty-points2'), undefined);
   });
 
-  it('refuse un nom vide, avec majuscule, espace, tiret en bord, double tiret ou chiffre initial', () => {
+  it('rejects an empty name, or one with an uppercase letter, a space, a hyphen at either end, a double hyphen or a leading digit', () => {
     for (const name of [
       '',
       'Billing',
@@ -66,24 +66,24 @@ describe('domainNameProblem', () => {
     }
   });
 
-  it('refuse les noms réservés', () => {
+  it('rejects reserved names', () => {
     assert.ok(domainNameProblem('core'));
   });
 });
 
 describe('moduleClassName', () => {
-  it('passe le nom en PascalCase, suffixé de Module', () => {
+  it('converts the name to PascalCase, suffixed with Module', () => {
     assert.equal(moduleClassName('billing'), 'BillingModule');
     assert.equal(moduleClassName('loyalty-points'), 'LoyaltyPointsModule');
   });
 });
 
 describe('scopeOf', () => {
-  it("lit le scope npm dans l'alias de api-core", () => {
+  it('reads the npm scope from the api-core alias', () => {
     assert.equal(scopeOf(TSCONFIG), '@acme');
   });
 
-  it('échoue sans alias api-core', () => {
+  it('fails without an api-core alias', () => {
     assert.throws(() => scopeOf('{ "compilerOptions": { "paths": {} } }'), /api-core/);
   });
 });
@@ -91,7 +91,7 @@ describe('scopeOf', () => {
 describe('domainFiles', () => {
   const files = domainFiles('loyalty-points');
 
-  it('crée la lib sous libs/api/<nom>, avec sa config Nx, TypeScript, Vitest et oxlint', () => {
+  it('creates the lib under libs/api/<name>, with its Nx, TypeScript, Vitest and oxlint config', () => {
     assert.deepEqual(Object.keys(files).sort(), [
       'libs/api/loyalty-points/.oxlintrc.json',
       'libs/api/loyalty-points/project.json',
@@ -104,14 +104,14 @@ describe('domainFiles', () => {
     ]);
   });
 
-  it('nomme le projet api-<nom>, avec les tags de domaine', () => {
+  it('names the project api-<name>, with the domain tags', () => {
     const project = JSON.parse(files['libs/api/loyalty-points/project.json']);
     assert.equal(project.name, 'api-loyalty-points');
     assert.equal(project.sourceRoot, 'libs/api/loyalty-points/src');
     assert.deepEqual(project.tags, ['scope:api', 'type:domain']);
   });
 
-  it("n'expose que le module depuis la façade", () => {
+  it('exposes only the module from the facade', () => {
     assert.match(
       files['libs/api/loyalty-points/src/index.ts'],
       /^export \{ LoyaltyPointsModule \} from '\.\/lib\/loyalty-points\.module';$/m,
@@ -123,7 +123,7 @@ describe('domainFiles', () => {
     );
   });
 
-  it("passe les tests tant que la lib n'en a aucun, et interdit framework et persistance dans domain/", () => {
+  it('passes tests while the lib has none, and forbids framework and persistence in domain/', () => {
     const vitest = files['libs/api/loyalty-points/vitest.config.mts'];
     assert.match(vitest, /passWithNoTests: true/);
     assert.match(vitest, /name: 'api-loyalty-points'/);
@@ -135,7 +135,7 @@ describe('domainFiles', () => {
 });
 
 describe('addPathAlias', () => {
-  it("ajoute l'alias vers la façade après le dernier domaine API", () => {
+  it('adds the alias to the facade after the last API domain', () => {
     const paths = JSON.parse(addPathAlias(TSCONFIG, 'api-billing', 'libs/api/billing'))
       .compilerOptions.paths;
     assert.deepEqual(Object.keys(paths), [
@@ -149,17 +149,17 @@ describe('addPathAlias', () => {
     assert.deepEqual(paths['@acme/api-billing'], ['./libs/api/billing/src/index.ts']);
   });
 
-  it('garde le reste du fichier', () => {
+  it('keeps the rest of the file', () => {
     const config = JSON.parse(addPathAlias(TSCONFIG, 'api-billing', 'libs/api/billing'));
     assert.equal(config.compilerOptions.strict, true);
     assert.deepEqual(config.exclude, ['node_modules', 'tmp']);
   });
 
-  it('refuse un alias qui existe déjà', () => {
+  it('rejects an alias that already exists', () => {
     assert.throws(() => addPathAlias(TSCONFIG, 'api-catalog', 'libs/api/catalog'), /existe déjà/);
   });
 
-  it('range une lib front après le dernier alias web', () => {
+  it('places a front-end lib after the last web alias', () => {
     const paths = JSON.parse(addPathAlias(TSCONFIG, 'web-billing', 'libs/web/billing'))
       .compilerOptions.paths;
     assert.deepEqual(Object.keys(paths).slice(-2), ['@acme/web-ui', '@acme/web-billing']);
@@ -168,7 +168,7 @@ describe('addPathAlias', () => {
 });
 
 describe('registerModule', () => {
-  it("importe le module et l'ajoute après CoreModule, hors des blocs d'exemple", () => {
+  it('imports the module and adds it after CoreModule, outside the example blocks', () => {
     const result = registerModule(APP_MODULE, 'loyalty-points', '@acme');
     assert.match(
       result,
@@ -180,7 +180,7 @@ describe('registerModule', () => {
     );
   });
 
-  it('fonctionne aussi sur un tableau sur une ligne (projet sans exemples)', () => {
+  it('also works on a single-line array (project without examples)', () => {
     const stripped = `import { Module } from '@nestjs/common';
 import { CoreModule } from '@acme/api-core';
 
@@ -194,7 +194,7 @@ export class AppModule {}
     assert.match(result, /imports: \[CoreModule, BillingModule\]/);
   });
 
-  it("échoue quand l'AppModule n'a pas la forme attendue", () => {
+  it('fails when the AppModule does not have the expected shape', () => {
     assert.throws(
       () => registerModule('export class AppModule {}', 'billing', '@acme'),
       /AppModule/,

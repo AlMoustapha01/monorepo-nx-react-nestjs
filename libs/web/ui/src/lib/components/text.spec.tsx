@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import { Text } from './text';
 
 describe('Text', () => {
-  it('transmet id et aria-* à l’élément rendu', () => {
+  it('passes id and aria-* to the rendered element', () => {
     const { container } = render(
       <Text id="t" aria-live="polite">
         contenu

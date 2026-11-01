@@ -19,7 +19,7 @@ const ISSUER = 'https://auth.test.local';
 const AUDIENCE = 'api';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-describe('Service d’authentification', () => {
+describe('Authentication service', () => {
   let container: StartedPostgreSqlContainer;
   let server: Server;
   let pool: Pool;
@@ -138,7 +138,7 @@ describe('Service d’authentification', () => {
     return payload;
   }
 
-  it('délivre au créateur d’une organisation un token staff vérifiable par le JWKS', async () => {
+  it('issues the creator of an organization a staff token verifiable with the JWKS', async () => {
     const cookie = await verifiedSignUp('owner@shop.test');
     const organization = await call('/api/auth/organization/create', {
       body: { name: 'Boutique', slug: 'boutique' },
@@ -157,7 +157,7 @@ describe('Service d’authentification', () => {
     expect(tenantId).toMatch(UUID);
   });
 
-  it('ouvre la première organisation de l’utilisateur à la connexion', async () => {
+  it('makes the first organization of the user active on sign-in', async () => {
     const signIn = await call('/api/auth/sign-in/email', {
       body: { email: 'owner@shop.test', password: 'correct-horse-battery' },
     });
@@ -166,13 +166,13 @@ describe('Service d’authentification', () => {
     expect(await accessToken(signIn.cookie)).toHaveProperty('tenant_id');
   });
 
-  it('ne donne ni tenant ni rôle sans organisation', async () => {
+  it('gives neither tenant nor role without an organization', async () => {
     const claims = await accessToken(await verifiedSignUp('alone@shop.test'));
     expect(claims).not.toHaveProperty('tenant_id');
     expect(claims).toMatchObject({ roles: [] });
   });
 
-  it('refuse la connexion avant la vérification de l’email', async () => {
+  it('refuses sign-in before the email is verified', async () => {
     await call('/api/auth/sign-up/email', {
       body: { email: 'unverified@shop.test', password: 'correct-horse-battery', name: 'Bob' },
     });
@@ -182,7 +182,7 @@ describe('Service d’authentification', () => {
     expect(signIn.response.status).toBe(403);
   });
 
-  it('crée ses tables dans le schéma auth, avec des UUID', async () => {
+  it('creates its tables in the auth schema, with UUIDs', async () => {
     const { rows } = await pool.query<{ table_schema: string; table_name: string }>(
       `select table_schema, table_name from information_schema.tables
        where table_schema not in ('pg_catalog', 'information_schema') order by table_name`,
@@ -198,7 +198,7 @@ describe('Service d’authentification', () => {
     expect(ids[0]?.data_type).toBe('uuid');
   });
 
-  it('trace ses endpoints (spans de Better Auth)', async () => {
+  it('traces its endpoints (Better Auth spans)', async () => {
     await call('/api/auth/sign-in/email', {
       body: { email: 'owner@shop.test', password: 'correct-horse-battery' },
     });
@@ -206,7 +206,7 @@ describe('Service d’authentification', () => {
     expect(names.some((name) => name.includes('/sign-in/email'))).toBe(true);
   });
 
-  it('envoie à Sentry un email impossible à envoyer', async () => {
+  it('reports an email that cannot be sent to Sentry', async () => {
     await call('/api/auth/sign-up/email', {
       body: { email: 'smtp-down@shop.test', password: 'correct-horse-battery', name: 'Eve' },
     });
@@ -217,7 +217,7 @@ describe('Service d’authentification', () => {
     );
   });
 
-  it('n’envoie à Sentry que les erreurs inattendues', async () => {
+  it('sends only unexpected errors to Sentry', async () => {
     reported.length = 0;
     const onError = auth.options.onAPIError?.onError as (error: unknown) => Promise<void> | void;
     await onError(new APIError('UNAUTHORIZED', { message: 'Invalid password' }));
@@ -228,7 +228,7 @@ describe('Service d’authentification', () => {
     ]);
   });
 
-  it('répond aux sondes', async () => {
+  it('answers the probes', async () => {
     expect((await call('/health')).response.status).toBe(200);
     expect((await call('/ready')).response.status).toBe(200);
   });

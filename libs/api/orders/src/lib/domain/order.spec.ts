@@ -24,26 +24,26 @@ const newOrder = (lines: OrderLine[]): NewOrder => ({
 });
 
 describe('Order', () => {
-  it('passe une commande et calcule son total depuis les lignes', () => {
+  it('places an order and computes its total from the lines', () => {
     const order = Order.place(newOrder([line(), line({ unitPriceMinor: 500, quantity: 3 })]));
     expect(order.status).toBe('placed');
     expect(order.totalMinor).toBe(1990 * 2 + 500 * 3);
   });
 
-  it('refuse une commande vide', () => {
+  it('rejects an empty order', () => {
     expect(() => Order.place(newOrder([]))).toThrow(
       expect.objectContaining({ code: 'EMPTY_ORDER' }),
     );
   });
 
-  it('refuse deux lignes pour le même produit', () => {
+  it('rejects two lines for the same product', () => {
     const productId = newProductId();
     expect(() => Order.place(newOrder([line({ productId }), line({ productId })]))).toThrow(
       expect.objectContaining({ code: 'DUPLICATE_ORDER_LINE' }),
     );
   });
 
-  it('refuse une quantité ou un prix invalide', () => {
+  it('rejects an invalid quantity or price', () => {
     for (const invalid of [{ quantity: 0 }, { quantity: 1.5 }, { unitPriceMinor: -1 }]) {
       expect(() => Order.place(newOrder([line(invalid)]))).toThrow(
         expect.objectContaining({ code: 'INVALID_ORDER_LINE' }),
@@ -51,7 +51,7 @@ describe('Order', () => {
     }
   });
 
-  it('annule une commande, de façon idempotente', () => {
+  it('cancels an order idempotently', () => {
     const order = Order.place(newOrder([line()]));
     const cancelledAt = new Date('2026-10-21T10:00:00.000Z');
     order.cancel(cancelledAt);
@@ -60,7 +60,7 @@ describe('Order', () => {
     expect(order.updatedAt).toEqual(cancelledAt);
   });
 
-  it('isole ses lignes des mutations de l’appelant', () => {
+  it('isolates its lines from caller mutations', () => {
     const lines = [line()];
     const order = Order.place(newOrder(lines));
     (lines[0] as { quantity: number }).quantity = 50;

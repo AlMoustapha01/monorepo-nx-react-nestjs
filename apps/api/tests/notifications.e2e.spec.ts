@@ -21,7 +21,7 @@ interface MailpitMessage {
 }
 
 /** Commande passée → outbox → BullMQ → email reçu par un vrai serveur SMTP (Mailpit). */
-describe('Email de confirmation de commande (e2e)', () => {
+describe('Order confirmation email (e2e)', () => {
   let database: TestDatabase;
   let redis: TestRedis;
   let mailpit: StartedTestContainer;
@@ -69,7 +69,7 @@ describe('Email de confirmation de commande (e2e)', () => {
     return ((await response.json()) as { messages: MailpitMessage[] }).messages;
   }
 
-  it('envoie la confirmation au client après la commande', async () => {
+  it('sends the confirmation to the customer after the order', async () => {
     const product = await api()
       .post('/api/v1/catalog/products')
       .auth(staffToken, { type: 'bearer' })

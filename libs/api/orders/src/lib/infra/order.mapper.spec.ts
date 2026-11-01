@@ -31,16 +31,16 @@ describe('OrderMapper', () => {
     lines: [line(0, 'TEE-01'), line(1, 'MUG-01')],
   };
 
-  it('restitue l’enregistrement d’origine après un aller-retour', () => {
+  it('restores the original record after a round trip', () => {
     expect(mapper.toRow(mapper.toDomain(record))).toEqual(record);
   });
 
-  it('remet les lignes dans leur ordre, quel que soit l’ordre de lecture', () => {
+  it('puts the lines back in order, whatever the read order', () => {
     const shuffled = { ...record, lines: [...record.lines].reverse() };
     expect(mapper.toDomain(shuffled).lines.map((l) => l.sku)).toEqual(['TEE-01', 'MUG-01']);
   });
 
-  it('refuse une devise inconnue lue en base', () => {
+  it('rejects an unknown currency read from the database', () => {
     expect(() =>
       mapper.toDomain({ ...record, order: { ...record.order, currency: 'GBP' } }),
     ).toThrow(ZodError);

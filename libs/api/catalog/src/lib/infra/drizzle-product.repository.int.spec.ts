@@ -11,7 +11,7 @@ import { DrizzleProductRepository } from './drizzle-product.repository';
 
 const newProductId = domainIdGenerator('PRD');
 
-describe('DrizzleProductRepository (Postgres réel)', () => {
+describe('DrizzleProductRepository (real Postgres)', () => {
   const context = createTestRequestContext();
   const tenantA = { userId: randomUUID(), tenantId: randomUUID() };
   const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
@@ -36,7 +36,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       now: createdAt,
     });
 
-  it('relit fidèlement ce qu’il a écrit', () =>
+  it('reads back exactly what it wrote', () =>
     context.runAs(tenantA, async () => {
       const product = newProduct(tenantA.tenantId, 'ROUND-TRIP');
       await repository.insert(product);
@@ -52,7 +52,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       expect(found?.price.equals(product.price)).toBe(true);
     }));
 
-  it('ne lit ni ne modifie jamais les produits d’un autre tenant', async () => {
+  it('never reads or modifies the products of another tenant', async () => {
     const foreign = newProduct(tenantB.tenantId, 'FOREIGN');
     await context.runAs(tenantB, () => repository.insert(foreign));
 
@@ -72,7 +72,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     expect(untouched?.status).toBe('draft');
   });
 
-  it('écrit toujours dans le tenant du contexte, pas celui de l’entité', async () => {
+  it('always writes to the context tenant, not the entity tenant', async () => {
     const forged = newProduct(tenantB.tenantId, 'FORGED');
     await context.runAs(tenantA, () => repository.insert(forged));
 
@@ -80,7 +80,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     expect(await context.runAs(tenantA, () => repository.findById(forged.id))).not.toBeNull();
   });
 
-  it('ajuste les ventes de façon atomique, sans que update les écrase', () =>
+  it('adjusts sales atomically, without update overwriting them', () =>
     context.runAs(tenantA, async () => {
       const product = newProduct(tenantA.tenantId, 'SOLD');
       await repository.insert(product);
@@ -98,7 +98,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       expect((await repository.findById(product.id))?.soldCount).toBe(4);
     }));
 
-  it('n’ajuste pas les ventes d’un produit d’un autre tenant', async () => {
+  it('does not adjust the sales of a product from another tenant', async () => {
     const foreign = newProduct(tenantB.tenantId, 'SOLD-FOREIGN');
     await context.runAs(tenantB, () => repository.insert(foreign));
     await context.runAs(tenantA, () =>
@@ -108,7 +108,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     expect(untouched?.soldCount).toBe(0);
   });
 
-  it('filtre la liste par statut', async () => {
+  it('filters the list by status', async () => {
     const tenant = { userId: randomUUID(), tenantId: randomUUID() };
     await context.runAs(tenant, async () => {
       const draft = newProduct(tenant.tenantId, 'STATUS-DRAFT');
@@ -123,7 +123,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     });
   });
 
-  it('traduit la contrainte d’unicité SKU en erreur métier', () =>
+  it('translates the SKU unique constraint into a business error', () =>
     context.runAs(tenantA, async () => {
       await repository.insert(newProduct(tenantA.tenantId, 'DUP'));
       await expect(repository.insert(newProduct(tenantA.tenantId, 'DUP'))).rejects.toMatchObject({
@@ -131,7 +131,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       });
     }));
 
-  it('pagine par (created_at, id) décroissants, y compris à horodatage égal', async () => {
+  it('paginates by (created_at, id) descending, including with equal timestamps', async () => {
     const tenant = { userId: randomUUID(), tenantId: randomUUID() };
     const sameInstant = new Date('2026-10-20T10:00:00.000Z');
     const inserted = ['P-1', 'P-2', 'P-3', 'P-4', 'P-5'].map((sku) =>
@@ -161,7 +161,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
     });
   });
 
-  it('verrou optimiste : avance la version et refuse une copie périmée', () =>
+  it('optimistic locking: bumps the version and rejects a stale copy', () =>
     context.runAs(tenantA, async () => {
       const product = newProduct(tenantA.tenantId, 'LOCKED');
       await repository.insert(product);
@@ -184,7 +184,7 @@ describe('DrizzleProductRepository (Postgres réel)', () => {
       expect(stored?.price.amountMinor).toBe(2500);
     }));
 
-  it('une vente n’avance pas la version', () =>
+  it('a sale does not bump the version', () =>
     context.runAs(tenantA, async () => {
       const product = newProduct(tenantA.tenantId, 'SALE-NO-VERSION');
       await repository.insert(product);

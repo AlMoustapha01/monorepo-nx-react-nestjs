@@ -37,13 +37,13 @@ const env = (FEATURE_FLAGS?: string) =>
   });
 
 describe('ConfiguredFeatureFlags', () => {
-  it('prend la valeur par défaut du catalogue sans surcharge', async () => {
+  it('uses the catalog default value without an override', async () => {
     const flags = new ConfiguredFeatureFlags(new AppConfig(env()));
     await expect(flags.isEnabled(ON)).resolves.toBe(true);
     await expect(flags.isEnabled(OFF)).resolves.toBe(false);
   });
 
-  it('applique les surcharges de FEATURE_FLAGS', async () => {
+  it('applies the FEATURE_FLAGS overrides', async () => {
     const flags = new ConfiguredFeatureFlags(
       new AppConfig(env(' test.on = false , test.off=true')),
     );
@@ -51,7 +51,7 @@ describe('ConfiguredFeatureFlags', () => {
     await expect(flags.isEnabled(OFF)).resolves.toBe(true);
   });
 
-  it('refuse de démarrer sur un flag inconnu ou une valeur invalide', () => {
+  it('refuses to start on an unknown flag or an invalid value', () => {
     expect(() => env('test.onn=false')).toThrow(/FEATURE_FLAGS/);
     expect(() => env('test.on=peut-etre')).toThrow(/FEATURE_FLAGS/);
     expect(() => env('test.on')).toThrow(/FEATURE_FLAGS/);
@@ -76,16 +76,16 @@ describe('FeatureFlagsGuard', () => {
   const guard = new FeatureFlagsGuard(new Reflector(), flags);
   afterEach(() => flags.reset());
 
-  it('laisse passer une route sans flag', async () => {
+  it('allows a route without a flag', async () => {
     flags.set(ON, false);
     await expect(guard.canActivate(executionFor('list'))).resolves.toBe(true);
   });
 
-  it('laisse passer une route dont le flag est activé', async () => {
+  it('allows a route whose flag is enabled', async () => {
     await expect(guard.canActivate(executionFor('guarded'))).resolves.toBe(true);
   });
 
-  it('répond 404 quand le flag est désactivé', async () => {
+  it('responds 404 when the flag is disabled', async () => {
     flags.set(ON, false);
     await expect(guard.canActivate(executionFor('guarded'))).rejects.toMatchObject({
       code: 'FEATURE_DISABLED',

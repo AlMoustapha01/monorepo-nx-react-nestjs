@@ -18,25 +18,25 @@ function draftProduct(amountMinor = 1990): Product {
 }
 
 describe('Money', () => {
-  it.each([-1, 19.9, Number.MAX_SAFE_INTEGER + 1])('rejette le montant %s', (amount) => {
+  it.each([-1, 19.9, Number.MAX_SAFE_INTEGER + 1])('rejects the amount %s', (amount) => {
     expect(() => Money.of(amount, 'EUR')).toThrow(CatalogError);
   });
 
-  it('compare montant et devise', () => {
+  it('compares amount and currency', () => {
     expect(Money.of(100, 'EUR').equals(Money.of(100, 'EUR'))).toBe(true);
     expect(Money.of(100, 'EUR').equals(Money.of(100, 'USD'))).toBe(false);
   });
 });
 
 describe('Product', () => {
-  it('naît en brouillon, non vendable', () => {
+  it('starts as a draft, not sellable', () => {
     const product = draftProduct();
     expect(product.status).toBe('draft');
     expect(product.isPurchasable).toBe(false);
     expect(product.createdAt).toEqual(T0);
   });
 
-  it('devient vendable une fois publié', () => {
+  it('becomes sellable once published', () => {
     const product = draftProduct();
     product.publish(T1);
     expect(product.status).toBe('active');
@@ -44,13 +44,13 @@ describe('Product', () => {
     expect(product.updatedAt).toEqual(T1);
   });
 
-  it('ne peut pas être publié à prix nul', () => {
+  it('cannot be published with a zero price', () => {
     expect(() => draftProduct(0).publish(T1)).toThrow(
       expect.objectContaining({ code: 'PRODUCT_NOT_PUBLISHABLE' }),
     );
   });
 
-  it('refuse un prix nul une fois actif', () => {
+  it('rejects a zero price once active', () => {
     const product = draftProduct();
     product.publish(T1);
     expect(() => product.changePrice(Money.of(0, 'EUR'), T1)).toThrow(
@@ -58,7 +58,7 @@ describe('Product', () => {
     );
   });
 
-  it('est figé une fois archivé', () => {
+  it('is frozen once archived', () => {
     const product = draftProduct();
     product.archive(T1);
     expect(() => product.publish(T1)).toThrow(
@@ -69,7 +69,7 @@ describe('Product', () => {
     );
   });
 
-  it('publier deux fois ne change rien', () => {
+  it('publishing twice changes nothing', () => {
     const product = draftProduct();
     product.publish(T1);
     product.publish(new Date('2026-10-21T00:00:00.000Z'));

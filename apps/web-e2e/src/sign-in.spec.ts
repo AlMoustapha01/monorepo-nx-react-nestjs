@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { createAccount, createOrganization, signIn } from './support';
 
-test('connexion : refus, retour à la page demandée, puis déconnexion', async ({ page }) => {
+test('sign-in: refusal, return to the requested page, then sign-out', async ({ page }) => {
   const account = await createAccount('signin');
   await createOrganization(account, 'Boutique');
 
@@ -23,7 +23,7 @@ test('connexion : refus, retour à la page demandée, puis déconnexion', async 
   await expect(page).toHaveURL('/connexion?redirect=%2F');
 });
 
-test('la connexion ne redirige pas vers un autre site', async ({ page }) => {
+test('sign-in does not redirect to another site', async ({ page }) => {
   const account = await createAccount('redirect');
   await createOrganization(account, 'Boutique');
 
@@ -33,7 +33,7 @@ test('la connexion ne redirige pas vers un autre site', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
 });
 
-test('l’organisation choisie reste active après un rechargement', async ({ page }) => {
+test('the chosen organization stays active after a reload', async ({ page }) => {
   const account = await createAccount('switch');
   await createOrganization(account, 'Atelier');
   await createOrganization(account, 'Comptoir');

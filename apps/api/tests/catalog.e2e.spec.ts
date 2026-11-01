@@ -13,7 +13,7 @@ import {
 import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 
-describe('API catalogue (e2e)', () => {
+describe('Catalog API (e2e)', () => {
   let database: TestDatabase;
   let redis: TestRedis;
   let app: INestApplication;
@@ -53,7 +53,7 @@ describe('API catalogue (e2e)', () => {
       .auth(token, { type: 'bearer' })
       .send({ sku, name: 'Tee-shirt', price: { amountMinor: 1990, currency: 'EUR' } });
 
-  it('expose /health et /ready sans authentification', async () => {
+  it('exposes /health and /ready without authentication', async () => {
     await api().get('/health').expect(200);
     await api()
       .get('/ready')
@@ -64,7 +64,7 @@ describe('API catalogue (e2e)', () => {
       });
   });
 
-  it('refuse par défaut une requête sans token, au format RFC 9457', async () => {
+  it('rejects a request without a token by default, in RFC 9457 format', async () => {
     const response = await api().get('/api/v1/catalog/products?cursor=secret').expect(401);
     expect(response.headers['content-type']).toContain('application/problem+json');
     expect(response.body).toMatchObject({
@@ -75,12 +75,12 @@ describe('API catalogue (e2e)', () => {
     });
   });
 
-  it('propage le request id reçu', async () => {
+  it('propagates the received request id', async () => {
     const response = await api().get('/health').set('x-request-id', 'trace-123');
     expect(response.headers['x-request-id']).toBe('trace-123');
   });
 
-  it('crée, publie et relit un produit', async () => {
+  it('creates, publishes and reads back a product', async () => {
     const created = await createProduct(tokenA, ' tee-blanc-m ').expect(201);
     expect(created.body).toMatchObject({ sku: 'TEE-BLANC-M', status: 'draft' });
     expect(created.body.id).toMatch(/^PRD-[0-9a-z]{20}$/);
@@ -99,7 +99,7 @@ describe('API catalogue (e2e)', () => {
       .expect(({ body }) => expect(body.price).toEqual({ amountMinor: 1990, currency: 'EUR' }));
   });
 
-  it('renvoie 400 avec le détail des champs invalides', async () => {
+  it('returns 400 with the details of invalid fields', async () => {
     const response = await api()
       .post('/api/v1/catalog/products')
       .auth(tokenA, { type: 'bearer' })
@@ -111,7 +111,7 @@ describe('API catalogue (e2e)', () => {
     );
   });
 
-  it('renvoie 409 pour un SKU déjà pris et 422 pour une règle métier', async () => {
+  it('returns 409 for a SKU already taken and 422 for a business rule', async () => {
     await createProduct(tokenA, 'MUG-01').expect(201);
     await createProduct(tokenA, 'MUG-01')
       .expect(409)
@@ -129,7 +129,7 @@ describe('API catalogue (e2e)', () => {
       .expect(({ body }) => expect(body.code).toBe('PRODUCT_NOT_PUBLISHABLE'));
   });
 
-  it('refuse un ID qui n’est pas un PRD-…, avant tout accès en base', async () => {
+  it('rejects an ID that is not a PRD-…, before any database access', async () => {
     for (const id of [randomUUID(), 'ORD-01jb4x7k2m9qwfzp3hd8']) {
       await api()
         .get(`/api/v1/catalog/products/${id}`)
@@ -139,7 +139,7 @@ describe('API catalogue (e2e)', () => {
     }
   });
 
-  it('isole les tenants : 404 sur le produit d’un autre tenant', async () => {
+  it('isolates tenants: 404 on a product of another tenant', async () => {
     const { body } = await createProduct(tokenA, 'SECRET-01').expect(201);
     await api()
       .get(`/api/v1/catalog/products/${body.id}`)
@@ -148,7 +148,7 @@ describe('API catalogue (e2e)', () => {
       .expect(({ body: problem }) => expect(problem.code).toBe('PRODUCT_NOT_FOUND'));
   });
 
-  it('pagine la liste par curseur', async () => {
+  it('paginates the list by cursor', async () => {
     const token = await signTestToken({
       userId: randomUUID(),
       tenantId: randomUUID(),
@@ -180,7 +180,7 @@ describe('API catalogue (e2e)', () => {
       .expect(({ body }) => expect(body.code).toBe('INVALID_CURSOR'));
   });
 
-  it('réserve la gestion du catalogue au staff, en 403', async () => {
+  it('restricts catalog management to staff, with 403', async () => {
     await createProduct(customerTokenA, 'CUST-01')
       .expect(403)
       .expect(({ body }) => {
@@ -189,7 +189,7 @@ describe('API catalogue (e2e)', () => {
       });
   });
 
-  it('ne montre à un client que les produits publiés', async () => {
+  it('shows a customer only published products', async () => {
     const draft = await createProduct(tokenA, 'HIDDEN-01').expect(201);
     const active = await createProduct(tokenA, 'VISIBLE-01').expect(201);
     await api()
@@ -213,7 +213,7 @@ describe('API catalogue (e2e)', () => {
     );
   });
 
-  it('verrou optimiste : ETag, If-Match et 412 sur une copie périmée', async () => {
+  it('optimistic locking: ETag, If-Match and 412 on a stale copy', async () => {
     const created = await createProduct(tokenA, 'ETAG-01').expect(201);
     expect(created.headers['etag']).toBe('"1"');
     const id: string = created.body.id;

@@ -30,7 +30,7 @@ describe('RedisThrottlerStorage', () => {
     await redis?.stop();
   });
 
-  it('compte les requêtes et bloque au-delà de la limite', async () => {
+  it('counts requests and blocks beyond the limit', async () => {
     const hit = () => storage.increment('alice', 60_000, 2, 30_000, 'default');
     await expect(hit()).resolves.toMatchObject({ totalHits: 1, isBlocked: false });
     await expect(hit()).resolves.toMatchObject({ totalHits: 2, isBlocked: false });
@@ -41,7 +41,7 @@ describe('RedisThrottlerStorage', () => {
     });
   });
 
-  it('partage le compteur entre instances, et chaque clé a son propre compteur', async () => {
+  it('shares the counter across instances, and each key has its own counter', async () => {
     const other = storageFor(redis.url);
     await storage.increment('bob', 60_000, 5, 60_000, 'default');
     await expect(other.increment('bob', 60_000, 5, 60_000, 'default')).resolves.toMatchObject({
@@ -53,7 +53,7 @@ describe('RedisThrottlerStorage', () => {
     await other.onApplicationShutdown();
   });
 
-  it('pose un TTL sur chaque clé', async () => {
+  it('sets a TTL on every key', async () => {
     await storage.increment('dave', 60_000, 1, 30_000, 'default');
     await storage.increment('dave', 60_000, 1, 30_000, 'default');
     const keys = await client.keys('rate-limit:{default:dave}*');
@@ -63,7 +63,7 @@ describe('RedisThrottlerStorage', () => {
     }
   });
 
-  it('laisse passer quand Redis est injoignable', async () => {
+  it('lets requests through when Redis is unreachable', async () => {
     const closed = createServer();
     await new Promise<void>((resolve) => closed.listen(0, '127.0.0.1', resolve));
     const { port } = closed.address() as { port: number };

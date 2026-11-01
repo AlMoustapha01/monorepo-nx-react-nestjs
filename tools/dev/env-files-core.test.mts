@@ -20,25 +20,25 @@ const EXAMPLES = {
 };
 
 describe('appKeysInRoot', () => {
-  it("nomme les variables d'une app encore définies dans le .env racine", () => {
+  it('names the variables of an app still defined in the root .env', () => {
     const root = 'DATABASE_URL=postgres://x\nPORT=3005\n# VITE_DEV_TOKEN=abc\n';
     assert.deepEqual(appKeysInRoot(root, Object.values(EXAMPLES.apps)), ['PORT']);
   });
 
-  it('ne trouve rien dans un .env racine qui ne garde que les variables communes', () => {
+  it('finds nothing in a root .env that keeps only the shared variables', () => {
     assert.deepEqual(appKeysInRoot(ROOT_EXAMPLE, Object.values(EXAMPLES.apps)), []);
   });
 });
 
 describe('splitLegacyEnv', () => {
-  it("reporte une valeur de l'ancien .env dans le fichier de l'app qui la lit", () => {
+  it('moves a value from the legacy .env to the file of the app that reads it', () => {
     const legacy = 'PORT=3005\nVITE_DEV_TOKEN=abc\n';
     const { apps } = splitLegacyEnv(legacy, EXAMPLES);
     assert.match(apps['apps/api/.env'] ?? '', /^PORT=3005$/m);
     assert.match(apps['apps/web/.env'] ?? '', /^VITE_DEV_TOKEN=abc$/m);
   });
 
-  it("garde l'alternative choisie dans l'ancien .env : l'autre est commentée", () => {
+  it('keeps the alternative chosen in the legacy .env: the other is commented out', () => {
     const legacy = [
       '# AUTH_JWT_SECRET=change-me',
       'AUTH_JWKS_URL=http://localhost:3100/api/auth/jwks',
@@ -48,17 +48,17 @@ describe('splitLegacyEnv', () => {
     assert.match(api, /^AUTH_JWKS_URL=http:\/\/localhost:3100\/api\/auth\/jwks$/m);
   });
 
-  it("garde la ligne de l'exemple, et ses commentaires, pour une variable absente de l'ancien .env", () => {
+  it('keeps the example line, and its comments, for a variable missing from the legacy .env', () => {
     const { apps } = splitLegacyEnv('', EXAMPLES);
     assert.equal(apps['apps/api/.env'], API_EXAMPLE);
   });
 
-  it("prend la dernière valeur quand l'ancien .env définit une variable deux fois", () => {
+  it('takes the last value when the legacy .env defines a variable twice', () => {
     const api = splitLegacyEnv('PORT=3001\nPORT=3002\n', EXAMPLES).apps['apps/api/.env'] ?? '';
     assert.match(api, /^PORT=3002$/m);
   });
 
-  it("garde à la racine les variables communes et celles qu'aucun exemple ne déclare", () => {
+  it('keeps at the root the shared variables and those no example declares', () => {
     const legacy = 'DATABASE_URL=postgres://localhost:5433/app\nOTLP_PORT=4319\nPORT=3005\n';
     const { root } = splitLegacyEnv(legacy, EXAMPLES);
     assert.match(root, /^DATABASE_URL=postgres:\/\/localhost:5433\/app$/m);

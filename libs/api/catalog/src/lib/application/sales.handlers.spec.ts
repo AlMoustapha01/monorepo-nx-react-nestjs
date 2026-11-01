@@ -28,8 +28,8 @@ function eventOf<TDefinition extends IntegrationEventDefinition>(
   };
 }
 
-describe('compteur de ventes du catalogue', () => {
-  it('ajoute les ventes d’une commande puis les retire à son annulation', () =>
+describe('catalog sales counter', () => {
+  it('adds the sales of an order, then removes them when it is cancelled', () =>
     context.runAs(tenant, async () => {
       const products = new InMemoryProductRepository(context);
       const { id } = await new CreateProduct(products, context).execute({
@@ -64,7 +64,7 @@ describe('compteur de ventes du catalogue', () => {
       expect((await getProduct.execute(id)).soldCount).toBe(0);
     }));
 
-  it('ne descend jamais sous zéro', () =>
+  it('never goes below zero', () =>
     context.runAs(tenant, async () => {
       const products = new InMemoryProductRepository(context);
       const { id } = await new CreateProduct(products, context).execute({

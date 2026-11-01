@@ -24,13 +24,13 @@ describe('RolesGuard', () => {
   const as = (roles: Role[], fn: () => void) =>
     context.runAs({ userId: randomUUID(), tenantId: randomUUID(), roles }, fn);
 
-  it('laisse passer une route sans exigence de rôle', () =>
+  it('allows a route with no role requirement', () =>
     as([], () => expect(guard.canActivate(executionFor('browse'))).toBe(true)));
 
-  it('laisse passer un principal qui a le rôle requis', () =>
+  it('allows a principal that has the required role', () =>
     as(['staff'], () => expect(guard.canActivate(executionFor('manage'))).toBe(true)));
 
-  it('refuse un principal sans le rôle requis, en 403', () =>
+  it('rejects a principal without the required role, with 403', () =>
     as([], () =>
       expect(() => guard.canActivate(executionFor('manage'))).toThrow(
         expect.objectContaining({ code: 'FORBIDDEN', kind: 'FORBIDDEN' }),

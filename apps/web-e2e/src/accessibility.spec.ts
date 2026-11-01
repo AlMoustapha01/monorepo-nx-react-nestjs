@@ -7,7 +7,7 @@ import { createAccount, createOrganization, signIn } from './support';
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
 for (const path of ['/connexion', '/inscription', '/mot-de-passe-oublie']) {
-  test(`${path} n’a pas de violation d’accessibilité détectable`, async ({ page }) => {
+  test(`${path} has no detectable accessibility violation`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
@@ -15,7 +15,7 @@ for (const path of ['/connexion', '/inscription', '/mot-de-passe-oublie']) {
   });
 }
 
-test('un formulaire en erreur reste accessible', async ({ page }) => {
+test('a form in error stays accessible', async ({ page }) => {
   await page.goto('/connexion');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page.getByLabel('Adresse email')).toHaveAttribute('aria-invalid', 'true');
@@ -23,7 +23,7 @@ test('un formulaire en erreur reste accessible', async ({ page }) => {
   expect(violations).toEqual([]);
 });
 
-test('l’accueil et l’en-tête d’un utilisateur connecté sont accessibles', async ({ page }) => {
+test('the home page and header of a signed-in user are accessible', async ({ page }) => {
   const account = await createAccount('a11y');
   await createOrganization(account, 'Boutique');
   await page.goto('/connexion');

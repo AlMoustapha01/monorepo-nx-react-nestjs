@@ -1,7 +1,7 @@
 import { signUpSchema } from './auth';
 
 describe('signUpSchema', () => {
-  it('normalise l’email et refuse un mot de passe trop court', () => {
+  it('normalizes the email and rejects a password that is too short', () => {
     expect(
       signUpSchema.parse({ name: ' Ada ', email: ' Ada@Shop.TEST ', password: 'long-enough' }),
     ).toEqual({ name: 'Ada', email: 'ada@shop.test', password: 'long-enough' });

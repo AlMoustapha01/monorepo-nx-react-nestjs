@@ -44,8 +44,8 @@ const product = (overrides: Partial<ProductSnapshot> = {}): ProductSnapshot => (
   ...overrides,
 });
 
-describe('commandes (couche application)', () => {
-  it('passe une commande au nom du client courant, avec les prix du catalogue', () =>
+describe('orders (application layer)', () => {
+  it('places an order on behalf of the current customer, with catalog prices', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder, getOrder } = setup();
       const tee = catalog.add(product());
@@ -71,7 +71,7 @@ describe('commandes (couche application)', () => {
       expect(order.lines.map((line) => line.sku)).toEqual(['TEE-01', 'MUG-01']);
     }));
 
-  it('publie OrderPlaced avec l’email du client, pour les autres domaines', () =>
+  it('publishes OrderPlaced with the customer email, for other domains', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder, outbox } = setup();
       const tee = catalog.add(product());
@@ -90,7 +90,7 @@ describe('commandes (couche application)', () => {
       ]);
     }));
 
-  it('ne publie rien si la commande est refusée', () =>
+  it('publishes nothing if the order is rejected', () =>
     context.runAs(tenantA, async () => {
       const { placeOrder, outbox } = setup();
       await expect(
@@ -99,7 +99,7 @@ describe('commandes (couche application)', () => {
       expect(outbox.published).toEqual([]);
     }));
 
-  it('publie OrderCancelled une seule fois, même si l’annulation est répétée', () =>
+  it('publishes OrderCancelled only once, even if the cancellation is repeated', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder, cancelOrder, outbox } = setup();
       const tee = catalog.add(product());
@@ -113,7 +113,7 @@ describe('commandes (couche application)', () => {
       ]);
     }));
 
-  it('fige le prix : un changement au catalogue ne modifie pas la commande', () =>
+  it('freezes the price: a catalog change does not modify the order', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder, getOrder } = setup();
       const tee = catalog.add(product());
@@ -124,7 +124,7 @@ describe('commandes (couche application)', () => {
       expect((await getOrder.execute(id)).totalMinor).toBe(1990);
     }));
 
-  it('refuse les produits inconnus ou non publiés, en les listant', () =>
+  it('rejects unknown or unpublished products, listing them', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder } = setup();
       const draft = catalog.add(product({ purchasable: false }));
@@ -143,7 +143,7 @@ describe('commandes (couche application)', () => {
       });
     }));
 
-  it('refuse de mélanger les devises', () =>
+  it('refuses to mix currencies', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder } = setup();
       const eur = catalog.add(product());
@@ -161,7 +161,7 @@ describe('commandes (couche application)', () => {
       ).rejects.toMatchObject({ code: 'CURRENCY_MISMATCH' });
     }));
 
-  it('refuse deux lignes pour le même produit', () =>
+  it('rejects two lines for the same product', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder } = setup();
       const tee = catalog.add(product());
@@ -176,7 +176,7 @@ describe('commandes (couche application)', () => {
       ).rejects.toMatchObject({ code: 'DUPLICATE_ORDER_LINE' });
     }));
 
-  it('isole les tenants : une commande étrangère est introuvable', async () => {
+  it('isolates tenants: an order from another tenant is not found', async () => {
     const { catalog, placeOrder, getOrder, cancelOrder } = setup();
     const tee = catalog.add(product());
     const { id } = await context.runAs(tenantA, () =>
@@ -190,7 +190,7 @@ describe('commandes (couche application)', () => {
     expect((await context.runAs(tenantA, () => getOrder.execute(id))).status).toBe('placed');
   });
 
-  it('annule et pagine les commandes par curseur', () =>
+  it('cancels and paginates orders by cursor', () =>
     context.runAs(tenantA, async () => {
       const { catalog, placeOrder, cancelOrder, listOrders } = setup();
       const tee = catalog.add(product());
@@ -209,11 +209,11 @@ describe('commandes (couche application)', () => {
       expect(all.find((order) => order.id === ids[0])?.status).toBe('cancelled');
     }));
 
-  describe('propriété des commandes', () => {
+  describe('order ownership', () => {
     const otherCustomer = { userId: randomUUID(), tenantId: tenantA.tenantId };
     const staff = { userId: randomUUID(), tenantId: tenantA.tenantId, roles: ['staff'] as const };
 
-    it('un client ne voit ni n’annule la commande d’un autre client', async () => {
+    it('a customer neither sees nor cancels the order of another customer', async () => {
       const { catalog, placeOrder, getOrder, cancelOrder, listOrders } = setup();
       const tee = catalog.add(product());
       const { id } = await context.runAs(tenantA, () =>
@@ -228,7 +228,7 @@ describe('commandes (couche application)', () => {
       expect((await context.runAs(tenantA, () => getOrder.execute(id))).status).toBe('placed');
     });
 
-    it('le staff voit et annule toutes les commandes du tenant', async () => {
+    it('staff see and cancel all orders of the tenant', async () => {
       const { catalog, placeOrder, cancelOrder, listOrders } = setup();
       const tee = catalog.add(product());
       for (const customer of [tenantA, otherCustomer]) {

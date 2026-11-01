@@ -5,7 +5,7 @@ import { envSchema } from './env';
 const REFERENCE = join(__dirname, '../../../docs/reference/variables-environnement.md');
 
 describe('envSchema', () => {
-  it('a chaque variable documentée dans la référence', () => {
+  it('has every variable documented in the reference', () => {
     const reference = readFileSync(REFERENCE, 'utf8');
     const undocumented = Object.keys(envSchema.shape).filter(
       (name) => !reference.includes(`| \`${name}\``),

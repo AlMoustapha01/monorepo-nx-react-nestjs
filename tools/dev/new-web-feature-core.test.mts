@@ -6,7 +6,7 @@ describe('webFeatureFiles', () => {
   const files = webFeatureFiles('loyalty-points', '@acme');
   const root = 'libs/web/loyalty-points';
 
-  it('crée la lib sous libs/web/<nom>, avec sa config Nx, TypeScript, Vitest, oxlint et Lingui', () => {
+  it('creates the lib under libs/web/<name>, with its Nx, TypeScript, Vitest, oxlint and Lingui config', () => {
     assert.deepEqual(Object.keys(files).sort(), [
       `${root}/.oxlintrc.json`,
       `${root}/lingui.config.ts`,
@@ -21,14 +21,14 @@ describe('webFeatureFiles', () => {
     ]);
   });
 
-  it('nomme le projet web-<nom>, avec les tags de feature', () => {
+  it('names the project web-<name>, with the feature tags', () => {
     const project = JSON.parse(files[`${root}/project.json`]);
     assert.equal(project.name, 'web-loyalty-points');
     assert.equal(project.sourceRoot, `${root}/src`);
     assert.deepEqual(project.tags, ['scope:web', 'type:feature']);
   });
 
-  it("passe les tests tant que la lib n'en a aucun, et compile la macro Lingui", () => {
+  it('passes tests while the lib has none, and compiles the Lingui macro', () => {
     const vitest = files[`${root}/vitest.config.mts`];
     assert.match(vitest, /passWithNoTests: true/);
     assert.match(vitest, /name: 'web-loyalty-points'/);
@@ -38,26 +38,26 @@ describe('webFeatureFiles', () => {
     assert.match(vitest, /libs\/web\/loyalty-points'/);
   });
 
-  it('applique les règles de lint web', () => {
+  it('applies the web lint rules', () => {
     assert.deepEqual(JSON.parse(files[`${root}/.oxlintrc.json`]), {
       extends: ['../.oxlintrc.web.json'],
     });
   });
 
-  it('active noUncheckedIndexedAccess et JSX', () => {
+  it('enables noUncheckedIndexedAccess and JSX', () => {
     const options = JSON.parse(files[`${root}/tsconfig.json`]).compilerOptions;
     assert.equal(options.noUncheckedIndexedAccess, true);
     assert.equal(options.jsx, 'react-jsx');
   });
 
-  it('rend les composants avec le data-access du projet', () => {
+  it('renders components with the data-access of the project', () => {
     assert.match(
       files[`${root}/src/test-utils.tsx`],
       /import \{ createQueryClient \} from '@acme\/web-data-access';/,
     );
   });
 
-  it("n'expose rien tant que la façade est vide, sans export *", () => {
+  it('exposes nothing while the facade is empty, without export *', () => {
     const index = files[`${root}/src/index.ts`];
     assert.match(index, /^export \{\};$/m);
     assert.doesNotMatch(index, /^export \*/m);

@@ -95,7 +95,7 @@ describe('storefront', () => {
     },
   );
 
-  it('recharge les données du nouveau tenant au changement d’organisation', async () => {
+  it('reloads the new tenant data when switching organization', async () => {
     // Comme la vraie API : le catalogue dépend du tenant inscrit dans le token.
     const catalogs: Record<string, ReturnType<typeof product>[]> = {
       o1: [product('PRD-00000000000000000001', 'Tablier en lin')],

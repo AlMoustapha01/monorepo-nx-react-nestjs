@@ -9,7 +9,7 @@ import { validateEnv } from '../config/env';
 import { CoreError } from '../errors/app-error';
 import { JwtVerifier } from './jwt-verifier';
 
-describe('JwtVerifier avec un secret (dev, tests)', () => {
+describe('JwtVerifier with a secret (dev, tests)', () => {
   const env = validateEnv(
     testEnv({
       databaseUrl: 'postgres://user:pass@localhost:5432/db',
@@ -19,14 +19,14 @@ describe('JwtVerifier avec un secret (dev, tests)', () => {
   const verifier = new JwtVerifier(new AppConfig(env));
   const principal = { userId: randomUUID(), tenantId: randomUUID() };
 
-  it('extrait le principal d’un token valide, sans rôle par défaut', async () => {
+  it('extracts the principal from a valid token, with no role by default', async () => {
     await expect(verifier.verify(await signTestToken(principal))).resolves.toEqual({
       ...principal,
       roles: [],
     });
   });
 
-  it('garde les rôles connus et ignore les autres', async () => {
+  it('keeps known roles and ignores the others', async () => {
     const token = await signTestToken({
       ...principal,
       roles: ['staff', 'superadmin'] as unknown as ['staff'],
@@ -34,12 +34,12 @@ describe('JwtVerifier avec un secret (dev, tests)', () => {
     await expect(verifier.verify(token)).resolves.toMatchObject({ roles: ['staff'] });
   });
 
-  it('rejette un token expiré', async () => {
+  it('rejects an expired token', async () => {
     const token = await signTestToken(principal, '-1m');
     await expect(verifier.verify(token)).rejects.toThrow(CoreError);
   });
 
-  it('rejette un token signé avec une autre clé', async () => {
+  it('rejects a token signed with another key', async () => {
     const token = await new SignJWT({ tenant_id: principal.tenantId })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(principal.userId)
@@ -51,7 +51,7 @@ describe('JwtVerifier avec un secret (dev, tests)', () => {
   });
 });
 
-describe('JwtVerifier avec un JWKS', () => {
+describe('JwtVerifier with a JWKS', () => {
   const principal = { userId: randomUUID(), tenantId: randomUUID() };
   let keys: JWK[] = [];
   let server: Server;
@@ -101,7 +101,7 @@ describe('JwtVerifier avec un JWKS', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('vérifie un token signé par une clé publiée', async () => {
+  it('verifies a token signed by a published key', async () => {
     const key = await newKey('k1');
     keys = [key.jwk];
     await expect(verifierFor().verify(await sign(key))).resolves.toEqual({
@@ -110,7 +110,7 @@ describe('JwtVerifier avec un JWKS', () => {
     });
   });
 
-  it('découvre une nouvelle clé après une rotation', async () => {
+  it('discovers a new key after a rotation', async () => {
     const before = await newKey('before');
     keys = [before.jwk];
     const verifier = verifierFor();
@@ -123,20 +123,20 @@ describe('JwtVerifier avec un JWKS', () => {
     await expect(verifier.verify(await sign(after))).resolves.toMatchObject(principal);
   });
 
-  it('refuse un token HS256 : l’algorithme ne vient pas de l’en-tête', async () => {
+  it('rejects an HS256 token: the algorithm does not come from the header', async () => {
     await expect(verifierFor().verify(await signTestToken(principal))).rejects.toMatchObject({
       code: 'UNAUTHENTICATED',
     });
   });
 
-  it('refuse un token destiné à une autre audience', async () => {
+  it('rejects a token intended for another audience', async () => {
     const key = await newKey('k2');
     keys = [key.jwk];
     const token = await sign(key, { tenant_id: principal.tenantId }, 'another-api');
     await expect(verifierFor().verify(token)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 
-  it('refuse un token sans tenant', async () => {
+  it('rejects a token without a tenant', async () => {
     const key = await newKey('k3');
     keys = [key.jwk];
     await expect(verifierFor().verify(await sign(key, {}))).rejects.toMatchObject({
@@ -144,7 +144,7 @@ describe('JwtVerifier avec un JWKS', () => {
     });
   });
 
-  it('lit le tenant et les rôles dans les claims configurées', async () => {
+  it('reads the tenant and roles from the configured claims', async () => {
     const key = await newKey('k4');
     keys = [key.jwk];
     const verifier = verifierFor({
@@ -158,7 +158,7 @@ describe('JwtVerifier avec un JWKS', () => {
     await expect(verifier.verify(token)).resolves.toEqual({ ...principal, roles: ['staff'] });
   });
 
-  it('répond 401 et le journalise quand le fournisseur est injoignable', async () => {
+  it('responds 401 and logs it when the provider is unreachable', async () => {
     const closed = createServer();
     await new Promise<void>((resolve) => closed.listen(0, '127.0.0.1', resolve));
     const { port } = closed.address() as AddressInfo;
@@ -175,19 +175,19 @@ describe('JwtVerifier avec un JWKS', () => {
   });
 });
 
-describe('validateEnv (authentification)', () => {
+describe('validateEnv (authentication)', () => {
   const base = testEnv({
     databaseUrl: 'postgres://user:pass@localhost:5432/db',
     redisUrl: 'redis://localhost:6379',
   });
 
-  it('exige le JWKS ou le secret, pas les deux', () => {
+  it('requires the JWKS or the secret, not both', () => {
     expect(() => validateEnv({ ...base, AUTH_JWKS_URL: 'https://auth.test/jwks' })).toThrow(
       /exactly one/,
     );
   });
 
-  it('refuse le secret partagé en production', () => {
+  it('rejects the shared secret in production', () => {
     expect(() =>
       validateEnv({ ...base, NODE_ENV: 'production', SMTP_URL: 'smtp://mail:25' }),
     ).toThrow(/AUTH_JWT_SECRET is not allowed in production/);

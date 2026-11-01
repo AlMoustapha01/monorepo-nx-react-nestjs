@@ -21,15 +21,15 @@ describe('ProductMapper', () => {
     updatedAt: new Date('2026-10-20T11:00:00.000Z'),
   };
 
-  it('restitue la ligne d’origine après un aller-retour', () => {
+  it('restores the original row after a round trip', () => {
     expect(mapper.toRow(mapper.toDomain(row))).toEqual(row);
   });
 
-  it('refuse une devise inconnue lue en base', () => {
+  it('rejects an unknown currency read from the database', () => {
     expect(() => mapper.toDomain({ ...row, priceCurrency: 'GBP' })).toThrow(ZodError);
   });
 
-  it('convertit une liste de lignes', () => {
+  it('converts a list of rows', () => {
     expect(mapper.toDomainList([row, row]).map((product) => product.sku)).toEqual([
       'TEE-BLANC-M',
       'TEE-BLANC-M',

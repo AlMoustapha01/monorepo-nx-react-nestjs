@@ -8,17 +8,17 @@ const requestFrom = (remoteAddress: string, forwardedFor?: string) =>
   }) as unknown as IncomingMessage;
 
 describe('clientIp', () => {
-  it('prend l’adresse du socket sans proxy de confiance, même si le client envoie X-Forwarded-For', () => {
+  it('uses the socket address without a trusted proxy, even if the client sends X-Forwarded-For', () => {
     expect(clientIp(requestFrom('203.0.113.7', '198.51.100.1'), 0)).toBe('203.0.113.7');
   });
 
-  it('remonte d’autant de proxys que de proxys de confiance', () => {
+  it('walks back as many proxies as there are trusted proxies', () => {
     // Le client a forgé 198.51.100.1 ; le load balancer a ajouté la vraie adresse, 203.0.113.7.
     const request = requestFrom('10.0.0.2', '198.51.100.1, 203.0.113.7');
     expect(clientIp(request, 1)).toBe('203.0.113.7');
   });
 
-  it('ne dépasse pas le début de la chaîne', () => {
+  it('does not go past the start of the chain', () => {
     expect(clientIp(requestFrom('10.0.0.2', '203.0.113.7'), 5)).toBe('203.0.113.7');
   });
 });

@@ -11,7 +11,7 @@ import { DrizzleOrderRepository } from './drizzle-order.repository';
 const newProductId = domainIdGenerator('PRD');
 const newOrderId = domainIdGenerator('ORD');
 
-describe('DrizzleOrderRepository (Postgres réel)', () => {
+describe('DrizzleOrderRepository (real Postgres)', () => {
   const context = createTestRequestContext();
   const tenantA = { userId: randomUUID(), tenantId: randomUUID() };
   const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
@@ -44,7 +44,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
       now: createdAt,
     });
 
-  it('relit la commande avec ses lignes, dans l’ordre', () =>
+  it('reads back the order with its lines, in order', () =>
     context.runAs(tenantA, async () => {
       const order = newOrder(tenantA.tenantId);
       await repository.insert(order);
@@ -54,7 +54,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
       expect(found?.totalMinor).toBe(1990 * 2 + 900);
     }));
 
-  it('persiste l’annulation', () =>
+  it('persists the cancellation', () =>
     context.runAs(tenantA, async () => {
       const order = newOrder(tenantA.tenantId);
       await repository.insert(order);
@@ -67,7 +67,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
       });
     }));
 
-  it('ne lit ni ne modifie jamais les commandes d’un autre tenant', async () => {
+  it('never reads or modifies the orders of another tenant', async () => {
     const foreign = newOrder(tenantB.tenantId);
     await context.runAs(tenantB, () => repository.insert(foreign));
 
@@ -84,7 +84,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
     expect(untouched?.status).toBe('placed');
   });
 
-  it('écrit commande et lignes dans le tenant du contexte, pas celui de l’entité', async () => {
+  it('writes the order and its lines to the context tenant, not the entity tenant', async () => {
     const forged = newOrder(tenantB.tenantId);
     await context.runAs(tenantA, () => repository.insert(forged));
 
@@ -93,7 +93,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
     expect(own?.lines).toHaveLength(2);
   });
 
-  it('filtre la liste par client', async () => {
+  it('filters the list by customer', async () => {
     const tenant = { userId: randomUUID(), tenantId: randomUUID() };
     const mine = newOrder(tenant.tenantId);
     const theirs = newOrder(tenant.tenantId);
@@ -105,7 +105,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
     });
   });
 
-  it('pagine par (created_at, id) décroissants et charge les lignes de chaque page', async () => {
+  it('paginates by (created_at, id) descending and loads the lines of each page', async () => {
     const tenant = { userId: randomUUID(), tenantId: randomUUID() };
     const sameInstant = new Date('2026-10-20T10:00:00.000Z');
     const inserted = [1, 2, 3].map(() => newOrder(tenant.tenantId, sameInstant));
@@ -130,7 +130,7 @@ describe('DrizzleOrderRepository (Postgres réel)', () => {
     });
   });
 
-  it('verrou optimiste : une seconde annulation concurrente est refusée', () =>
+  it('optimistic locking: a second concurrent cancellation is rejected', () =>
     context.runAs(tenantA, async () => {
       const order = newOrder(tenantA.tenantId);
       await repository.insert(order);

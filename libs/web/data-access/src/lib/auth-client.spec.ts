@@ -12,7 +12,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('createAuthClient', () => {
-  it('envoie les identifiants', async () => {
+  it('sends the credentials', async () => {
     let body: unknown;
     server.use(
       http.post(`${AUTH}/sign-in/email`, async ({ request }) => {
@@ -24,7 +24,7 @@ describe('createAuthClient', () => {
     expect(body).toEqual({ email: 'ada@shop.test', password: 'secret' });
   });
 
-  it('transforme une erreur de Better Auth en ApiError avec son code', async () => {
+  it('turns a Better Auth error into an ApiError with its code', async () => {
     server.use(
       http.post(`${AUTH}/sign-in/email`, () =>
         HttpResponse.json(
@@ -38,7 +38,7 @@ describe('createAuthClient', () => {
     );
   });
 
-  it('lit la session, ou null sans session', async () => {
+  it('reads the session, or null without a session', async () => {
     server.use(http.get(`${AUTH}/get-session`, () => HttpResponse.json(null)));
     await expect(auth.getSession()).resolves.toBeNull();
 
@@ -56,7 +56,7 @@ describe('createAuthClient', () => {
     });
   });
 
-  it('crée une organisation avec un slug unique dérivé du nom', async () => {
+  it('creates an organization with a unique slug derived from the name', async () => {
     let slug = '';
     server.use(
       http.post(`${AUTH}/organization/create`, async ({ request }) => {
@@ -68,7 +68,7 @@ describe('createAuthClient', () => {
     expect(slug).toMatch(/^cafe-ete-[0-9a-f]{6}$/);
   });
 
-  it('renvoie undefined comme access token sans session', async () => {
+  it('returns undefined as the access token without a session', async () => {
     server.use(http.get(`${AUTH}/token`, () => new HttpResponse(null, { status: 401 })));
     await expect(auth.getAccessToken()).resolves.toBeUndefined();
 
@@ -76,7 +76,7 @@ describe('createAuthClient', () => {
     await expect(auth.getAccessToken()).resolves.toBe('jwt');
   });
 
-  it('signale un service injoignable', async () => {
+  it('reports an unreachable service', async () => {
     server.use(http.get(`${AUTH}/get-session`, () => HttpResponse.error()));
     await expect(auth.getSession()).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
   });

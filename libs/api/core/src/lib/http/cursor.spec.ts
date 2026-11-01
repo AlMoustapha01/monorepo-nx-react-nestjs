@@ -2,7 +2,7 @@ import { CoreError } from '../errors/app-error';
 import { decodeCursor, encodeCursor } from './cursor';
 
 describe('cursor', () => {
-  it('fait un aller-retour sans perte', () => {
+  it('round-trips without loss', () => {
     const cursor = {
       createdAt: new Date('2026-10-20T08:30:00.123Z'),
       id: '0199f5c2-6a1e-7b3c-9d4e-5f6a7b8c9d0e',

@@ -26,7 +26,7 @@ const BILLING_ERROR_KINDS = {
 `;
 
 describe('parseErrorKinds', () => {
-  it('lit chaque code, sa catégorie et son commentaire', () => {
+  it('reads each code, its category and its comment', () => {
     assert.deepEqual(parseErrorKinds(SOURCE), [
       { code: 'INVOICE_NOT_FOUND', kind: 'NOT_FOUND', description: '' },
       {
@@ -38,7 +38,7 @@ describe('parseErrorKinds', () => {
     ]);
   });
 
-  it('ne trouve rien dans un fichier sans table de codes', () => {
+  it('finds nothing in a file without a code table', () => {
     assert.deepEqual(parseErrorKinds('export const x = 1;'), []);
   });
 });
@@ -46,7 +46,7 @@ describe('parseErrorKinds', () => {
 describe('renderErrorCodes', () => {
   const entries = parseErrorKinds(SOURCE);
 
-  it('donne une section par lib, avec le statut HTTP de chaque catégorie', () => {
+  it('renders one section per lib, with the HTTP status of each category', () => {
     const text = renderErrorCodes([
       {
         name: 'billing',
@@ -61,7 +61,7 @@ describe('renderErrorCodes', () => {
     assert.match(text, /\| `INVOICE_VERSION_CONFLICT` \| 409 \| `CONFLICT` \| Deux écritures/);
   });
 
-  it('entoure la section d’un domaine d’exemple de marqueurs example', () => {
+  it('wraps the section of an example domain in example markers', () => {
     const lines = renderErrorCodes([
       { name: 'billing', file: 'libs/api/billing/src/x.errors.ts', example: true, entries },
     ]).split('\n');
@@ -69,7 +69,7 @@ describe('renderErrorCodes', () => {
     assert.equal(lines.at(-2), EXAMPLE_END);
   });
 
-  it('refuse une catégorie inconnue', () => {
+  it('rejects an unknown category', () => {
     assert.throws(
       () =>
         renderErrorCodes([
@@ -88,20 +88,20 @@ describe('renderErrorCodes', () => {
 describe('replaceGenerated', () => {
   const DOC = 'avant\n<!-- error-codes:start -->\nancien\n<!-- error-codes:end -->\naprès\n';
 
-  it('remplace seulement le bloc généré', () => {
+  it('replaces only the generated block', () => {
     assert.equal(
       replaceGenerated(DOC, 'nouveau\n'),
       'avant\n<!-- error-codes:start -->\nnouveau\n<!-- error-codes:end -->\naprès\n',
     );
   });
 
-  it('refuse une page sans marqueurs', () => {
+  it('rejects a page without markers', () => {
     assert.throws(() => replaceGenerated('rien', 'x'), /error-codes:start/);
   });
 });
 
 describe('sameContent', () => {
-  it('ignore l’alignement des tableaux fait par le formateur', () => {
+  it('ignores the table alignment done by the formatter', () => {
     assert.ok(
       sameContent(
         '| Code | Statut |\n| --- | --- |\n| `A` | 404 |\n',
@@ -110,11 +110,11 @@ describe('sameContent', () => {
     );
   });
 
-  it('ignore les lignes vides ajoutées par le formateur autour des marqueurs', () => {
+  it('ignores the blank lines the formatter adds around markers', () => {
     assert.ok(sameContent(`${EXAMPLE_START}\n### \`a\`\n`, `${EXAMPLE_START}\n\n### \`a\`\n`));
   });
 
-  it('voit un code ajouté', () => {
+  it('detects an added code', () => {
     assert.ok(!sameContent('| `A` | 404 |\n', '| `A` | 404 |\n| `B` | 409 |\n'));
   });
 });

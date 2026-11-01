@@ -45,7 +45,7 @@ describe('Rate limiting (e2e)', () => {
       .get('/api/v1/feature-flags')
       .auth(token, { type: 'bearer' });
 
-  it('répond 429 au-delà de la limite, toutes instances confondues', async () => {
+  it('responds 429 beyond the limit, across all instances', async () => {
     const token = await signTestToken({ userId: randomUUID(), tenantId: randomUUID() });
     await call(0, token).expect(200);
     await call(1, token).expect(200);
@@ -58,7 +58,7 @@ describe('Rate limiting (e2e)', () => {
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
   });
 
-  it('donne un compteur à chaque utilisateur, même derrière la même IP', async () => {
+  it('gives each user their own counter, even behind the same IP', async () => {
     const tenantId = randomUUID();
     const busy = await signTestToken({ userId: randomUUID(), tenantId });
     for (let i = 0; i < 3; i++) {

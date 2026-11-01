@@ -15,7 +15,7 @@ async function fill(password = 'long-enough-password') {
 }
 
 describe('SignUpPage', () => {
-  it('crée le compte et demande de confirmer l’email', async () => {
+  it('creates the account and asks to confirm the email', async () => {
     let body: unknown;
     server.use(
       http.post(`${AUTH}/sign-up/email`, async ({ request }) => {
@@ -37,13 +37,13 @@ describe('SignUpPage', () => {
     });
   });
 
-  it('refuse un mot de passe trop court', async () => {
+  it('rejects a password that is too short', async () => {
     await renderWithProviders(<SignUpPage auth={auth} verificationCallbackUrl="/" />);
     await fill('short');
     expect(await screen.findByText('Entre 8 et 128 caractères.')).toBeTruthy();
   });
 
-  it('répond pareil quand l’adresse a déjà un compte, comme le service', async () => {
+  it('responds the same when the address already has an account, like the service', async () => {
     // Avec la vérification d'email obligatoire, Better Auth ne révèle pas qu'un compte existe :
     // même réponse qu'une inscription (vérifié contre le vrai service par apps/web-e2e).
     server.use(
@@ -54,7 +54,7 @@ describe('SignUpPage', () => {
     expect(await screen.findByRole('heading', { name: 'Vérifiez votre boîte mail' })).toBeTruthy();
   });
 
-  it('signale un compte existant si le service le révèle (sans vérification d’email)', async () => {
+  it('reports an existing account if the service reveals it (without email verification)', async () => {
     server.use(
       http.post(`${AUTH}/sign-up/email`, () => betterAuthError(422, 'USER_ALREADY_EXISTS')),
     );

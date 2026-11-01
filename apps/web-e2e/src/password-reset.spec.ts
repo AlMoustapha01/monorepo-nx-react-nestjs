@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { createAccount, createOrganization, linkFromEmail, signIn } from './support';
 
-test('mot de passe oublié : lien par email, nouveau mot de passe, connexion', async ({ page }) => {
+test('forgotten password: email link, new password, sign-in', async ({ page }) => {
   const account = await createAccount('reset');
   await createOrganization(account, 'Boutique');
 
@@ -25,7 +25,7 @@ test('mot de passe oublié : lien par email, nouveau mot de passe, connexion', a
   await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
 });
 
-test('un lien de réinitialisation ne sert qu’une fois', async ({ page }) => {
+test('a reset link works only once', async ({ page }) => {
   const account = await createAccount('reuse');
   await page.goto('/mot-de-passe-oublie');
   await page.getByLabel('Adresse email').fill(account.email);

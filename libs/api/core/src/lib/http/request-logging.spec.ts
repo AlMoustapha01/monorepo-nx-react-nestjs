@@ -41,7 +41,7 @@ function appLoggingAt(level: 'info' | 'debug') {
 const completion = (lines: LogLine[]) => lines.at(-1) as LogLine;
 
 describe('requestLoggingOptions', () => {
-  it('résume la requête dans le message : méthode, URL, statut', async () => {
+  it('summarizes the request in the message: method, URL, status', async () => {
     const { app, lines } = appLoggingAt('info');
     await request(app).get('/ok?limit=20').expect(200);
 
@@ -49,7 +49,7 @@ describe('requestLoggingOptions', () => {
     expect(completion(lines).responseTime).toEqual(expect.any(Number));
   });
 
-  it('ne garde de la requête et de la réponse que l’essentiel, sans en-têtes', async () => {
+  it('keeps only the essentials of the request and response, without headers', async () => {
     const { app, lines } = appLoggingAt('info');
     await request(app).get('/ok').set('User-Agent', 'curl').expect(200);
 
@@ -63,7 +63,7 @@ describe('requestLoggingOptions', () => {
     expect(line.res).toEqual({ statusCode: 200 });
   });
 
-  it('garde les en-têtes en debug, sans le token', async () => {
+  it('keeps headers in debug, without the token', async () => {
     const { app, lines } = appLoggingAt('debug');
     await request(app).get('/ok').set('Authorization', 'Bearer secret').expect(200);
 
@@ -72,7 +72,7 @@ describe('requestLoggingOptions', () => {
     expect(line.res?.headers).toEqual(expect.any(Object));
   });
 
-  it('ajoute le code d’erreur au message et en champ filtrable', async () => {
+  it('adds the error code to the message and as a filterable field', async () => {
     const { app, lines } = appLoggingAt('info');
     await request(app).post('/conflict').expect(422);
 
@@ -82,7 +82,7 @@ describe('requestLoggingOptions', () => {
     expect(line.level).toBe(40);
   });
 
-  it('formate aussi une réponse 5xx', async () => {
+  it('also formats a 5xx response', async () => {
     const { app, lines } = appLoggingAt('info');
     await request(app).get('/boom').expect(500);
 
@@ -90,7 +90,7 @@ describe('requestLoggingOptions', () => {
     expect(completion(lines).level).toBe(50);
   });
 
-  it('ne rattache aux logs émis pendant la requête que son id', async () => {
+  it('attaches only the request id to logs emitted during the request', async () => {
     const { app, lines } = appLoggingAt('info');
     await request(app).get('/ok').expect(200);
 

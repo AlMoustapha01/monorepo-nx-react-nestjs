@@ -8,7 +8,7 @@ import { ForgotPasswordPage } from './forgot-password-page';
 import { ResetPasswordPage } from './reset-password-page';
 
 describe('ForgotPasswordPage', () => {
-  it('envoie la demande avec la page de réinitialisation, sans révéler si le compte existe', async () => {
+  it('sends the request with the reset page, without revealing whether the account exists', async () => {
     let body: unknown;
     server.use(
       http.post(`${AUTH}/request-password-reset`, async ({ request }) => {
@@ -28,7 +28,7 @@ describe('ForgotPasswordPage', () => {
 });
 
 describe('ResetPasswordPage', () => {
-  it('enregistre le nouveau mot de passe', async () => {
+  it('saves the new password', async () => {
     let body: unknown;
     server.use(
       http.post(`${AUTH}/reset-password`, async ({ request }) => {
@@ -45,7 +45,7 @@ describe('ResetPasswordPage', () => {
     expect(body).toEqual({ newPassword: 'new-long-password', token: 'tok' });
   });
 
-  it('propose un nouveau lien quand le token est refusé ou absent', async () => {
+  it('offers a new link when the token is rejected or missing', async () => {
     server.use(http.post(`${AUTH}/reset-password`, () => betterAuthError(400, 'INVALID_TOKEN')));
     await renderWithProviders(
       <ResetPasswordPage auth={auth} token="old" onReset={vi.fn<() => void>()} />,
@@ -56,7 +56,7 @@ describe('ResetPasswordPage', () => {
     expect((await screen.findByRole('alert')).textContent).toContain("Ce lien n'est plus valide");
   });
 
-  it('n’affiche pas le formulaire sans token', async () => {
+  it('does not show the form without a token', async () => {
     await renderWithProviders(
       <ResetPasswordPage auth={auth} token={undefined} onReset={vi.fn<() => void>()} />,
     );

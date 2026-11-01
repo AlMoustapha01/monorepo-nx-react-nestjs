@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { PASSWORD, linkFromEmail, uniqueEmail } from './support';
 
-test('inscription, confirmation de l’email, puis création de l’organisation', async ({ page }) => {
+test('sign-up, email confirmation, then organization creation', async ({ page }) => {
   const email = uniqueEmail('signup');
 
   await page.goto('/');
@@ -28,7 +28,7 @@ test('inscription, confirmation de l’email, puis création de l’organisation
   await expect(page.getByText('Atelier Ada')).toBeVisible();
 });
 
-test('l’inscription ne révèle pas qu’une adresse a déjà un compte', async ({ page }) => {
+test('sign-up does not reveal that an address already has an account', async ({ page }) => {
   const email = uniqueEmail('twice');
   // Même réponse les deux fois : la page ne permet pas de deviner qui est inscrit.
   for (let attempt = 0; attempt < 2; attempt++) {
