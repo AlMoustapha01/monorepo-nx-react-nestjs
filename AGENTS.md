@@ -67,8 +67,8 @@ specs/NNN-<nom>/            une fonctionnalité Spec Kit : spec.md, plan.md, tas
 .specify/                   Spec Kit : constitution (memory/), scripts, templates ; généré, sauf la constitution
 tools/spec-kit/preset/      source des personnalisations de Spec Kit (templates, règles TDD)
 tools/dev/spec-trace.mts    matrice scénario → tests (`pnpm -s spec:trace`)
-docs/agents/                consignes portables des agents : relecteur indépendant, designer, relecteur design
-.claude/                    adaptateur Claude Code : sous-agents `relecteur`, `designer` et `relecteur-design`, hook de fin de tour, skills Spec Kit
+docs/agents/                consignes portables des agents : relecteur indépendant, PO, relecteur produit, designer, relecteur design
+.claude/                    adaptateur Claude Code : sous-agents `relecteur`, `relecteur-produit`, `designer` et `relecteur-design`, hook de fin de tour, skills Spec Kit
 ```
 
 Conventions du front : [`apps/web/AGENTS.md`](apps/web/AGENTS.md) et [`libs/web/AGENTS.md`](libs/web/AGENTS.md).
@@ -167,7 +167,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
   - `/speckit-design` : `specs/design.md` (utilisateurs et contextes d'usage, principes d'ergonomie, ton, accessibilité, direction visuelle), appliqué au thème de l'app (`theme.css`, et une police `@fontsource` s'il en faut une) ; le mode sombre et ce que le thème ne porte pas restent à faire par une fonctionnalité ;
   - `/speckit-epics` : regroupe les exigences en epics, ordonnés par leurs dépendances, avec leurs parcours de bout en bout.
 
-  L'agent propose, l'humain valide avant toute écriture. Les specs se font ensuite une à la fois, juste avant leur implémentation, jamais toutes d'avance.
+  L'agent propose, l'humain valide avant tout commit. Pour le PRD et les epics, l'agent principal mène la conversation en PO, selon les standards de [`docs/agents/po.md`](docs/agents/po.md) (exigence testable, epic démontrable, rien de la source perdu en silence), écrit un brouillon que le sous-agent `relecteur-produit` relit à froid ([`docs/agents/relecteur-produit.md`](docs/agents/relecteur-produit.md)), corrige une fois, puis montre brouillon et écarts restants à l'humain, qui tranche. Les specs se font ensuite une à la fois, juste avant leur implémentation, jamais toutes d'avance.
 
 - **Cycle**, dans Claude Code :
   1. `/speckit-specify <description>` (ou `/speckit-specify E03`, qui part des exigences de l'epic qu'aucune spec ne couvre) : crée la branche `NNN-<nom>` (arbre propre, depuis `dev`), puis le quoi et le pourquoi dans `specs/NNN-<nom>/spec.md`, sans technique ;

@@ -37,10 +37,12 @@ Quand le produit a un cahier des charges, `specs/product.yml` en liste les exige
 
 Le récit du produit (vision, utilisateurs, problèmes, périmètre et non-objectifs, contraintes, indicateurs de succès) est dans `specs/prd.md`, qui cite les mêmes identifiants. Deux commandes du preset les rédigent avec vous, sur une branche `docs/product-*` :
 
-- `/speckit-prd <description, ou chemin du cahier des charges>` : pose au plus 5 questions, propose les exigences (identifiants du cahier des charges s'il en a), puis écrit `specs/prd.md` (template `prd-template`) et la liste `requirements`, une fois le brouillon validé. En révision, il retire au lieu de renuméroter et liste les specs qui citent une exigence retirée ou changée.
-- `/speckit-epics` : regroupe les exigences en epics (un résultat pour l'utilisateur, pas une couche technique), propose les dépendances, l'ordre de livraison et les parcours, puis écrit la liste `epics` une fois la proposition validée. Il termine par le premier epic débloqué : `/speckit-specify E01`.
+- `/speckit-prd <description, ou chemin du cahier des charges>` : pose au plus 5 questions, propose les exigences (identifiants du cahier des charges s'il en a), puis écrit en brouillon `specs/prd.md` (template `prd-template`) et la liste `requirements`, et ne les commite qu'une fois le brouillon validé. En révision, il retire au lieu de renuméroter et liste les specs qui citent une exigence retirée ou changée.
+- `/speckit-epics` : regroupe les exigences en epics (un résultat pour l'utilisateur, pas une couche technique), propose les dépendances, l'ordre de livraison et les parcours, puis écrit en brouillon la liste `epics`, et ne la commite qu'une fois la proposition validée. Il termine par le premier epic débloqué : `/speckit-specify E01`.
 
 Aucune des deux n'écrit d'état ni ne modifie une spec. Elles commitent seulement `specs/prd.md` et `specs/product.yml`.
+
+L'agent y tient le rôle de PO : il mène les questions et les propositions lui-même, parce que le cadrage se fait en conversation, avec une grille explicite, [`docs/agents/po.md`](../agents/po.md) (une exigence est une capacité testable, un epic un résultat démontrable, rien de la source ne disparaît en silence). Il écrit son brouillon dans les fichiers, puis le fait relire à froid par le sous-agent `relecteur-produit` ([`docs/agents/relecteur-produit.md`](../agents/relecteur-produit.md)), qui ne reçoit que les chemins et la source, jamais les notes de l'agent ni vos réponses. Un écart bloquant est corrigé une fois ou contesté avec sa preuve ; vous voyez ensuite le brouillon et les écarts restants, et tranchez. Si vous refusez, les fichiers sont restaurés. Avec un autre agent, la commande vous demande de lancer la relecture dans une nouvelle session et d'en coller le rapport.
 
 Entre les deux, `/speckit-design` fixe le cadrage design du produit (voir [Design](#design)).
 
