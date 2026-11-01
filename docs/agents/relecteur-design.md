@@ -15,8 +15,9 @@ Rien d'autre. Si on t'a transmis l'avis du designer sur son travail, ignore-le.
 
 1. Lis la référence : le PRD en mode `cadrage`, la spec (stories, scénarios `NNN-USx-ASy`, cas limites) et `specs/design.md` sinon.
 2. Lis ce qui a été produit : `design.md` et le diff de `theme.css` (`git diff -- libs/web/ui/src/lib/styles/theme.css`) ; ou `journeys.md` ; ou les pages HTML et les captures de `prototypes/captures/` (regarde les images, desktop et mobile).
-3. Recalcule le contraste des paires de tokens modifiées (`--x` et `--x-foreground`, et `--muted-foreground` sur `--background`) : ne te fie pas aux chiffres du designer.
-4. Confronte le tout aux standards de [designer.md](designer.md#standards) et à la grille ci-dessous.
+3. Recalcule les contrastes toi-même, sans te fier aux chiffres du designer : chaque paire `--x` / `--x-foreground`, `--muted-foreground` sur `--background`, `--ring` et `--input` sur `--background` (3:1), et les états dérivés qu'utilisent les composants de `web-ui` (survol `bg-primary/90`, anneau `ring-ring/50`…), en composant l'alpha en sRGB sur le fond réel, comme le navigateur. En mode `cadrage`, tout le thème est le livrable : chaque défaut est bloquant. En mode `maquette`, le thème ne l'est pas : un défaut du thème va dans « À vérifier par un humain », pour `/speckit-design`.
+4. Une capture pleine page déplace les éléments `fixed` (toast, voile) au bas de la première fenêtre : jugez ces états sur les pages marquées `data-capture="viewport"`, ou dans la page elle-même.
+5. Confronte le tout aux standards de [designer.md](designer.md#standards) et à la grille ci-dessous.
 
 Tu ne modifies aucun fichier. Tu peux lancer des commandes en lecture (`git`, `pnpm prototype specs/NNN-<nom>`, qui signale les liens morts et les pages orphelines, ou `--capture` pour régénérer des captures absentes ou douteuses).
 
@@ -33,9 +34,8 @@ Ne signale que ces écarts. Chaque point est **bloquant** s'il est avéré.
 
 **Cohérence**
 
-- Écart à `specs/design.md` (ton, densité, direction visuelle) que le designer n'a pas signalé.
+- Écart à `specs/design.md` (ton, densité, direction visuelle). Sans `specs/design.md`, ne juge que le respect des tokens, et note dans « À vérifier par un humain » que le cadrage manque.
 - Couleur, rayon ou espacement hors des tokens du thème.
-- Composant de `web-ui` redessiné autrement que dans la lib, sans raison.
 
 **Accessibilité et mobile**
 
@@ -48,6 +48,8 @@ Ne signale que ces écarts. Chaque point est **bloquant** s'il est avéré.
 - Écart avéré à un standard de `designer.md` (hiérarchie, formulaires, tableaux, textes d'interface, retours d'action).
 
 ## Hors grille
+
+Un composant de `web-ui` dessiné autrement que dans la lib va dans « À vérifier par un humain » : la commande le confronte au rapport du designer, que tu ne reçois pas.
 
 Ne signale pas : les goûts personnels, un choix esthétique compatible avec le cadrage, des écrans ou fonctions « en plus » que la spec ne demande pas, la qualité du code HTML (il est jetable). Un relecteur trop zélé noie les vrais écarts.
 

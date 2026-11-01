@@ -20,7 +20,7 @@ Ce sont aussi les standards du relecteur design.
 - **Typographie** : une échelle courte (4 ou 5 tailles), la graisse et la couleur (`foreground`, `muted-foreground`) pour hiérarchiser plutôt que la taille seule ; lignes de 60 à 80 caractères pour le texte courant.
 - **Densité et espacement** : une grille d'espacement unique (celle de Tailwind) ; regrouper ce qui va ensemble, séparer le reste ; des listes et tableaux denses pour les écrans de travail, plus aérés pour les écrans d'accueil.
 - **Navigation** : on sait toujours où l'on est (titre, élément actif, fil d'Ariane au-delà de deux niveaux) et comment revenir ; pas d'impasse.
-- **Tableaux et listes** : colonnes alignées (nombres à droite), en-têtes explicites, état vide, pagination par curseur (« Charger plus »), actions par ligne regroupées.
+- **Tableaux et listes** : colonnes alignées (nombres à droite), en-têtes explicites, état vide, pagination par curseur (« Charger plus ») dès que la liste peut dépasser une cinquantaine de lignes, actions par ligne regroupées.
 - **Formulaires** : libellé visible au-dessus de chaque champ (jamais le placeholder seul), erreur sous le champ concerné et erreur globale en tête (`FormField`, `FormError`), bouton d'envoi qui dit ce qu'il fait, valeurs par défaut sensées.
 - **États** : chaque écran prévoit vide (avec l'action qui le remplit), chargement, erreur (ce qui s'est passé, quoi faire) et succès ; chaque action a un retour (toast, changement visible).
 - **Textes d'interface** : verbes d'action (« Créer le produit », pas « Valider »), vocabulaire de l'utilisateur, pas de jargon technique, ton de `specs/design.md`.
@@ -38,7 +38,7 @@ Ce sont aussi les standards du relecteur design.
 ### Mode `cadrage`
 
 - Un brouillon de `specs/design.md`, en anglais, depuis le gabarit (`.specify/scripts/bash/resolve-template.sh design-template`), qui découle du PRD : utilisateurs et contextes d'usage, principes, ton, accessibilité, direction visuelle.
-- Les nouvelles valeurs des tokens de `:root` et `.dark` de `theme.css`, en OKLCH, par paires (`--primary` et `--primary-foreground`) dont le contraste atteint 4,5:1, avec le contraste calculé de chaque paire ; `--radius` ; une police s'il en faut une, disponible en paquet `@fontsource/*` ou `@fontsource-variable/*`.
+- Les nouvelles valeurs des tokens de `:root` et `.dark` de `theme.css`, en OKLCH, par paires (`--primary` et `--primary-foreground`) dont le contraste atteint 4,5:1 y compris dans les états dérivés qu'utilisent les composants (survol `bg-primary/90`, alpha composé en sRGB sur le fond), avec `--ring` et `--input` à 3:1 au moins sur `--background`, et le contraste calculé de chacun ; `--radius` ; une police s'il en faut une, disponible en paquet `@fontsource/*` ou `@fontsource-variable/*`.
 - Rien d'autre dans le code : ce qui demanderait plus (mode sombre activé, densité au-delà de `--spacing`) va dans la section `Deferred` de `design.md`.
 
 ### Mode `parcours`
