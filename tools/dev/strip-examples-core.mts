@@ -18,8 +18,6 @@ export const EXAMPLE_PATHS = [
   'apps/web/src/storefront.spec.tsx',
   'apps/web-e2e/src/storefront.spec.ts',
   'apps/web-e2e/src/storefront-support.ts',
-  'docs/archive/plans/2026-10-21-storefront.md',
-  'docs/archive/specs/2026-10-21-storefront-design.md',
 ];
 
 /** Mentions à relire après le retrait (`git grep -i -E`). */

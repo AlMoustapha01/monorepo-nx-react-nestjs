@@ -21,9 +21,9 @@ const keepMigrations = values['keep-migrations'] === true;
 
 const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' });
 const run = (args: string[], cwd = '.') => execFileSync('pnpm', args, { stdio: 'inherit', cwd });
-/** Fichiers suivis, hors ce script et l'historique des plans ; git grep sort en 1 sans résultat. */
+/** Fichiers suivis, hors ce script ; git grep sort en 1 sans résultat. */
 function grep(args: string[], exclude: string[] = []): string {
-  const pathspecs = ['.', ':!tools/dev/strip-examples*', ':!docs/archive', ...exclude];
+  const pathspecs = ['.', ':!tools/dev/strip-examples*', ...exclude];
   try {
     return git('grep', ...args, '--', ...pathspecs);
   } catch {

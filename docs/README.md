@@ -31,5 +31,3 @@ Le comportement des fonctionnalités d'un projet n'est pas décrit ici, mais dan
 | Faire évoluer une spec après son merge, changer son statut                                     | [Spec Kit : cycle de vie et maintenance](guides/spec-kit.md)                                                                                                                                       |
 | Comprendre la relecture indépendante et le hook de fin de tour, ajuster la grille du relecteur | [Spec Kit : relecture indépendante](guides/spec-kit.md#relecture-indépendante)                                                                                                                     |
 | Personnaliser Spec Kit, l'utiliser avec un autre agent, le mettre à jour                       | [Spec Kit : cycle de vie et maintenance](guides/spec-kit.md)                                                                                                                                       |
-
-[`archive/`](archive/README.md) contient les documents de conception et les plans qui ont servi à construire le boilerplate : un historique, pas une documentation à jour.
