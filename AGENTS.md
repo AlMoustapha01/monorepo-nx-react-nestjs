@@ -9,6 +9,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                                     |
 | Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                                       |
 | Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, doc (Scalar) sur `/api/docs`, OpenAPI sur `/api/docs-json`                       |
+| Nouveau projet : nom et options à garder (exemples, Sentry)                   | `pnpm create:project` (arbre propre ; `--yes` sans question) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)          |
 | Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)                    |
 | Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                                      |
 | Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                                         |
@@ -149,7 +150,7 @@ En pratique : [Observabilité en local](docs/guides/observabilite-en-local.md) (
 
 <!-- option:sentry:start -->
 
-- **Erreurs** : Sentry, activé par `SENTRY_DSN`, pour les erreurs seulement (traces et métriques restent dans OpenTelemetry). Sont envoyées : les 5xx inattendues (filtre RFC 9457, avec route, `request_id`, tenant et ID utilisateur), les jobs abandonnés (pas les échecs suivis d'un retry réussi), les exceptions non rattrapées. Chaque erreur porte le `trace_id` : on passe de Sentry à la trace et aux logs. Ailleurs, `reportError(error, { tags })` (api-core). Pas d'email ni de donnée personnelle chez Sentry : l'ID utilisateur seulement.
+- **Erreurs** : Sentry (option `sentry` de `pnpm create:project`), activé par `SENTRY_DSN`, pour les erreurs seulement (traces et métriques restent dans OpenTelemetry). Sont envoyées : les 5xx inattendues (filtre RFC 9457, avec route, `request_id`, tenant et ID utilisateur), les jobs abandonnés (pas les échecs suivis d'un retry réussi), les exceptions non rattrapées. Chaque erreur porte le `trace_id` : on passe de Sentry à la trace et aux logs. Ailleurs, `reportError(error, { tags })` (api-core). Pas d'email ni de donnée personnelle chez Sentry : l'ID utilisateur seulement.
 
 <!-- option:sentry:end -->
 
@@ -236,4 +237,4 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).
 - Une classe de base abstraite injectée par héritage doit porter `@Injectable()`, sinon Nest ne voit pas les dépendances de son constructeur.
-- `pnpm strip:examples` traite toute ligne qui ne contient qu'un marqueur `example:start` ou `example:end` (en commentaire), y compris dans un template literal de test, partout sauf dans ses propres fichiers. Un test qui a besoin de ces marqueurs les construit par interpolation (``const START = `// example:${'start'}`;``), sinon `strip:examples` retire ou rejette sa fixture.
+- `pnpm create:project` et `pnpm strip:examples` traitent toute ligne qui ne contient qu'un marqueur `example:start`, `example:end` ou `option:<id>:start|end` (en commentaire), y compris dans un template literal de test, partout sauf dans leurs propres fichiers. Un test qui a besoin de ces marqueurs les construit par interpolation (``const START = `// example:${'start'}`;``), sinon le script retire ou rejette sa fixture. Un bloc d'une option ne contient jamais le marqueur d'une autre.

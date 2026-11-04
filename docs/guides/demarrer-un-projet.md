@@ -7,6 +7,29 @@ Deux étapes, à des moments différents :
 
 Les exemples de code ci-dessous utilisent le scope `@acme`. Ces étapes ont été déroulées de bout en bout sur une copie du repo : après chacune, `pnpm check`, le build, `web:i18n-check` et les parcours Playwright passent.
 
+## En une commande : `pnpm create:project`
+
+Juste après le clone, sur un arbre git propre :
+
+```sh
+pnpm install
+pnpm create:project
+git diff && pnpm check
+```
+
+La commande demande le nom du projet (vide : on garde `nx-react-nestjs`), puis, pour chaque option encore présente, si on la garde :
+
+| Option     | Ce qu'un « non » retire                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `examples` | le code d'exemple, comme `pnpm strip:examples` (étape 2 ci-dessous) ; à garder tant qu'il sert de modèle                      |
+| `sentry`   | Sentry de l'API et du service d'auth : `reportError`, son initialisation, ses tests, ses variables et les paquets `@sentry/*` |
+
+Elle affiche un récapitulatif et ne modifie rien avant la confirmation (Ctrl-C, ou « non », laisse l'arbre intact). Puis elle renomme, retire, met à jour le lockfile, régénère ce qui doit l'être (migrations, routes, catalogues), reformate, et liste les mentions restantes à relire.
+
+Sans question (CI, script) : `--yes` garde toute option non précisée, `--no-<option>` la retire, `--name <nom>` renomme ; `--keep-migrations` comme pour `strip:examples`. Exemple : `pnpm create:project --yes --name acme --no-sentry`. Sans terminal, `--yes` est obligatoire.
+
+On peut la relancer plus tard : elle ne repose que les questions encore utiles (pas le nom une fois renommé, pas une option déjà retirée), et répond « Rien à faire. » s'il n'en reste aucune. Les deux sections suivantes détaillent ce que font le renommage et le retrait des exemples, aussi disponibles seuls.
+
 ## 1. Renommer le scope
 
 Juste après le clone, sur un arbre git propre :
@@ -42,4 +65,4 @@ Il refuse un second passage. Ensuite : retirer `FEATURE_FLAGS=storefront=true` d
 
 **Projet déjà déployé** : `pnpm strip:examples --keep-migrations`. Ne jamais supprimer ni réécrire une migration appliquée : retirer le code, déployer, puis générer une migration qui supprime les tables (`pnpm nx run api:db-generate --name=drop-examples`). drizzle-kit ne génère pas le `DROP SCHEMA` d'un `pgSchema` disparu : relire le SQL produit.
 
-**Nouvel exemple** : dans ses propres fichiers, ajoutés à `EXAMPLE_PATHS`, ou entre des marqueurs sur des lignes entières : `// example:start` et `// example:end` (`{/* example:start */}` en JSX), `# example:start` (`.env.example`, YAML), `<!-- example:start -->` (Markdown). Le job `strip-examples` de la CI lance le script puis `pnpm check`.
+**Nouvelle option** : une entrée dans `PROJECT_OPTIONS` (`tools/dev/project-options-core.mts`) : la question, les fichiers propres à l'option (`paths`), ses paquets, ce qu'il faut régénérer et le motif des mentions à relire. Dans les fichiers partagés, son code va entre des marqueurs `option:<id>` sur des lignes entières : `// option:<id>:start` et `// option:<id>:end` (`{/* … */}` en JSX), `# option:<id>:start` (`.env.example`, YAML), `<!-- option:<id>:start -->` (Markdown, jamais au milieu d'un tableau). Les exemples gardent leurs marqueurs `example`. Un bloc ne contient jamais le marqueur d'une autre option : le script refuse avant toute modification. Ajouter enfin sa variante (`--no-<id>`) à la matrice du job `create-project` de la CI, qui lance la commande puis `pnpm check`.

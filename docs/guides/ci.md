@@ -10,7 +10,7 @@ Les quatre jobs tournent en parallèle, chacun sur un runner Ubuntu neuf.
 | ---------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `check`          | format, lint, types, tests et build des projets affectés, scripts, specs, knip   | `pnpm check` (voir [plus bas](#check) pour les différences) |
 | `e2e`            | parcours navigateur contre la vraie stack, si le front, l'API ou l'auth changent | `pnpm nx run web-e2e:e2e`                                   |
-| `strip-examples` | le projet passe encore `pnpm check` une fois le code d'exemple retiré            | dans un worktree à part, voir [plus bas](#strip-examples)   |
+| `create-project` | le projet passe encore `pnpm check` une fois chaque option retirée               | dans un worktree à part, voir [plus bas](#create-project)   |
 | `image`          | les images de production de l'API et du service d'auth se construisent           | `docker build .` et `docker build --build-arg APP=auth .`   |
 
 Docker est disponible sur les runners : les tests d'intégration et e2e y démarrent Postgres, Redis et Mailpit par Testcontainers, comme en local.
@@ -49,18 +49,18 @@ La trace rejoue le test étape par étape, avec le DOM, la console et les requê
 
 En local, le même dossier est écrit sous `dist/.playwright/apps/web-e2e/` (sans le rapport HTML, réservé à la CI).
 
-### `strip-examples`
+### `create-project`
 
-Il lance `pnpm strip:examples` puis `pnpm check` sur tout le repo, sans `affected`. Il échoue quand un marqueur `example` est mal formé, ou quand le code d'exemple a fui hors de ses fichiers et de ses marqueurs : le code restant ne compile plus, ou ses tests échouent (un import vers un domaine d'exemple depuis du code générique, un nouveau fichier d'exemple oublié dans `EXAMPLE_PATHS`). Les mentions restantes de la boutique (un commentaire, une doc) sont listées dans la sortie du script, sans faire échouer le job ([Démarrer un projet](demarrer-un-projet.md)).
+Une matrice de trois variantes : `no-examples` (`--no-examples`), `no-sentry` (`--no-sentry`) et `minimal` (`--name acme --no-examples --no-sentry`). Chacune lance `pnpm create:project --yes <options>` puis `pnpm check` sur tout le repo, sans `affected`. Elle échoue quand un marqueur est mal formé, ou quand le code d'une option a fui hors de ses fichiers et de ses marqueurs : le code restant ne compile plus, ou ses tests échouent (un import vers un domaine d'exemple depuis du code générique, un nouveau fichier oublié dans les `paths` de l'option). Les mentions restantes (un commentaire, une doc) sont listées dans la sortie du script, sans faire échouer le job ([Démarrer un projet](demarrer-un-projet.md)). Une nouvelle option ajoute sa variante : chaque option seule, plus le minimum, pas toutes les combinaisons.
 
 Pour le reproduire sans toucher à sa copie de travail (le script modifie l'arbre et exige qu'il soit propre) :
 
 ```bash
-git worktree add ../strip-test HEAD
-cd ../strip-test
+git worktree add ../create-test HEAD
+cd ../create-test
 pnpm install
-pnpm strip:examples && pnpm check
-cd - && git worktree remove --force ../strip-test
+pnpm create:project --yes --no-sentry && pnpm check
+cd - && git worktree remove --force ../create-test
 ```
 
 ### `image`
@@ -85,7 +85,7 @@ En local, `nx affected` compare à la branche `main` locale (`defaultBase` de `n
 - **Actions épinglées par SHA**, avec la version en commentaire (`@3d3c42e… # v7.0.1`) : un tag peut être déplacé vers un autre code, un commit non. Renovate met à jour le SHA et le commentaire ensemble.
 - **Permissions minimales** : lecture du code, et des runs précédents pour `nx-set-shas`. `persist-credentials: false` : le token du checkout n'est pas laissé sur le disque pour les étapes suivantes.
 - **Un nouveau push annule le run précédent** de la même PR (`concurrency`). Sur `main`, chaque commit est vérifié jusqu'au bout.
-- **Timeouts** : 30 min pour `check`, `e2e` et `strip-examples`, 20 min pour `image`. Un job qui les atteint est bloqué (souvent un conteneur qui ne démarre pas), pas lent.
+- **Timeouts** : 30 min pour `check`, `e2e` et chaque variante de `create-project`, 20 min pour `image`. Un job qui les atteint est bloqué (souvent un conteneur qui ne démarre pas), pas lent.
 - Node et pnpm viennent du repo (`.nvmrc`, `packageManager`) : la CI ne déclare aucune version à elle.
 
 ## Faire évoluer la CI
@@ -99,7 +99,7 @@ En local, `nx affected` compare à la branche `main` locale (`defaultBase` de `n
 
 Rien n'empêche aujourd'hui de merger une PR en échec : la protection des branches `dev` et `main` est à configurer sur GitHub (Settings → Branches, ou Rules), une fois par dépôt :
 
-- exiger les checks `check`, `e2e`, `strip-examples` et `image` ; `e2e` peut l'être, il réussit quand il n'a rien à lancer ;
+- exiger les checks `check`, `e2e`, les trois `create-project (…)` et `image` ; `e2e` peut l'être, il réussit quand il n'a rien à lancer ;
 - ne pas exiger `audit` : il ne tourne que si les dépendances changent, et un check exigé qui ne tourne pas bloque la PR ;
 - exiger la revue des propriétaires de code (« Require review from Code Owners ») pour les chemins sensibles de [`.github/CODEOWNERS`](../../.github/CODEOWNERS), **seulement à partir de deux mainteneurs** : GitHub ne compte pas l'approbation de l'auteur d'une PR, un mainteneur seul ne pourrait plus merger ses propres PR. D'ici là, CODEOWNERS sert de liste : le relecteur la cite, et la revue humaine reste une règle d'équipe ;
 - sur `main`, n'autoriser que le merge commit, pour que `dev` et `main` gardent un historique commun ([Branches et releases](branches.md)) ;

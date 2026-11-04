@@ -111,10 +111,22 @@ jobs:
           path: dist/.playwright/apps/web-e2e
           retention-days: 7
 
-  # Sans les exemples, tout passe encore : le script et ses marqueurs ne se périment pas en silence.
-  strip-examples:
+  # Chaque option retirée seule, puis toutes avec le renommage : tout passe encore, le script et
+  # ses marqueurs ne se périment pas en silence. Une nouvelle option ajoute sa ligne.
+  create-project:
+    name: create-project (${{ matrix.variant }})
     runs-on: ubuntu-26.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: no-examples
+            args: --no-examples
+          - variant: no-sentry
+            args: --no-sentry
+          - variant: minimal
+            args: --name acme --no-examples --no-sentry
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -129,8 +141,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Retirer les exemples
-        run: pnpm strip:examples
+      # Retirer un paquet met à jour le lockfile : pas de --frozen-lockfile après cette étape.
+      - name: Démarrer le projet
+        run: pnpm create:project --yes ${{ matrix.args }}
 
       # Tests d'intégration et e2e via Testcontainers, comme dans le job check.
       - name: Vérifications
