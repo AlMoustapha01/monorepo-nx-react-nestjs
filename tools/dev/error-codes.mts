@@ -12,7 +12,7 @@ import {
   replaceGenerated,
   sameContent,
 } from './error-codes-core.mts';
-import { EXAMPLE_PATHS } from './strip-examples-core.mts';
+import { optionById } from './project-options-core.mts';
 
 const REFERENCE = 'docs/reference/codes-erreur.md';
 const SOURCE_FILE = /^libs\/api\/([^/]+)\/src\/.+\.ts$/;
@@ -38,7 +38,7 @@ function sections(): ErrorCodeSection[] {
     found.push({
       name: lib === 'core' ? 'api-core' : lib,
       file,
-      example: EXAMPLE_PATHS.includes(`libs/api/${lib}`),
+      example: optionById('examples').paths.includes(`libs/api/${lib}`),
       entries,
     });
   }

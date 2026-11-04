@@ -9,12 +9,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import {
-  EXAMPLE_PATHS,
-  LEFTOVER_PATTERN,
-  prunePaths,
-  stripExampleBlocks,
-} from './strip-examples-core.mts';
+import { optionById, prunePaths, stripBlocks } from './project-options-core.mts';
+
+const { paths: EXAMPLE_PATHS, leftovers: LEFTOVER_PATTERN } = optionById('examples');
 
 const { values } = parseArgs({ options: { 'keep-migrations': { type: 'boolean' } } });
 const keepMigrations = values['keep-migrations'] === true;
@@ -23,7 +20,12 @@ const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' 
 const run = (args: string[], cwd = '.') => execFileSync('pnpm', args, { stdio: 'inherit', cwd });
 /** Fichiers suivis, hors ce script ; git grep sort en 1 sans résultat. */
 function grep(args: string[], exclude: string[] = []): string {
-  const pathspecs = ['.', ':!tools/dev/strip-examples*', ...exclude];
+  const pathspecs = [
+    '.',
+    ':!tools/dev/strip-examples*',
+    ':!tools/dev/project-options*',
+    ...exclude,
+  ];
   try {
     return git('grep', ...args, '--', ...pathspecs);
   } catch {
@@ -40,7 +42,7 @@ if (git('status', '--porcelain').trim() !== '') {
 const stripped: { path: string; text: string; blocks: number }[] = [];
 try {
   for (const path of grep(['-lz', '-E', 'example:(start|end)']).split('\0').filter(Boolean)) {
-    const result = stripExampleBlocks(readFileSync(path, 'utf8'), path);
+    const result = stripBlocks(readFileSync(path, 'utf8'), path, 'example');
     if (result.blocks > 0) stripped.push({ path, ...result });
   }
 } catch (error) {

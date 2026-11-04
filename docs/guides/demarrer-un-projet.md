@@ -34,7 +34,7 @@ git diff && pnpm check
 
 Le script :
 
-- supprime les fichiers propres aux exemples (liste `EXAMPLE_PATHS` de `tools/dev/strip-examples-core.mts` : domaines, contrats, tests, lib et routes de la boutique) et, dans les fichiers partagés, les lignes entre `example:start` et `example:end` (modules de l'API, exports des contrats, flags d'exemple, produits du seed, navigation du front, doc). Un marqueur mal formé arrête tout avant le moindre changement. Il retire aussi de `tsconfig.base.json` les alias devenus sans cible ;
+- supprime les fichiers propres aux exemples (`paths` de l'option `examples` dans `tools/dev/project-options-core.mts` : domaines, contrats, tests, lib et routes de la boutique) et, dans les fichiers partagés, les lignes entre `example:start` et `example:end` (modules de l'API, exports des contrats, flags d'exemple, produits du seed, navigation du front, doc). Un marqueur mal formé arrête tout avant le moindre changement. Il retire aussi de `tsconfig.base.json` les alias devenus sans cible ;
 - repart d'une migration unique, `0000_init.sql` (tables de core et de vos domaines), régénère `routeTree.gen.ts` (build du front) et les catalogues Lingui, reformate et vide le cache de Nx ;
 - liste les mentions des exemples qui restent : des règles générales illustrées par eux (`orders` → `ProductCatalog` → `CatalogFacade`, préfixes `PRD-`/`ORD-` dans `AGENTS.md`), des données de test. À relire et à remplacer par vos propres domaines.
 
