@@ -5,7 +5,7 @@
  */
 
 export type OptionId = 'examples';
-type Regeneration = 'migrations' | 'routes' | 'i18n';
+export type Regeneration = 'migrations' | 'routes' | 'i18n';
 
 export interface ProjectOption {
   id: OptionId;
@@ -24,7 +24,7 @@ export interface ProjectOption {
   afterRemoval?: string;
 }
 
-const PROJECT_OPTIONS: readonly ProjectOption[] = [
+export const PROJECT_OPTIONS: readonly ProjectOption[] = [
   {
     id: 'examples',
     question:
