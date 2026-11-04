@@ -4,7 +4,7 @@
  * `<marqueur>:end`. Logique pure ; les fichiers et les commandes sont dans project-steps.mts.
  */
 
-export type OptionId = 'examples';
+export type OptionId = 'examples' | 'sentry';
 export type Regeneration = 'migrations' | 'routes' | 'i18n';
 
 export interface ProjectOption {
@@ -51,6 +51,20 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
       'storefront|ProductCatalog|CatalogFacade|libs/api/(catalog|orders|notifications)|(^|[^a-z])(PRD|ORD)-',
     afterRemoval:
       "retirer storefront de FEATURE_FLAGS dans apps/api/.env ou .env s'il y figure (un flag inconnu empêche l'API de démarrer)",
+  },
+  {
+    id: 'sentry',
+    question: "Garder Sentry (suivi des erreurs inattendues de l'API et du service d'auth) ?",
+    marker: 'option:sentry',
+    paths: [
+      'libs/api/core/src/lib/errors/error-reporter.ts',
+      'libs/api/core/src/lib/errors/error-reporter.spec.ts',
+      'apps/auth/src/report-error.ts',
+      'apps/auth/src/report-error.spec.ts',
+    ],
+    dependencies: ['@sentry/core', '@sentry/node'],
+    regenerate: [],
+    leftovers: 'sentry|reportError',
   },
 ];
 

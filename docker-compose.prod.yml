@@ -19,8 +19,10 @@ x-api-env: &api-env
   AUTH_JWKS_URL: http://auth:3100/api/auth/jwks
   # Vide : OpenTelemetry inactif. Sinon l'URL OTLP/HTTP du collecteur (ex. http://otel-collector:4318).
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  # option:sentry:start
   SENTRY_DSN: ${SENTRY_DSN:-}
   SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+  # option:sentry:end
 
 services:
   migrate:
@@ -87,8 +89,10 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET est requis (32 caractères minimum)}
       AUTH_APP_URL: ${AUTH_APP_URL:-http://localhost:4200}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      # option:sentry:start
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      # option:sentry:end
     depends_on:
       postgres: { condition: service_healthy }
 

@@ -28,6 +28,7 @@ function main() {
       trustProxyHops: env.TRUST_PROXY_HOPS,
       // Appelé par requête, après la déclaration de `shutdown`.
       isShuttingDown: () => shutdown.shuttingDown,
+      logger,
     }),
   );
   const shutdown = gracefulShutdown({

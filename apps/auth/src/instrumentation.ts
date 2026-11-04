@@ -2,14 +2,18 @@
  * Premier import de main.ts : les instrumentations doivent être enregistrées avant le premier
  * require de http et pg. Même principe que l'API (apps/api/src/instrumentation.ts) :
  * - traces OpenTelemetry si OTEL_EXPORTER_OTLP_ENDPOINT est défini. Better Auth émet aussi ses
- *   propres spans (endpoints, hooks) dès qu'un SDK est actif ;
- * - Sentry, pour les erreurs seulement, si SENTRY_DSN est défini.
+ *   propres spans (endpoints, hooks) dès qu'un SDK est actif.
  */
+// option:sentry:start
+// Sentry, pour les erreurs seulement, si SENTRY_DSN est défini.
+// option:sentry:end
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NodeSDK } from '@opentelemetry/sdk-node';
+// option:sentry:start
 import * as Sentry from '@sentry/node';
+// option:sentry:end
 import { loadEnvFiles } from './load-env';
 
 loadEnvFiles();
@@ -38,6 +42,7 @@ const sdk = enabled
   : undefined;
 sdk?.start();
 
+// option:sentry:start
 // Sans les intégrations par défaut : ni HTTP ni console, pour ne pas doubler OpenTelemetry et pino.
 if (process.env['SENTRY_DSN']) {
   Sentry.initWithoutDefaultIntegrations({
@@ -54,8 +59,12 @@ if (process.env['SENTRY_DSN']) {
     ],
   });
 }
+// option:sentry:end
 
 /** Envoie spans et erreurs encore en mémoire ; appelé à l'arrêt, après la fermeture du serveur. */
 export async function shutdownTelemetry(): Promise<void> {
-  await Promise.all([sdk?.shutdown(), Sentry.close(2000)]);
+  await sdk?.shutdown();
+  // option:sentry:start
+  await Sentry.close(2000);
+  // option:sentry:end
 }

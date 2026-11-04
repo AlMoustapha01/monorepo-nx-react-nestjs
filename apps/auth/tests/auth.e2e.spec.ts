@@ -1,10 +1,14 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { NodeSDK, tracing } from '@opentelemetry/sdk-node';
+// option:sentry:start
 import type { ErrorEvent } from '@sentry/core';
 import * as Sentry from '@sentry/node';
+// option:sentry:end
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+// option:sentry:start
 import { APIError } from 'better-auth/api';
+// option:sentry:end
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { Pool } from 'pg';
 import { pino } from 'pino';
@@ -32,10 +36,13 @@ describe('Authentication service', () => {
     instrumentations: [],
     autoDetectResources: false,
   });
+  // option:sentry:start
   const reported: ErrorEvent[] = [];
+  // option:sentry:end
 
   beforeAll(async () => {
     telemetry.start();
+    // option:sentry:start
     Sentry.initWithoutDefaultIntegrations({
       dsn: 'https://public@sentry.example/1',
       beforeSend: (event) => {
@@ -43,6 +50,7 @@ describe('Authentication service', () => {
         return null;
       },
     });
+    // option:sentry:end
     container = await new PostgreSqlContainer('postgres:17-alpine').start();
     server = createServer();
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -84,12 +92,15 @@ describe('Authentication service', () => {
         corsOrigins: [APP_URL],
         trustProxyHops: 0,
         isShuttingDown: () => false,
+        logger,
       }),
     );
   });
 
   afterAll(async () => {
+    // option:sentry:start
     await Sentry.close(0);
+    // option:sentry:end
     await telemetry.shutdown();
     await new Promise((resolve) => server.close(resolve));
     await pool.end();
@@ -206,6 +217,7 @@ describe('Authentication service', () => {
     expect(names.some((name) => name.includes('/sign-in/email'))).toBe(true);
   });
 
+  // option:sentry:start
   it('reports an email that cannot be sent to Sentry', async () => {
     await call('/api/auth/sign-up/email', {
       body: { email: 'smtp-down@shop.test', password: 'correct-horse-battery', name: 'Eve' },
@@ -227,6 +239,7 @@ describe('Authentication service', () => {
       expect.objectContaining({ tags: expect.objectContaining({ operation: 'api' }) }),
     ]);
   });
+  // option:sentry:end
 
   it('answers the probes', async () => {
     expect((await call('/health')).response.status).toBe(200);

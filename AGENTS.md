@@ -146,7 +146,13 @@ En pratique : [Observabilité en local](docs/guides/observabilite-en-local.md) (
 - **Événements** : l'outbox stocke le contexte W3C de la requête (`trace_context`) ; le worker exécute chaque handler dans un span `process <handler>` enfant de cette requête. Une seule trace va de la requête HTTP jusqu'aux handlers, dans le service `api-worker`.
 - **Métriques** (OTLP, toutes les 60 s ; `OTEL_METRIC_EXPORT_INTERVAL`) : durée des requêtes HTTP par route, et pour la messagerie `outbox.pending_events`, `outbox.oldest_pending_age` (retard du relais), `integration_events.handler.duration` (par handler et issue), `integration_events.queue.jobs` (par état) et `integration_events.jobs.exhausted` (jobs abandonnés). Alertes conseillées : retard de l'outbox au-delà d'une minute, tout job abandonné. Les jauges sont lues par le process qui a `JOBS_ENABLED=true`.
 - **Logs** : chaque ligne émise pendant un span porte `trace_id` et `span_id` (instrumentation pino).
+
+<!-- option:sentry:start -->
+
 - **Erreurs** : Sentry, activé par `SENTRY_DSN`, pour les erreurs seulement (traces et métriques restent dans OpenTelemetry). Sont envoyées : les 5xx inattendues (filtre RFC 9457, avec route, `request_id`, tenant et ID utilisateur), les jobs abandonnés (pas les échecs suivis d'un retry réussi), les exceptions non rattrapées. Chaque erreur porte le `trace_id` : on passe de Sentry à la trace et aux logs. Ailleurs, `reportError(error, { tags })` (api-core). Pas d'email ni de donnée personnelle chez Sentry : l'ID utilisateur seulement.
+
+<!-- option:sentry:end -->
+
 - **Service d'identité** (`apps/auth`) : mêmes variables, service `auth` (`AUTH_OTEL_SERVICE_NAME` pour le changer, distinct d'`OTEL_SERVICE_NAME` de l'API). HTTP, Postgres et les spans de Better Auth (endpoints, hooks) sont tracés ; vont à Sentry, avec le tag `service: auth`, ses erreurs inattendues (pas les refus 4xx) et les emails impossibles à envoyer.
 - **Code métier** : rien à faire. Pour un span sur mesure, `trace.getTracer('<domaine>')` de `@opentelemetry/api`, sans dépendre du SDK.
 - **Tests** : `startTestTelemetry()` (`api-core/testing`) enregistre un vrai SDK qui garde spans et métriques en mémoire.
@@ -219,7 +225,13 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - `jose` v6 est en ESM uniquement, chargé par `require` (natif et sans avertissement depuis Node 24).
 - Build de l'API : `importHelpers` est désactivé pour le bundle, car le `package.json` généré ne liste que les modules importés (pas `tslib`). Un nouveau point d'entrée s'ajoute dans `additionalEntryPoints` (`apps/api/webpack.config.js`) et dans `knip.json`.
 - `better-auth` déclare en peers optionnels ses adapters et intégrations (drizzle, prisma, vitest, react…) : pnpm lui rattache ceux de la racine. Les images s'installent avec `--no-optional` (sinon celle du service d'auth double de taille) et l'audit ignore une faille du serveur de dev d'esbuild arrivée par ce chemin. Pas de `.pnpmfile.cjs` : Renovate l'ignore (`--ignore-pnpmfile`) et ses lockfiles ne correspondraient plus.
+
+<!-- option:sentry:start -->
+
 - `@sentry/node` 11 dépend de `@sentry/bundler-plugins` (webpack, esbuild, swc) pour ses plugins de bundler : retiré par une override dans `pnpm-workspace.yaml`, sinon l'image de prod prend ~100 Mo d'outils de build. Ne pas importer `@sentry/node/bundler-plugin/*`.
+
+<!-- option:sentry:end -->
+
 - `pg` : un `Pool` sans écouteur `error` fait planter le process quand Postgres coupe une connexion inactive (redémarrage, bascule). Tout nouveau pool en déclare un.
 - BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).

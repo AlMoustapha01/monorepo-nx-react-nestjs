@@ -3,15 +3,19 @@
  * le premier require de http, express, pg et @nestjs/core.
  * Inactif sans OTEL_EXPORTER_OTLP_ENDPOINT (aucun coût en test ni en dev par défaut). Le reste se
  * configure par les variables standard : OTEL_SERVICE_NAME, OTEL_TRACES_SAMPLER, etc.
- * Sentry (erreurs seulement) : actif avec SENTRY_DSN ; SENTRY_ENVIRONMENT, SENTRY_RELEASE.
  */
+// option:sentry:start
+// Sentry (erreurs seulement) : actif avec SENTRY_DSN ; SENTRY_ENVIRONMENT, SENTRY_RELEASE.
+// option:sentry:end
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { NodeSDK } from '@opentelemetry/sdk-node';
+// option:sentry:start
 import * as Sentry from '@sentry/node';
+// option:sentry:end
 import { loadEnvFiles } from './load-env';
 
 loadEnvFiles();
@@ -40,6 +44,7 @@ const sdk = enabled
   : undefined;
 sdk?.start();
 
+// option:sentry:start
 // Erreurs seulement : traces et métriques passent par OpenTelemetry. Sans les intégrations par
 // défaut, Sentry n'instrumente ni HTTP ni la console, pour ne pas doubler OpenTelemetry et pino.
 if (process.env['SENTRY_DSN']) {
@@ -56,8 +61,12 @@ if (process.env['SENTRY_DSN']) {
     ],
   });
 }
+// option:sentry:end
 
 /** Envoie spans, métriques et erreurs encore en mémoire ; appelé après la fermeture de l'application. */
 export async function shutdownTelemetry(): Promise<void> {
-  await Promise.all([sdk?.shutdown(), Sentry.close(2000)]);
+  await sdk?.shutdown();
+  // option:sentry:start
+  await Sentry.close(2000);
+  // option:sentry:end
 }

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   checkMarkers,
+  optionById,
   parseYesNo,
   prunePaths,
   removeDependencies,
@@ -193,5 +194,14 @@ describe('summarize', () => {
     assert.match(summary, /Garder : examples/);
     assert.match(summary, /Rien à retirer/);
     assert.doesNotMatch(summary, /migration/);
+  });
+});
+
+describe('sentry option', () => {
+  it('removes the Sentry packages and declares no regeneration', () => {
+    const sentry = optionById('sentry');
+    assert.equal(sentry.marker, 'option:sentry');
+    assert.deepEqual(sentry.dependencies, ['@sentry/core', '@sentry/node']);
+    assert.deepEqual(sentry.regenerate, []);
   });
 });

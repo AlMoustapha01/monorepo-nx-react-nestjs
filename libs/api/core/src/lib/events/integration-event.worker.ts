@@ -11,7 +11,9 @@ import { and, eq, lt } from 'drizzle-orm';
 import { AppConfig } from '../config/app-config';
 import { RequestContext } from '../context/request-context';
 import { DatabaseSession } from '../database/database-session';
+// option:sentry:start
 import { reportError } from '../errors/error-reporter';
+// option:sentry:end
 import type { IntegrationEvent } from './integration-event';
 import { IntegrationEventRegistry } from './integration-event.registry';
 import {
@@ -97,11 +99,13 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
     const handler = job?.data.handler ?? job?.name ?? 'unknown';
     this.jobsExhausted.add(1, { 'app.event.handler': handler });
     this.logger.error(details, 'Integration event job abandoned');
+    // option:sentry:start
     // Un échec suivi d'un retry réussi n'est pas un incident : seuls les abandons vont à Sentry.
     reportError(error, {
       tags: { handler, event_id: job?.data.event?.id, tenant_id: job?.data.event?.tenantId },
       userId: job?.data.event?.actorId,
     });
+    // option:sentry:end
   }
 
   async beforeApplicationShutdown(): Promise<void> {
