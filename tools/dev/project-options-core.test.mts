@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { checkMarkers, prunePaths, stripBlocks } from './project-options-core.mts';
+import {
+  checkMarkers,
+  parseYesNo,
+  prunePaths,
+  removeDependencies,
+  stripBlocks,
+  summarize,
+} from './project-options-core.mts';
 
 // Construits par interpolation : une ligne qui ne contient qu'un marqueur serait retirée du test.
 const SENTRY_START = `// option:${'sentry'}:start`;
@@ -115,5 +122,76 @@ describe('prunePaths', () => {
       prunePaths(tsconfig, () => true),
       { text: tsconfig, removed: [] },
     );
+  });
+});
+
+describe('parseYesNo', () => {
+  it('takes the fallback on an empty answer', () => {
+    assert.equal(parseYesNo('', true), true);
+    assert.equal(parseYesNo('  ', false), false);
+  });
+
+  it('reads yes and no in French and English, whatever the case and spaces', () => {
+    for (const answer of ['o', 'oui', 'Y', ' yes ']) assert.equal(parseYesNo(answer, false), true);
+    for (const answer of ['n', 'non', 'No']) assert.equal(parseYesNo(answer, true), false);
+  });
+
+  it('returns undefined for anything else, so that the question is asked again', () => {
+    assert.equal(parseYesNo('peut-être', true), undefined);
+  });
+});
+
+describe('removeDependencies', () => {
+  const packageJson = `${JSON.stringify(
+    {
+      name: 'x',
+      dependencies: { '@sentry/core': '^11.4.0', '@sentry/node': '^11.4.0', zod: '^4.0.0' },
+      devDependencies: { '@sentry/core': '^11.4.0', vitest: '^4.0.0' },
+    },
+    null,
+    2,
+  )}\n`;
+
+  it('removes the packages from dependencies and devDependencies, keeping order and format', () => {
+    const result = removeDependencies(packageJson, ['@sentry/core', '@sentry/node']);
+    assert.deepEqual(result.removed, ['@sentry/core', '@sentry/node']);
+    assert.equal(
+      result.text,
+      `${JSON.stringify(
+        { name: 'x', dependencies: { zod: '^4.0.0' }, devDependencies: { vitest: '^4.0.0' } },
+        null,
+        2,
+      )}\n`,
+    );
+  });
+
+  it('rewrites nothing when no package is present', () => {
+    assert.deepEqual(removeDependencies(packageJson, ['left-pad']), {
+      text: packageJson,
+      removed: [],
+    });
+  });
+});
+
+describe('summarize', () => {
+  it('lists the new scope, the removed options and the regenerated migration', () => {
+    const summary = summarize({ name: 'acme', remove: ['examples'], keepMigrations: false }, []);
+    assert.match(summary, /@acme/);
+    assert.match(summary, /Retirer : examples/);
+    assert.match(summary, /migration unique régénérée/);
+  });
+
+  it('says that migrations are kept when asked', () => {
+    const summary = summarize({ remove: ['examples'], keepMigrations: true }, []);
+    assert.match(summary, /migrations gardées/);
+    assert.doesNotMatch(summary, /régénérée/);
+  });
+
+  it('has no renaming line without a name, and lists what is kept when nothing is removed', () => {
+    const summary = summarize({ remove: [], keepMigrations: false }, ['examples']);
+    assert.doesNotMatch(summary, /@/);
+    assert.match(summary, /Garder : examples/);
+    assert.match(summary, /Rien à retirer/);
+    assert.doesNotMatch(summary, /migration/);
   });
 });

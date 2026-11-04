@@ -156,3 +156,57 @@ export function prunePaths(
   for (const alias of removed) delete paths[alias];
   return { text: `${JSON.stringify(json, null, 2)}\n`, removed };
 }
+
+/** Choix de create:project : nouveau scope (absent : on ne renomme pas) et options à retirer. */
+export interface Choices {
+  name?: string;
+  remove: OptionId[];
+  keepMigrations: boolean;
+}
+
+/** Réponse à une question oui/non ; vide : `fallback` ; incompréhensible : undefined. */
+export function parseYesNo(answer: string, fallback: boolean): boolean | undefined {
+  const normalized = answer.trim().toLowerCase();
+  if (normalized === '') return fallback;
+  if (['o', 'oui', 'y', 'yes'].includes(normalized)) return true;
+  if (['n', 'non', 'no'].includes(normalized)) return false;
+  return undefined;
+}
+
+/** Retire des paquets des `dependencies` et `devDependencies` de package.json. */
+export function removeDependencies(
+  packageJson: string,
+  names: readonly string[],
+): { text: string; removed: string[] } {
+  const json = JSON.parse(packageJson) as Record<string, Record<string, string> | undefined>;
+  const removed = new Set<string>();
+  for (const field of ['dependencies', 'devDependencies']) {
+    const dependencies = json[field];
+    for (const name of names) {
+      if (dependencies && name in dependencies) {
+        delete dependencies[name];
+        removed.add(name);
+      }
+    }
+  }
+  if (removed.size === 0) return { text: packageJson, removed: [] };
+  return { text: `${JSON.stringify(json, null, 2)}\n`, removed: [...removed] };
+}
+
+/** Récapitulatif affiché avant la confirmation. */
+export function summarize(choices: Choices, kept: readonly OptionId[]): string {
+  const lines: string[] = [];
+  if (choices.name) lines.push(`Renommer le scope en @${choices.name}`);
+  if (kept.length > 0) lines.push(`Garder : ${kept.join(', ')}`);
+  lines.push(
+    choices.remove.length > 0 ? `Retirer : ${choices.remove.join(', ')}` : 'Rien à retirer',
+  );
+  if (choices.remove.some((id) => optionById(id).regenerate.includes('migrations'))) {
+    lines.push(
+      choices.keepMigrations
+        ? 'Migrations : migrations gardées (projet déjà déployé)'
+        : 'Migrations : migration unique régénérée',
+    );
+  }
+  return lines.join('\n');
+}
