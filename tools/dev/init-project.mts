@@ -5,7 +5,7 @@
  * Puis reformate (des imports plus courts changent le découpage des lignes) et vide le cache de Nx.
  * `pnpm create:project` fait la même chose, avec les options du projet.
  */
-import { projectNameProblem } from './init-project-core.mts';
+import { AFTER_RENAME, projectNameProblem } from './init-project-core.mts';
 import { assertCleanTree, finish, isRenamed, renameScope } from './project-steps.mts';
 
 const name = process.argv[2] ?? '';
@@ -29,5 +29,4 @@ console.log(`
 Projet renommé en @${name}. Ensuite :
   git diff               relire, puis committer
   pnpm check             vérifier
-À adapter à la main : titre du README, MAIL_FROM (.env.example), comptes et organisation de démo
-(tools/dev), author et repository de tools/spec-kit/preset/preset.yml (puis specify preset update).`);
+${AFTER_RENAME}`);

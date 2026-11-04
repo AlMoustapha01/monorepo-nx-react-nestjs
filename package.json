@@ -13,6 +13,7 @@
     "dev:down": "docker compose --profile observability down",
     "dev:token": "node tools/dev/token.mts",
     "dev:seed": "node tools/dev/seed.mts",
+    "create:project": "node tools/dev/create-project.mts",
     "init:project": "node tools/dev/init-project.mts",
     "strip:examples": "node tools/dev/strip-examples.mts",
     "new:domain": "node tools/dev/new-domain.mts",
