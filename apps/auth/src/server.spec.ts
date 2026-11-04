@@ -30,7 +30,7 @@ describe('clientIp', () => {
 describe('createRequestListener', () => {
   it('logs an unexpected error of the auth handler and answers 500', async () => {
     const failure = new Error('connection terminated');
-    const error = vi.fn();
+    const error = vi.fn<(details: object, message: string) => void>();
     const server = createServer(
       createRequestListener({
         auth: { handler: () => Promise.reject(failure) } as unknown as Auth,
