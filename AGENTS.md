@@ -161,7 +161,7 @@ En pratique : [Observabilité en local](docs/guides/observabilite-en-local.md) (
 
 ## Développer une fonctionnalité (Spec Kit)
 
-Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spec Kit](https://github.com/github/spec-kit) (1.2.2), installé et configuré dans le repo pour Claude Code. Comment ce cycle couvre une méthode de travail avec des agents (phases, mémoire entre sessions, prototypes, ce qui manque encore) : [Méthode](docs/guides/methode.md).
+Toute fonctionnalité d'un projet issu du boilerplate part d'une spec, avec [Spec Kit](https://github.com/github/spec-kit) (1.3.2), installé et configuré dans le repo pour Claude Code. Comment ce cycle couvre une méthode de travail avec des agents (phases, mémoire entre sessions, prototypes, ce qui manque encore) : [Méthode](docs/guides/methode.md).
 
 <!-- example:start -->
 
