@@ -141,7 +141,7 @@ libs/api/[domain]/src/
     └── http/                             # thin controllers, zod DTOs
 apps/api/migrations/                      # generated migration
 apps/api/tests/[domain].e2e.spec.ts       # API end-to-end tests
-apps/web/src/routes/_authenticated/       # thin routes only (assembly, requireFeature guard)
+apps/web/src/routes/_authenticated/       # thin routes only (assembly, and guards)
 libs/web/[feature]/src/lib/components/   # screens and logic, with Vitest + Testing Library tests
 libs/web/data-access/                     # API client and queries; Lingui catalogs updated (web:i18n-check)
 apps/web-e2e/src/[journey].spec.ts        # browser journeys

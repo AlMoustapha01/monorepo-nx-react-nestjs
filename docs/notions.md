@@ -121,10 +121,9 @@ Le reste au besoin, quand on touche au sujet.
 
 - **Feature flags** : livrer du code désactivé, l'activer par configuration, puis retirer le flag.
   Ici : `FEATURE_FLAGS` (`libs/shared/contracts/src/lib/feature-flags.ts`), [ADR 0008](architecture/adr/0008-feature-flags-dans-le-code.md).
+  Apprendre : [Feature Toggles](https://martinfowler.com/articles/feature-toggles.html) (Pete Hodgson, sur le site de Martin Fowler).
 
 <!-- option:feature-flags:end -->
-
-Apprendre : [Feature Toggles](https://martinfowler.com/articles/feature-toggles.html) (Pete Hodgson, sur le site de Martin Fowler).
 
 ## Exploitation
 

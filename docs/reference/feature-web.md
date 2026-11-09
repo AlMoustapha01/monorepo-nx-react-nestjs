@@ -214,7 +214,13 @@ export const Route = createFileRoute('/_authenticated/tickets')({
 });
 ```
 
-Le lien de navigation, dans `AppNavigation`, lit le flag avec `useFeatureFlag('tickets')`. Un test de l'app (`apps/web/src/*.spec.tsx`, banc commun `src/testing/app-harness.tsx`) vérifie le lien avec le flag actif, son absence et le 404 avec le flag coupé. `routeTree.gen.ts` se régénère au build et aux tests.
+Le lien de navigation est dans `AppNavigation`. `routeTree.gen.ts` se régénère au build et aux tests.
+
+<!-- option:feature-flags:start -->
+
+Le lien lit le flag avec `useFeatureFlag('tickets')`. Un test de l'app (`apps/web/src/*.spec.tsx`, banc commun `src/testing/app-harness.tsx`) vérifie le lien avec le flag actif, son absence et le 404 avec le flag coupé.
+
+<!-- option:feature-flags:end -->
 
 ## Traductions
 
@@ -225,7 +231,7 @@ pnpm nx run web:i18n-check                         # comme la CI ; committer les
 
 ## Accessibilité et parcours
 
-La page entre dans `apps/web-e2e/src/accessibility.spec.ts` (axe, WCAG 2.1 AA), formulaire en erreur compris, et son flag dans `E2E_FEATURE_FLAGS` (`apps/web-e2e/src/stack.ts`). Après `signIn`, attendre la page d'accueil avant de naviguer :
+La page entre dans `apps/web-e2e/src/accessibility.spec.ts` (axe, WCAG 2.1 AA), formulaire en erreur compris, avec son flag dans `E2E_FEATURE_FLAGS` (`apps/web-e2e/src/stack.ts`) s'il en a un. Après `signIn`, attendre la page d'accueil avant de naviguer :
 
 ```ts
 test('the tickets page is accessible', async ({ page }) => {

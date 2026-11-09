@@ -389,7 +389,7 @@ function toResponse(ticket: Ticket): TicketResponse {
 export class TicketsModule {}
 ```
 
-`RequestContext`, `FeatureFlags`, `Mailer`, `DatabaseSession`, `TransactionManager` et `Outbox` viennent de `CoreModule` (global) : rien à importer. Un domaine qui en consomme un autre importe son module, qui n'exporte que sa façade, et passe par un port et un adapter (`AGENTS.md`, « Règles de frontières »).
+`RequestContext`, `Mailer`, `DatabaseSession`, `TransactionManager` et `Outbox` viennent de `CoreModule` (global) : rien à importer. Un domaine qui en consomme un autre importe son module, qui n'exporte que sa façade, et passe par un port et un adapter (`AGENTS.md`, « Règles de frontières »).
 
 `src/index.ts` n'exporte que `TicketsModule`, une façade si d'autres domaines en ont besoin, et des types de contrat : jamais l'agrégat ni le repository.
 
@@ -414,7 +414,11 @@ export class SendTicketClosedEmail implements IntegrationEventHandler<typeof Tic
 }
 ```
 
-Le contenu de l'email (`ticketClosedEmail`) est une fonction pure de `domain/`, testée seule ; le handler se teste avec `RecordingMailer` et `StaticFeatureFlags`.
+Le contenu de l'email (`ticketClosedEmail`) est une fonction pure de `domain/`, testée seule ; le handler se teste avec `RecordingMailer`.
+<!-- option:feature-flags:start -->
+
+`FeatureFlags` vient aussi de `CoreModule` ; un handler qui le lit se teste avec `StaticFeatureFlags`.
+<!-- option:feature-flags:end -->
 
 ## Tests end-to-end (`apps/api/tests/tickets.e2e.spec.ts`)
 
