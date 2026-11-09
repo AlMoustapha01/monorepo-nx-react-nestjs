@@ -3,7 +3,9 @@ import { I18nProvider } from '@lingui/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { render } from '@testing-library/react';
+// option:feature-flags:start
 import { http, HttpResponse } from 'msw';
+// option:feature-flags:end
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 import {
@@ -33,10 +35,13 @@ export function fakeToken(payload: Record<string, unknown>): string {
   return `h.${btoa(JSON.stringify(payload)).replace(/=+$/, '')}.s`;
 }
 
-/** Serveur MSW (flags tous coupés par défaut), locale `fr` et stockage vide avant chaque test. */
+/** Serveur MSW, locale `fr` et stockage vide avant chaque test. */
 export function setupAppTest() {
   const server = setupServer(
+    // option:feature-flags:start
+    // Flags tous coupés par défaut.
     http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: {} })),
+    // option:feature-flags:end
   );
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
   afterEach(() => server.resetHandlers());

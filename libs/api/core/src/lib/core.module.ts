@@ -14,9 +14,11 @@ import { RequestContext } from './context/request-context';
 import { DatabaseModule } from './database/database.module';
 import { MessagingModule } from './events/messaging.module';
 import { ProblemDetailsFilter } from './errors/problem-details.filter';
+// option:feature-flags:start
 import { ConfiguredFeatureFlags, FeatureFlags } from './feature-flags/feature-flags';
 import { FeatureFlagsController } from './feature-flags/feature-flags.controller';
 import { FeatureFlagsGuard } from './feature-flags/feature-flags.guard';
+// option:feature-flags:end
 import {
   DatabaseHealthIndicator,
   HealthController,
@@ -70,25 +72,40 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     DatabaseModule,
     MessagingModule,
   ],
-  controllers: [HealthController, FeatureFlagsController],
+  controllers: [
+    HealthController,
+    // option:feature-flags:start
+    FeatureFlagsController,
+    // option:feature-flags:end
+  ],
   providers: [
     RequestContext,
     JwtVerifier,
     DatabaseHealthIndicator,
     RedisHealthIndicator,
     ShutdownState,
+    // option:feature-flags:start
     { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },
+    // option:feature-flags:end
     mailerProvider,
-    // L'ordre compte : authentification, rate limiting (par utilisateur), flag (404 avant tout
-    // 403), puis rôles.
+    // L'ordre compte : authentification, rate limiting (par utilisateur), puis rôles.
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // option:feature-flags:start
+    // Flag avant les rôles : 404 avant tout 403.
     { provide: APP_GUARD, useClass: FeatureFlagsGuard },
+    // option:feature-flags:end
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
   ],
-  exports: [RequestContext, FeatureFlags, Mailer],
+  exports: [
+    RequestContext,
+    // option:feature-flags:start
+    FeatureFlags,
+    // option:feature-flags:end
+    Mailer,
+  ],
 })
 export class CoreModule {}

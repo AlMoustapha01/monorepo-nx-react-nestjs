@@ -17,7 +17,7 @@ import {
 // Construits par interpolation : une ligne qui ne contient qu'un marqueur serait retirée du test.
 const SENTRY_START = `// option:${'sentry'}:start`;
 const SENTRY_END = `// option:${'sentry'}:end`;
-const DECLARED = ['example', 'option:sentry'];
+const DECLARED = ['example', 'option:sentry', 'option:feature-flags'];
 
 describe('stripBlocks', () => {
   it('removes each block, marker lines included', () => {
@@ -253,5 +253,15 @@ describe('PROJECT_OPTIONS', () => {
         );
       }
     });
+  });
+});
+
+describe('feature-flags option', () => {
+  it('requires the examples to be removed and regenerates the error codes', () => {
+    const flags = optionById('feature-flags');
+    assert.equal(flags.marker, 'option:feature-flags');
+    assert.deepEqual(flags.requires?.options, ['examples']);
+    assert.deepEqual(flags.regenerate, ['errors']);
+    assert.deepEqual(flags.dependencies, []);
   });
 });

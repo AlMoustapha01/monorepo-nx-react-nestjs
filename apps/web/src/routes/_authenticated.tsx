@@ -1,7 +1,11 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
+// option:feature-flags:start
 import { featureFlagsQueryOptions } from '@nx-react-nestjs/web-data-access';
+// option:feature-flags:end
 
+// option:feature-flags:start
 import { reportError } from '../report-error';
+// option:feature-flags:end
 import { requireSession } from '../session';
 
 /**
@@ -16,8 +20,10 @@ export const Route = createFileRoute('/_authenticated')({
         throw redirect({ to: '/organisations/nouvelle' });
       }
     }
+    // option:feature-flags:start
     // Les flags sont chargés une fois, avant le premier rendu.
     await context.queryClient.ensureQueryData(featureFlagsQueryOptions(context.api, reportError));
+    // option:feature-flags:end
   },
   component: Outlet,
 });

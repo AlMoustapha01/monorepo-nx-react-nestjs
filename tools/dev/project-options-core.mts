@@ -4,7 +4,7 @@
  * `<marqueur>:end`. Logique pure ; les fichiers et les commandes sont dans project-steps.mts.
  */
 
-export type OptionId = 'examples' | 'sentry';
+export type OptionId = 'examples' | 'sentry' | 'feature-flags';
 export type Regeneration = 'migrations' | 'routes' | 'i18n' | 'errors';
 
 export interface ProjectOption {
@@ -67,6 +67,29 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
     dependencies: ['@sentry/core', '@sentry/node'],
     regenerate: [],
     leftovers: 'sentry|reportError',
+  },
+  {
+    id: 'feature-flags',
+    question:
+      'Garder les feature flags (catalogue, @RequireFeature, requireFeature côté front, règle « toute fonctionnalité derrière un flag ») ?',
+    marker: 'option:feature-flags',
+    paths: [
+      'libs/shared/contracts/src/lib/feature-flags.ts',
+      'libs/shared/contracts/src/lib/feature-flags.spec.ts',
+      'libs/api/core/src/lib/feature-flags',
+      'libs/web/data-access/src/lib/feature-flags.ts',
+      'libs/web/data-access/src/lib/feature-flags.spec.ts',
+      'apps/web/src/feature-flags.ts',
+      'apps/web/src/feature-flags.spec.tsx',
+      'apps/api/tests/feature-flags.e2e.spec.ts',
+      'docs/architecture/adr/0008-feature-flags-dans-le-code.md',
+    ],
+    dependencies: [],
+    regenerate: ['errors'],
+    requires: { options: ['examples'], reason: "le code d'exemple utilise les feature flags" },
+    leftovers: 'feature.?flag|requireFeature|FEATURE_DISABLED',
+    afterRemoval:
+      "retirer FEATURE_FLAGS de apps/api/.env s'il y figure (la variable n'est plus lue)",
   },
 ];
 

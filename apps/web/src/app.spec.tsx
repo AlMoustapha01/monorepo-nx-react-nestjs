@@ -41,6 +41,7 @@ describe('app', () => {
     expect(screen.getByRole('main')).toBeTruthy();
   });
 
+  // option:feature-flags:start
   it('renders the home page when the flags call fails', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     server.use(http.get(`${API}/feature-flags`, () => new HttpResponse(null, { status: 500 })));
@@ -49,6 +50,7 @@ describe('app', () => {
     expect(heading.textContent).toBe('Accueil');
     expect(spy.mock.calls.some((c) => c[0] === '[reportError]')).toBe(true);
   });
+  // option:feature-flags:end
 
   it('renders the 404 page inside the layout for an unknown URL', async () => {
     renderAt('/nope');
@@ -208,6 +210,7 @@ describe('authentication', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Accueil' })).toBeTruthy();
   });
 
+  // option:feature-flags:start
   it('sends the auth service token to the API', async () => {
     current = { user, session: { activeOrganizationId: 'o1' } };
     const seen: (string | null)[] = [];
@@ -223,4 +226,5 @@ describe('authentication', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Accueil' })).toBeTruthy();
     expect(seen).toEqual([`Bearer ${token}`]);
   });
+  // option:feature-flags:end
 });

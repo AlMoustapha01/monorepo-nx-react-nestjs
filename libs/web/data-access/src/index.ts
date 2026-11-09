@@ -5,7 +5,9 @@ export { createApiClient } from './lib/api-client';
 export type { ApiClient, ApiClientOptions, ApiRequest, GetToken } from './lib/api-client';
 export { createAuthClient } from './lib/auth-client';
 export type { AuthClient, AuthClientOptions } from './lib/auth-client';
+// option:feature-flags:start
 export { featureFlagsQueryOptions, isFeatureEnabled } from './lib/feature-flags';
+// option:feature-flags:end
 export { createQueryClient } from './lib/query-client';
 export type { QueryClientOptions } from './lib/query-client';
 export { useIdempotentMutation } from './lib/use-idempotent-mutation';
