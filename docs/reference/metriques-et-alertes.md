@@ -52,6 +52,8 @@ Les requêtes sont en PromQL, avec les noms de la colonne Prometheus. Seuils de 
 
 Une alerte qui ne repose pas sur une métrique : **aucun worker en vie**. Sans worker, les jauges de messagerie ne sont plus émises du tout et les alertes ci-dessus restent muettes. Selon votre backend : `absent(outbox_oldest_pending_age_seconds)` pendant 5 min, ou une alerte de l'orchestrateur sur le nombre d'instances du worker.
 
+<!-- option:sentry:start -->
+
 ## Erreurs (Sentry)
 
 Hors métriques, avec `SENTRY_DSN` : chaque erreur porte le tag `trace_id`, pour passer de Sentry à la trace et aux logs.
@@ -64,3 +66,4 @@ Hors métriques, avec `SENTRY_DSN` : chaque erreur porte le tag `trace_id`, pour
 | Service d'identité    | erreur inattendue (pas les refus 4xx), email impossible à envoyer                                | `service: auth`                                                         |
 
 Pas d'email ni d'autre donnée personnelle chez Sentry : l'ID de l'utilisateur seulement.
+<!-- option:sentry:end -->

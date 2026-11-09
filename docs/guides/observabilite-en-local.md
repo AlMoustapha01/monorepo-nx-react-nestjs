@@ -111,6 +111,8 @@ return tracer.startActiveSpan('billing.compute-invoice', async (span) => {
 
 Sans SDK démarré (tests, dev sans endpoint), `@opentelemetry/api` renvoie des spans inertes : le code n'a pas à tester si la télémétrie est active. Pas de donnée personnelle dans les attributs : un ID, pas un email.
 
+<!-- option:sentry:start -->
+
 ## Sentry en local
 
 Facultatif. Avec `SENTRY_DSN` d'un projet de dev dans le `.env` de la racine (et `SENTRY_ENVIRONMENT=development`), sont envoyées :
@@ -120,6 +122,7 @@ Facultatif. Avec `SENTRY_DSN` d'un projet de dev dans le `.env` de la racine (et
 - les exceptions non rattrapées.
 
 Chaque erreur porte le tag `trace_id` : on le colle dans Tempo pour retrouver la trace et les logs. Pour signaler une erreur rattrapée ailleurs : `reportError(error, { tags })` d'api-core.
+<!-- option:sentry:end -->
 
 ## Dans les tests
 

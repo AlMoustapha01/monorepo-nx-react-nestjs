@@ -9,6 +9,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                                     |
 | Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                                       |
 | Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, doc (Scalar) sur `/api/docs`, OpenAPI sur `/api/docs-json`                       |
+| Nouveau projet : nom et options à garder (exemples, Sentry)                   | `pnpm create:project` (arbre propre ; `--yes` sans question) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)          |
 | Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)                    |
 | Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                                      |
 | Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                                         |
@@ -146,7 +147,13 @@ En pratique : [Observabilité en local](docs/guides/observabilite-en-local.md) (
 - **Événements** : l'outbox stocke le contexte W3C de la requête (`trace_context`) ; le worker exécute chaque handler dans un span `process <handler>` enfant de cette requête. Une seule trace va de la requête HTTP jusqu'aux handlers, dans le service `api-worker`.
 - **Métriques** (OTLP, toutes les 60 s ; `OTEL_METRIC_EXPORT_INTERVAL`) : durée des requêtes HTTP par route, et pour la messagerie `outbox.pending_events`, `outbox.oldest_pending_age` (retard du relais), `integration_events.handler.duration` (par handler et issue), `integration_events.queue.jobs` (par état) et `integration_events.jobs.exhausted` (jobs abandonnés). Alertes conseillées : retard de l'outbox au-delà d'une minute, tout job abandonné. Les jauges sont lues par le process qui a `JOBS_ENABLED=true`.
 - **Logs** : chaque ligne émise pendant un span porte `trace_id` et `span_id` (instrumentation pino).
-- **Erreurs** : Sentry, activé par `SENTRY_DSN`, pour les erreurs seulement (traces et métriques restent dans OpenTelemetry). Sont envoyées : les 5xx inattendues (filtre RFC 9457, avec route, `request_id`, tenant et ID utilisateur), les jobs abandonnés (pas les échecs suivis d'un retry réussi), les exceptions non rattrapées. Chaque erreur porte le `trace_id` : on passe de Sentry à la trace et aux logs. Ailleurs, `reportError(error, { tags })` (api-core). Pas d'email ni de donnée personnelle chez Sentry : l'ID utilisateur seulement.
+
+<!-- option:sentry:start -->
+
+- **Erreurs** : Sentry (option `sentry` de `pnpm create:project`), activé par `SENTRY_DSN`, pour les erreurs seulement (traces et métriques restent dans OpenTelemetry). Sont envoyées : les 5xx inattendues (filtre RFC 9457, avec route, `request_id`, tenant et ID utilisateur), les jobs abandonnés (pas les échecs suivis d'un retry réussi), les exceptions non rattrapées. Chaque erreur porte le `trace_id` : on passe de Sentry à la trace et aux logs. Ailleurs, `reportError(error, { tags })` (api-core). Pas d'email ni de donnée personnelle chez Sentry : l'ID utilisateur seulement.
+
+<!-- option:sentry:end -->
+
 - **Service d'identité** (`apps/auth`) : mêmes variables, service `auth` (`AUTH_OTEL_SERVICE_NAME` pour le changer, distinct d'`OTEL_SERVICE_NAME` de l'API). HTTP, Postgres et les spans de Better Auth (endpoints, hooks) sont tracés ; vont à Sentry, avec le tag `service: auth`, ses erreurs inattendues (pas les refus 4xx) et les emails impossibles à envoyer.
 - **Code métier** : rien à faire. Pour un span sur mesure, `trace.getTracer('<domaine>')` de `@opentelemetry/api`, sans dépendre du SDK.
 - **Tests** : `startTestTelemetry()` (`api-core/testing`) enregistre un vrai SDK qui garde spans et métriques en mémoire.
@@ -219,9 +226,15 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - `jose` v6 est en ESM uniquement, chargé par `require` (natif et sans avertissement depuis Node 24).
 - Build de l'API : `importHelpers` est désactivé pour le bundle, car le `package.json` généré ne liste que les modules importés (pas `tslib`). Un nouveau point d'entrée s'ajoute dans `additionalEntryPoints` (`apps/api/webpack.config.js`) et dans `knip.json`.
 - `better-auth` déclare en peers optionnels ses adapters et intégrations (drizzle, prisma, vitest, react…) : pnpm lui rattache ceux de la racine. Les images s'installent avec `--no-optional` (sinon celle du service d'auth double de taille) et l'audit ignore une faille du serveur de dev d'esbuild arrivée par ce chemin. Pas de `.pnpmfile.cjs` : Renovate l'ignore (`--ignore-pnpmfile`) et ses lockfiles ne correspondraient plus.
+
+<!-- option:sentry:start -->
+
 - `@sentry/node` 11 dépend de `@sentry/bundler-plugins` (webpack, esbuild, swc) pour ses plugins de bundler : retiré par une override dans `pnpm-workspace.yaml`, sinon l'image de prod prend ~100 Mo d'outils de build. Ne pas importer `@sentry/node/bundler-plugin/*`.
+
+<!-- option:sentry:end -->
+
 - `pg` : un `Pool` sans écouteur `error` fait planter le process quand Postgres coupe une connexion inactive (redémarrage, bascule). Tout nouveau pool en déclare un.
 - BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).
 - Une classe de base abstraite injectée par héritage doit porter `@Injectable()`, sinon Nest ne voit pas les dépendances de son constructeur.
-- `pnpm strip:examples` traite toute ligne qui ne contient qu'un marqueur `example:start` ou `example:end` (en commentaire), y compris dans un template literal de test, partout sauf dans ses propres fichiers. Un test qui a besoin de ces marqueurs les construit par interpolation (``const START = `// example:${'start'}`;``), sinon `strip:examples` retire ou rejette sa fixture.
+- `pnpm create:project` et `pnpm strip:examples` traitent toute ligne qui ne contient qu'un marqueur `example:start`, `example:end` ou `option:<id>:start|end` (en commentaire), y compris dans un template literal de test, partout sauf dans leurs propres fichiers. Un test qui a besoin de ces marqueurs les construit par interpolation (``const START = `// example:${'start'}`;``), sinon le script retire ou rejette sa fixture. Un bloc d'une option ne contient jamais le marqueur d'une autre.

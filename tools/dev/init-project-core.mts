@@ -29,3 +29,7 @@ export function renameProject(text: string, name: string): { text: string; repla
   });
   return { text: renamed, replacements };
 }
+
+/** Ce que le renommage ne fait pas, affiché après lui. */
+export const AFTER_RENAME = `À adapter à la main : titre du README, MAIL_FROM (.env.example), comptes et organisation de démo
+(tools/dev), author et repository de tools/spec-kit/preset/preset.yml (puis specify preset update).`;

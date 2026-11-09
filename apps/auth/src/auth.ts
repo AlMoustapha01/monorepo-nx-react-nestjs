@@ -6,7 +6,9 @@ import type { Logger } from 'pino';
 import { apiClaims } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
+// option:sentry:start
 import { reportError } from './report-error';
+// option:sentry:end
 
 /** En-tête interne : toute valeur envoyée par le client est remplacée par le serveur. */
 export const CLIENT_IP_HEADER = 'x-auth-client-ip';
@@ -46,7 +48,9 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
   const sendInBackground = (email: AuthEmail) => {
     sendEmail(email).catch((error: unknown) => {
       logger.error({ err: error, subject: email.subject }, 'Auth email failed');
+      // option:sentry:start
       reportError(error, { operation: 'send-email' });
+      // option:sentry:end
     });
   };
 
@@ -81,7 +85,9 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
           return;
         }
         logger.error({ err: error }, 'Unexpected auth error');
+        // option:sentry:start
         reportError(error, { operation: 'api' });
+        // option:sentry:end
       },
     },
     // En base : partagé entre les instances, contrairement à la mémoire.

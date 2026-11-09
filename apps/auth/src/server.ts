@@ -1,8 +1,11 @@
 import type { IncomingMessage, RequestListener, ServerResponse } from 'node:http';
 import { toNodeHandler } from 'better-auth/node';
 import type { Pool } from 'pg';
+import type { Logger } from 'pino';
 import { type Auth, CLIENT_IP_HEADER } from './auth';
+// option:sentry:start
 import { reportError } from './report-error';
+// option:sentry:end
 
 interface ServerDependencies {
   auth: Auth;
@@ -11,6 +14,7 @@ interface ServerDependencies {
   trustProxyHops: number;
   /** Vrai pendant l'arrêt : `/ready` répond 503 pour que le load balancer retire l'instance. */
   isShuttingDown: () => boolean;
+  logger: Logger;
 }
 
 /** Routes de Better Auth sous `/api/auth`, plus les sondes `/health` et `/ready`. */
@@ -20,6 +24,7 @@ export function createRequestListener({
   corsOrigins,
   trustProxyHops,
   isShuttingDown,
+  logger,
 }: ServerDependencies): RequestListener {
   const handleAuth = toNodeHandler(auth);
 
@@ -47,7 +52,10 @@ export function createRequestListener({
       delete request.headers[CLIENT_IP_HEADER];
     }
     handleAuth(request, response).catch((error: unknown) => {
+      logger.error({ err: error }, 'Unexpected auth server error');
+      // option:sentry:start
       reportError(error, { operation: 'http' });
+      // option:sentry:end
       if (!response.headersSent) {
         json(response, 500, { message: 'Internal server error' });
       } else {

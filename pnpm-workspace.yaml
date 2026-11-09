@@ -8,9 +8,11 @@ allowBuilds:
   '@parcel/watcher': true
   unrs-resolver: true
 overrides:
+  # option:sentry:start
   # @sentry/node n'en a besoin que pour ses plugins de bundler, inutilisés ici : sans cette ligne,
   # l'image de production embarque webpack, esbuild et swc (~100 Mo).
   '@sentry/bundler-plugins': '-'
+  # option:sentry:end
   # nx 23.3.0 épingle undici 7.29.0 (GHSA-8436-99hf-9mmv et une autre faille haute) ; à retirer
   # quand une version de nx embarque undici >= 7.29.1.
   'nx>undici': ^7.29.1

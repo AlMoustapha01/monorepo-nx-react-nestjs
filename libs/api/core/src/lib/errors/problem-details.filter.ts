@@ -13,7 +13,9 @@ import { z } from 'zod';
 import { RequestContext } from '../context/request-context';
 import { recordProblemCode } from '../http/request-logging';
 import { AppError, type ErrorKind } from './app-error';
+// option:sentry:start
 import { reportError } from './error-reporter';
+// option:sentry:end
 
 /** Corps de réponse RFC 9457 (application/problem+json), enrichi d'un `code` stable. */
 export interface ProblemDetails {
@@ -61,6 +63,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     // Une HttpException 5xx est levée exprès (ex. 503 de /ready pendant un arrêt) : pas un bug.
     if (problem.status >= 500 && !(exception instanceof HttpException)) {
       this.logger.error(exception);
+      // option:sentry:start
       reportError(exception, {
         tags: {
           request_id: this.context.requestId,
@@ -70,6 +73,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         },
         userId: this.context.principal?.userId,
       });
+      // option:sentry:end
     }
 
     recordProblemCode(response, problem.code);
