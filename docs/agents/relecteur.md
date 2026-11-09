@@ -44,7 +44,13 @@ Ne signale que ces écarts. Chaque point est **bloquant** s'il est avéré.
 - Route sans authentification hors `@Public()`, route qui modifie des données partagées du tenant sans `@RequireRole`, ressource interdite qui répond autre chose que 404.
 - Clé Redis sans TTL, appel externe sans timeout.
 - Migration éditée à la main ou non rétrocompatible.
+
+<!-- option:feature-flags:start -->
+
 - Fonctionnalité nouvelle hors feature flag, côté API ou front.
+
+<!-- option:feature-flags:end -->
+
 - Import profond d'un autre domaine, jointure ou clé étrangère vers son schéma, `domain/` qui importe NestJS, Drizzle ou `pg`.
 - Création à effet métier sans `@Idempotent({ required: true })`, agrégat modifiable sans verrou optimiste, montant en flottant.
 - Secret ou donnée personnelle dans le code, les tests, les logs ou Sentry.

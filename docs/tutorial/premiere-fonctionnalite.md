@@ -215,6 +215,11 @@ Ensuite, même cycle pour US2 (`/speckit-implement`, `/speckit-converge`) : la d
 
 ## Après le merge
 
+<!-- option:feature-flags:start -->
+
 - **Activer** : `FEATURE_FLAGS=announcements=true` dans l'environnement voulu, puis redémarrer l'API : aucun code à redéployer.
 - **Livrer** : une fois la fonctionnalité active partout, une PR supprime le flag et ses branches mortes, et passe la spec en `Shipped` (relire la spec à ce moment).
+
+<!-- option:feature-flags:end -->
+
 - **Faire évoluer** : un changement de comportement modifie `spec.md` dans la même PR ; un scénario ne se supprime pas, il se retire. Voir [Spec Kit : cycle de vie et maintenance](../guides/spec-kit.md).

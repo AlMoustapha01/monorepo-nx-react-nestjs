@@ -1,4 +1,6 @@
+// option:feature-flags:start
 import { type FeatureFlag, featureFlagSchema } from '@nx-react-nestjs/contracts';
+// option:feature-flags:end
 import { z } from 'zod';
 
 const csv = z
@@ -11,6 +13,7 @@ const csv = z
       .filter(Boolean),
   );
 
+// option:feature-flags:start
 /** `mon.flag=false,autre.flag=true` : un nom inconnu ou une valeur invalide bloque le démarrage. */
 const featureFlagOverrides = csv.pipe(
   z
@@ -22,6 +25,7 @@ const featureFlagOverrides = csv.pipe(
     )
     .transform((entries): Partial<Record<FeatureFlag, boolean>> => Object.fromEntries(entries)),
 );
+// option:feature-flags:end
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -64,8 +68,10 @@ export const envSchema = z.object({
   /** Proxys de confiance devant l'API (load balancer : 1) : l'IP du client vient de X-Forwarded-For. */
   TRUST_PROXY_HOPS: z.coerce.number().int().nonnegative().default(0),
 
+  // option:feature-flags:start
   /** Surcharge les valeurs par défaut du catalogue (`FEATURE_FLAGS` des contrats). */
   FEATURE_FLAGS: featureFlagOverrides,
+  // option:feature-flags:end
 });
 
 export type Env = z.infer<typeof envSchema>;

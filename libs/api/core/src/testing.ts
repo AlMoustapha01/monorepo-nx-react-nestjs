@@ -6,8 +6,10 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
+  // option:feature-flags:start
   type FeatureFlag,
   featureFlagDefinition,
+  // option:feature-flags:end
   type IntegrationEventDefinition,
   type IntegrationEventPayload,
 } from '@nx-react-nestjs/contracts';
@@ -23,7 +25,9 @@ import { type Principal, RequestContext } from './lib/context/request-context';
 import { TransactionManager } from './lib/database/database-session';
 import type { Database } from './lib/database/database.tokens';
 import { Outbox } from './lib/events/outbox';
+// option:feature-flags:start
 import { FeatureFlags } from './lib/feature-flags/feature-flags';
+// option:feature-flags:end
 import { type EmailMessage, Mailer } from './lib/mail/mailer';
 
 export const TEST_AUTH = {
@@ -145,6 +149,7 @@ export class RecordingMailer extends Mailer {
   }
 }
 
+// option:feature-flags:start
 /** Valeurs par défaut du catalogue, modifiables par test (`overrideProvider(FeatureFlags)` en e2e). */
 export class StaticFeatureFlags extends FeatureFlags {
   private readonly values = new Map<FeatureFlag, boolean>();
@@ -162,6 +167,7 @@ export class StaticFeatureFlags extends FeatureFlags {
     return this.values.get(flag) ?? featureFlagDefinition(flag).default;
   }
 }
+// option:feature-flags:end
 
 /** Lecteur à la demande : `collect()` renvoie les métriques au moment de l'appel. */
 class OnDemandMetricReader extends metrics.MetricReader {

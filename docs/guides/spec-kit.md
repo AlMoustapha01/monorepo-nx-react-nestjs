@@ -14,12 +14,12 @@ Une fois mergée, `spec.md` décrit le comportement actuel ; `plan.md` et `tasks
 
 `**Status**:` en tête de spec :
 
-| Statut        | Quand                                                                | Posé par            |
-| ------------- | -------------------------------------------------------------------- | ------------------- |
-| `Draft`       | Pendant l'écriture et l'implémentation                               | `/speckit-specify`  |
-| `Implemented` | Chaque scénario a son test                                           | `/speckit-converge` |
-| `Shipped`     | Dans la PR qui supprime le feature flag (relire la spec à ce moment) | À la main           |
-| `Retired`     | La fonctionnalité est retirée                                        | À la main           |
+| Statut        | Quand                                                                                                    | Posé par            |
+| ------------- | -------------------------------------------------------------------------------------------------------- | ------------------- |
+| `Draft`       | Pendant l'écriture et l'implémentation                                                                   | `/speckit-specify`  |
+| `Implemented` | Chaque scénario a son test                                                                               | `/speckit-converge` |
+| `Shipped`     | Quand la fonctionnalité est disponible pour tous (avec un flag : la PR qui le supprime ; relire la spec) | À la main           |
+| `Retired`     | La fonctionnalité est retirée                                                                            | À la main           |
 
 ### Contrôles de `spec:trace`
 

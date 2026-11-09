@@ -28,7 +28,12 @@ Une PR de `dev` vers `main`, fusionnée par **merge commit** (jamais squash ni r
 gh pr create --base main --head dev --title "release: <date ou version>"
 ```
 
-La CI revérifie la PR contre `main`. Une fois mergée, le déploiement suit [Déployer](deployer.md). Une fonctionnalité inachevée peut partir en production : elle reste derrière son feature flag, coupé par défaut (principe 6).
+La CI revérifie la PR contre `main`. Une fois mergée, le déploiement suit [Déployer](deployer.md).
+<!-- option:feature-flags:start -->
+
+Une fonctionnalité inachevée peut partir en production : elle reste derrière son feature flag, coupé par défaut (principe 6).
+
+<!-- option:feature-flags:end -->
 
 ## Corriger la production (hotfix)
 

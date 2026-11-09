@@ -4,8 +4,8 @@
  * `<marqueur>:end`. Logique pure ; les fichiers et les commandes sont dans project-steps.mts.
  */
 
-export type OptionId = 'examples' | 'sentry';
-export type Regeneration = 'migrations' | 'routes' | 'i18n';
+export type OptionId = 'examples' | 'sentry' | 'feature-flags';
+export type Regeneration = 'migrations' | 'routes' | 'i18n' | 'errors';
 
 export interface ProjectOption {
   id: OptionId;
@@ -18,6 +18,8 @@ export interface ProjectOption {
   /** Paquets retirés de package.json. */
   dependencies: readonly string[];
   regenerate: readonly Regeneration[];
+  /** Options à retirer avant celle-ci, ou dans le même passage ; déclarées plus haut dans la liste. */
+  requires?: { options: readonly OptionId[]; reason: string };
   /** Mentions à relire après le retrait (`git grep -i -E`). */
   leftovers: string;
   /** Consigne affichée après le retrait. */
@@ -66,12 +68,52 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
     regenerate: [],
     leftovers: 'sentry|reportError',
   },
+  {
+    id: 'feature-flags',
+    question:
+      'Garder les feature flags (catalogue, @RequireFeature, requireFeature côté front, règle « toute fonctionnalité derrière un flag ») ?',
+    marker: 'option:feature-flags',
+    paths: [
+      'libs/shared/contracts/src/lib/feature-flags.ts',
+      'libs/shared/contracts/src/lib/feature-flags.spec.ts',
+      'libs/api/core/src/lib/feature-flags',
+      'libs/web/data-access/src/lib/feature-flags.ts',
+      'libs/web/data-access/src/lib/feature-flags.spec.ts',
+      'apps/web/src/feature-flags.ts',
+      'apps/web/src/feature-flags.spec.tsx',
+      'apps/api/tests/feature-flags.e2e.spec.ts',
+    ],
+    dependencies: [],
+    regenerate: ['errors'],
+    requires: { options: ['examples'], reason: "le code d'exemple utilise les feature flags" },
+    leftovers: 'feature.?flag|requireFeature|FEATURE_DISABLED',
+    afterRemoval:
+      "retirer FEATURE_FLAGS de apps/api/.env s'il y figure (la variable n'est plus lue)",
+  },
 ];
 
 export function optionById(id: OptionId): ProjectOption {
   const option = PROJECT_OPTIONS.find((candidate) => candidate.id === id);
   if (!option) throw new Error(`Option inconnue : ${id}`);
   return option;
+}
+
+/** Refus de retirer `option` tant qu'une option qu'elle exige est présente et gardée ; sinon undefined. */
+export function removalProblem(
+  option: ProjectOption,
+  removed: readonly OptionId[],
+  present: readonly OptionId[],
+): string | undefined {
+  const missing = (option.requires?.options ?? []).filter(
+    (id) => present.includes(id) && !removed.includes(id),
+  );
+  if (missing.length === 0) return undefined;
+  return `Retirer ${option.id} exige de retirer aussi ${missing.join(', ')} : ${option.requires?.reason}.`;
+}
+
+/** `path` est l'une des racines ou se trouve dessous. */
+export function isInside(path: string, roots: readonly string[]): boolean {
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
 }
 
 /** Formes d'une ligne de marqueur (TS, shell/YAML, JSX, Markdown) : ouverture et fermeture. */

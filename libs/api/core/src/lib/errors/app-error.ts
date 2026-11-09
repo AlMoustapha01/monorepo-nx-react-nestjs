@@ -34,8 +34,10 @@ const CORE_ERROR_KINDS = {
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   /** Route réservée à un autre rôle (`@RequireRole`) ; `details.required` liste les rôles admis. */
   FORBIDDEN: 'FORBIDDEN',
+  // option:feature-flags:start
   /** Route derrière un flag désactivé : on ne révèle pas qu'elle existe. */
   FEATURE_DISABLED: 'NOT_FOUND',
+  // option:feature-flags:end
   /** Curseur de pagination illisible ou forgé : repartir de la première page. */
   INVALID_CURSOR: 'VALIDATION',
   /** Bug : tenant ou utilisateur lu hors d'une requête ou d'un handler. */

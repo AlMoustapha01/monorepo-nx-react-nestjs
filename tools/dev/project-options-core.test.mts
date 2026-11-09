@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   checkMarkers,
+  isInside,
   optionById,
+  type OptionId,
   parseYesNo,
+  PROJECT_OPTIONS,
   prunePaths,
+  removalProblem,
   removeDependencies,
   stripBlocks,
   summarize,
@@ -13,7 +17,7 @@ import {
 // Construits par interpolation : une ligne qui ne contient qu'un marqueur serait retirée du test.
 const SENTRY_START = `// option:${'sentry'}:start`;
 const SENTRY_END = `// option:${'sentry'}:end`;
-const DECLARED = ['example', 'option:sentry'];
+const DECLARED = ['example', 'option:sentry', 'option:feature-flags'];
 
 describe('stripBlocks', () => {
   it('removes each block, marker lines included', () => {
@@ -203,5 +207,61 @@ describe('sentry option', () => {
     assert.equal(sentry.marker, 'option:sentry');
     assert.deepEqual(sentry.dependencies, ['@sentry/core', '@sentry/node']);
     assert.deepEqual(sentry.regenerate, []);
+  });
+});
+
+describe('removalProblem', () => {
+  const option = {
+    ...optionById('sentry'),
+    requires: { options: ['examples'] as OptionId[], reason: "le code d'exemple s'en sert" },
+  };
+
+  it('refuses while a required option is present and kept', () => {
+    const problem = removalProblem(option, ['sentry'], ['examples', 'sentry']) ?? '';
+    assert.match(problem, /examples/);
+    assert.match(problem, /le code d'exemple s'en sert/);
+  });
+
+  it('accepts when the required option is removed in the same run or already absent', () => {
+    assert.equal(removalProblem(option, ['examples', 'sentry'], ['examples', 'sentry']), undefined);
+    assert.equal(removalProblem(option, ['sentry'], ['sentry']), undefined);
+  });
+
+  it('accepts an option without requirements', () => {
+    assert.equal(
+      removalProblem(optionById('sentry'), ['sentry'], ['examples', 'sentry']),
+      undefined,
+    );
+  });
+});
+
+describe('isInside', () => {
+  it('matches the root itself and its descendants, not a sibling sharing a prefix', () => {
+    assert.equal(isInside('libs/a', ['libs/a']), true);
+    assert.equal(isInside('libs/a/b.ts', ['libs/a']), true);
+    assert.equal(isInside('libs/ab.ts', ['libs/a']), false);
+  });
+});
+
+describe('PROJECT_OPTIONS', () => {
+  it('lists every required option before the option that requires it', () => {
+    PROJECT_OPTIONS.forEach((option, index) => {
+      for (const id of option.requires?.options ?? []) {
+        assert.ok(
+          PROJECT_OPTIONS.findIndex((other) => other.id === id) < index,
+          `${option.id} → ${id}`,
+        );
+      }
+    });
+  });
+});
+
+describe('feature-flags option', () => {
+  it('requires the examples to be removed and regenerates the error codes', () => {
+    const flags = optionById('feature-flags');
+    assert.equal(flags.marker, 'option:feature-flags');
+    assert.deepEqual(flags.requires?.options, ['examples']);
+    assert.deepEqual(flags.regenerate, ['errors']);
+    assert.deepEqual(flags.dependencies, []);
   });
 });

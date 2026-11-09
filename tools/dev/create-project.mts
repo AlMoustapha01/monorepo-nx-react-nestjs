@@ -13,6 +13,7 @@ import {
   optionById,
   parseYesNo,
   PROJECT_OPTIONS,
+  removalProblem,
   summarize,
   type Choices,
   type OptionId,
@@ -67,6 +68,17 @@ validateMarkers();
 if (!yes && !process.stdin.isTTY) {
   fail('Sans terminal, passez --yes et vos choix (ex. --yes --no-sentry).');
 }
+const present = presentOptions();
+const removedByFlags = PROJECT_OPTIONS.filter((option) => values[option.id] === false).map(
+  (option) => option.id,
+);
+for (const id of removedByFlags) {
+  const problem = removalProblem(optionById(id), removedByFlags, present);
+  if (problem) {
+    const ids = optionById(id).requires?.options.map((required) => `--no-${required}`) ?? [];
+    fail(`${problem}\nAjoutez ${ids.join(' ')}.`);
+  }
+}
 const renamed = isRenamed();
 if (renamed && typeof nameFlag === 'string') {
   fail('Le projet a déjà été renommé : --name est sans effet.');
@@ -117,12 +129,19 @@ async function askName(): Promise<string | undefined> {
 
 const choices: Choices = { name: await askName(), remove: [], keepMigrations };
 const kept: OptionId[] = [];
-for (const id of presentOptions()) {
+for (const id of present) {
+  const option = optionById(id);
+  if (removalProblem(option, choices.remove, present)) {
+    const required = option.requires?.options.join(', ');
+    console.log(`${id} gardé : ${option.requires?.reason} (retirez d'abord ${required}).`);
+    kept.push(id);
+    continue;
+  }
   const flag = values[id];
   const keep =
     typeof flag === 'boolean'
       ? flag
-      : yes || (await ask(`${optionById(id).question} [O/n] `, (raw) => parseYesNo(raw, true)));
+      : yes || (await ask(`${option.question} [O/n] `, (raw) => parseYesNo(raw, true)));
   (keep ? kept : choices.remove).push(id);
 }
 

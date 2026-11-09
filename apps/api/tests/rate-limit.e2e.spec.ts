@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { INestApplication } from '@nestjs/common';
+import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { configureApp } from '@nx-react-nestjs/api-core';
 import {
@@ -12,6 +12,15 @@ import {
 } from '@nx-react-nestjs/api-core/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app/app.module';
+
+/** Route de test, authentifiée : le test ne dépend d'aucun domaine ni d'aucune option. */
+@Controller({ path: 'rate-limit-probe', version: '1' })
+class ProbeController {
+  @Get()
+  probe(): { ok: true } {
+    return { ok: true };
+  }
+}
 
 /** Deux instances de l'API sur le même Redis : la limite vaut pour l'ensemble, par utilisateur. */
 describe('Rate limiting (e2e)', () => {
@@ -26,7 +35,10 @@ describe('Rate limiting (e2e)', () => {
       JOBS_ENABLED: 'false',
     });
     for (let i = 0; i < 2; i++) {
-      const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+      const moduleRef = await Test.createTestingModule({
+        imports: [AppModule],
+        controllers: [ProbeController],
+      }).compile();
       const app = moduleRef.createNestApplication({ bufferLogs: true });
       configureApp(app);
       await app.init();
@@ -39,10 +51,9 @@ describe('Rate limiting (e2e)', () => {
     await Promise.all([database?.stop(), redis?.stop()]);
   });
 
-  // Route authentifiée de core : le test ne dépend d'aucun domaine.
   const call = (instance: number, token: string) =>
     request(apps[instance]?.getHttpServer())
-      .get('/api/v1/feature-flags')
+      .get('/api/v1/rate-limit-probe')
       .auth(token, { type: 'bearer' });
 
   it('responds 429 beyond the limit, across all instances', async () => {

@@ -116,9 +116,14 @@ Le reste au besoin, quand on touche au sujet.
 - **Rate limiting** : limiter le nombre de requêtes par client et par fenêtre de temps ; au-delà, 429 et `Retry-After`.
   Ici : `libs/api/core/src/lib/http/rate-limit/`.
   Apprendre : [429 Too Many Requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429) (MDN), [Denial of Service Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html) (OWASP).
+
+<!-- option:feature-flags:start -->
+
 - **Feature flags** : livrer du code désactivé, l'activer par configuration, puis retirer le flag.
   Ici : `FEATURE_FLAGS` (`libs/shared/contracts/src/lib/feature-flags.ts`), [ADR 0008](architecture/adr/0008-feature-flags-dans-le-code.md).
   Apprendre : [Feature Toggles](https://martinfowler.com/articles/feature-toggles.html) (Pete Hodgson, sur le site de Martin Fowler).
+
+<!-- option:feature-flags:end -->
 
 ## Exploitation
 

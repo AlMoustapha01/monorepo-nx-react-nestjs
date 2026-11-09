@@ -10,7 +10,10 @@
   Status (one word, checked by `pnpm -s spec:trace`):
   - Draft: being written or implemented; scenarios may still wait for their test.
   - Implemented: every active scenario has a test (set by /speckit-converge).
-  - Shipped: the feature flag is removed; set in that pull request.
+  - Shipped: available to every user; set in the pull request that makes it so.
+# option:feature-flags:start
+    With a feature flag, that is the pull request that removes the flag.
+# option:feature-flags:end
   - Retired: the feature was removed; no test may cite its scenarios any more.
   Once merged, this spec describes the current behavior: a pull request that changes it
   updates this file. plan.md and tasks.md stay as they were (history of the build).

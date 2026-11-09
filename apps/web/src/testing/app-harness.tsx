@@ -19,6 +19,7 @@ import type { SessionContext } from '../session';
 
 /** Banc d'essai de l'app entière (routeur, layout, i18n) contre une API simulée par MSW. */
 
+/** @public URL de l'API simulée, pour les handlers MSW des tests de fonctionnalité. */
 export const API = 'http://localhost:3000/api/v1';
 export const AUTH = 'http://localhost:3100/api/auth';
 export const api = createApiClient({ baseUrl: API });
@@ -28,15 +29,18 @@ export function sessionContext(devMode: boolean): SessionContext {
   return { auth, tokens: createAccessTokenSource(() => auth.getAccessToken()), devMode };
 }
 
-/** Token factice lisible par les handlers MSW (charge utile en base64, sans signature). */
+/** @public Token factice lisible par les handlers MSW (charge utile en base64, sans signature). */
 export function fakeToken(payload: Record<string, unknown>): string {
   return `h.${btoa(JSON.stringify(payload)).replace(/=+$/, '')}.s`;
 }
 
-/** Serveur MSW (flags tous coupés par défaut), locale `fr` et stockage vide avant chaque test. */
+/** Serveur MSW, locale `fr` et stockage vide avant chaque test. */
 export function setupAppTest() {
   const server = setupServer(
+    // option:feature-flags:start
+    // Flags tous coupés par défaut.
     http.get(`${API}/feature-flags`, () => HttpResponse.json({ flags: {} })),
+    // option:feature-flags:end
   );
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
   afterEach(() => server.resetHandlers());

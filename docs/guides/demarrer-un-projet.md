@@ -19,10 +19,11 @@ git diff && pnpm check
 
 La commande demande le nom du projet (vide : on garde `nx-react-nestjs`), puis, pour chaque option encore présente, si on la garde :
 
-| Option     | Ce qu'un « non » retire                                                                                                       |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `examples` | le code d'exemple, comme `pnpm strip:examples` (étape 2 ci-dessous) ; à garder tant qu'il sert de modèle                      |
-| `sentry`   | Sentry de l'API et du service d'auth : `reportError`, son initialisation, ses tests, ses variables et les paquets `@sentry/*` |
+| Option          | Ce qu'un « non » retire                                                                                                                                                                                                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `examples`      | le code d'exemple, comme `pnpm strip:examples` (étape 2 ci-dessous) ; à garder tant qu'il sert de modèle                                                                                                                                                                                                   |
+| `sentry`        | Sentry de l'API et du service d'auth : `reportError`, son initialisation, ses tests, ses variables et les paquets `@sentry/*`                                                                                                                                                                              |
+| `feature-flags` | les feature flags : catalogue, `@RequireFeature`, `requireFeature` et `useFeatureFlag` du front, `FEATURE_FLAGS`, leurs tests, et la règle « toute fonctionnalité derrière un flag » (principe 6, constitution, gabarits Spec Kit). Seulement avec les exemples ou après eux : le code d'exemple s'en sert |
 
 Elle affiche un récapitulatif et ne modifie rien avant la confirmation (Ctrl-C, ou « non », laisse l'arbre intact). Puis elle renomme, retire, met à jour le lockfile, régénère ce qui doit l'être (migrations, routes, catalogues), reformate, et liste les mentions restantes à relire.
 

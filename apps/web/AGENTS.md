@@ -62,6 +62,8 @@ Fonctionnement :
 - Connexion, déconnexion, changement d'organisation : `resetSession` oublie le token et vide tout le cache (données de l'ancien utilisateur ou de l'ancien tenant).
 - Écrans et formulaires : lib `libs/web/auth` (react-hook-form + schémas zod de `contracts`) ; client HTTP : `createAuthClient` (`web-data-access`).
 
+<!-- option:feature-flags:start -->
+
 ## Feature flags
 
 Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés dans `FEATURE_FLAGS` (contracts) ; ceux marqués `client: true` sont exposés par `GET /api/v1/feature-flags`.
@@ -71,6 +73,8 @@ Le principe 6 de la racine vaut aussi pour le front. Les flags sont déclarés d
 - Lire un flag dans un composant de l'app : `useFeatureFlag('<flag>')`. Les libs `libs/web/*` ne lisent aucun flag : elles reçoivent des booléens en props.
 - Repli « tout coupé » : si l'appel échoue, les flags sont tous faux et l'erreur passe par `reportError` ; la page s'affiche quand même.
 - En local : `FEATURE_FLAGS=<flag>=true pnpm nx serve api`.
+
+<!-- option:feature-flags:end -->
 
 ## Différé volontairement
 
@@ -83,5 +87,12 @@ Playwright contre la vraie stack, démarrée une fois par exécution (`src/stack
 - Lancer : `pnpm nx run web-e2e:e2e` (Docker requis ; `pnpm exec playwright install chromium` la première fois). Rapport, traces, captures et journaux des services : `dist/.playwright/apps/web-e2e`.
 - Un parcours couvre ce qu'un test unitaire ne voit pas : redirections entre services, emails (lus dans Mailpit, `linkFromEmail`), cookies, tokens, plusieurs tenants. Le reste se teste en Vitest.
 - Chaque test crée ses propres comptes (`uniqueEmail`) : ils tournent en parallèle sur la même base. Préparer les données par l'API (`createAccount`, `createOrganization`, `invite` dans `support.ts`), et ne passer par l'interface que pour ce qui est testé.
-- Accessibilité : `@axe-core/playwright`, WCAG 2.1 A et AA, sur les pages publiques et l'app connectée. Une page nouvelle s'ajoute à `accessibility.spec.ts`, formulaire en erreur compris s'il y en a un ; derrière un flag, l'activer dans `E2E_FEATURE_FLAGS` (`src/stack.ts`), sinon elle répond 404.
+- Accessibilité : `@axe-core/playwright`, WCAG 2.1 A et AA, sur les pages publiques et l'app connectée. Une page nouvelle s'ajoute à `accessibility.spec.ts`, formulaire en erreur compris s'il y en a un.
+
+<!-- option:feature-flags:start -->
+
+- Derrière un flag : l'activer dans `E2E_FEATURE_FLAGS` (`src/stack.ts`), sinon la page répond 404.
+
+<!-- option:feature-flags:end -->
+
 - Le projet ne dépend d'aucune lib (`scope:e2e`) : il teste l'app de l'extérieur.

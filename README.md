@@ -14,7 +14,14 @@ Boilerplate de produit SaaS multi-tenant : une API NestJS découpée en domaines
                                     worker (BullMQ, Redis) ──► handlers des domaines
 ```
 
-- **API** (`apps/api`, `libs/api/*`) : un domaine métier par lib Nx (domaine, cas d'usage, adapters, controllers), frontières vérifiées par le lint, isolation par tenant dans chaque repository, erreurs RFC 9457, idempotence, verrou optimiste, feature flags, rate limiting.
+- **API** (`apps/api`, `libs/api/*`) : un domaine métier par lib Nx (domaine, cas d'usage, adapters, controllers), frontières vérifiées par le lint, isolation par tenant dans chaque repository, erreurs RFC 9457, idempotence, verrou optimiste, rate limiting.
+
+<!-- option:feature-flags:start -->
+
+- **Feature flags** : catalogue déclaré dans les contrats, `@RequireFeature` côté API, `requireFeature` côté front.
+
+<!-- option:feature-flags:end -->
+
 - **Événements** : outbox transactionnelle relayée vers BullMQ, handlers idempotents, livraison au moins une fois.
 - **Identité** (`apps/auth`) : Better Auth dans un service à part (comptes, organisations = tenants, rôles). L'API ne fait que vérifier des JWT : le fournisseur se remplace par configuration.
 - **Front** (`apps/web`, `libs/web/*`) : TanStack Router et Query, design system Tailwind 4 + shadcn avec Storybook, i18n Lingui, budget de poids du bundle.
