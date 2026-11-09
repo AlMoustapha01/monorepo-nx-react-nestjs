@@ -51,7 +51,7 @@ En local, le même dossier est écrit sous `dist/.playwright/apps/web-e2e/` (san
 
 ### `create-project`
 
-Une matrice de trois variantes : `no-examples` (`--no-examples`), `no-sentry` (`--no-sentry`) et `minimal` (`--name acme --no-examples --no-sentry`). Chacune lance `pnpm create:project --yes <options>` puis `pnpm check` sur tout le repo, sans `affected`. Elle échoue quand un marqueur est mal formé, ou quand le code d'une option a fui hors de ses fichiers et de ses marqueurs : le code restant ne compile plus, ou ses tests échouent (un import vers un domaine d'exemple depuis du code générique, un nouveau fichier oublié dans les `paths` de l'option). Les mentions restantes (un commentaire, une doc) sont listées dans la sortie du script, sans faire échouer le job ([Démarrer un projet](demarrer-un-projet.md)). Une nouvelle option ajoute sa variante : chaque option seule, plus le minimum, pas toutes les combinaisons.
+Une matrice de quatre variantes : `no-examples` (`--no-examples`), `no-sentry` (`--no-sentry`), `no-feature-flags` (`--no-examples --no-feature-flags`, les flags ne partent qu'avec les exemples) et `minimal` (`--name acme --no-examples --no-sentry --no-feature-flags`). Chacune lance `pnpm create:project --yes <options>` puis `pnpm check` sur tout le repo, sans `affected`. Elle échoue quand un marqueur est mal formé, ou quand le code d'une option a fui hors de ses fichiers et de ses marqueurs : le code restant ne compile plus, ou ses tests échouent (un import vers un domaine d'exemple depuis du code générique, un nouveau fichier oublié dans les `paths` de l'option). Les mentions restantes (un commentaire, une doc) sont listées dans la sortie du script, sans faire échouer le job ([Démarrer un projet](demarrer-un-projet.md)). Une nouvelle option ajoute sa variante : chaque option seule, plus le minimum, pas toutes les combinaisons.
 
 Pour le reproduire sans toucher à sa copie de travail (le script modifie l'arbre et exige qu'il soit propre) :
 
@@ -99,7 +99,7 @@ En local, `nx affected` compare à la branche `main` locale (`defaultBase` de `n
 
 Rien n'empêche aujourd'hui de merger une PR en échec : la protection des branches `dev` et `main` est à configurer sur GitHub (Settings → Branches, ou Rules), une fois par dépôt :
 
-- exiger les checks `check`, `e2e`, les trois `create-project (…)` et `image` ; `e2e` peut l'être, il réussit quand il n'a rien à lancer ;
+- exiger les checks `check`, `e2e`, les quatre `create-project (…)` et `image` ; `e2e` peut l'être, il réussit quand il n'a rien à lancer ;
 - ne pas exiger `audit` : il ne tourne que si les dépendances changent, et un check exigé qui ne tourne pas bloque la PR ;
 - exiger la revue des propriétaires de code (« Require review from Code Owners ») pour les chemins sensibles de [`.github/CODEOWNERS`](../../.github/CODEOWNERS), **seulement à partir de deux mainteneurs** : GitHub ne compte pas l'approbation de l'auteur d'une PR, un mainteneur seul ne pourrait plus merger ses propres PR. D'ici là, CODEOWNERS sert de liste : le relecteur la cite, et la revue humaine reste une règle d'équipe ;
 - sur `main`, n'autoriser que le merge commit, pour que `dev` et `main` gardent un historique commun ([Branches et releases](branches.md)) ;

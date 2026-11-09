@@ -125,8 +125,10 @@ jobs:
             args: --no-examples
           - variant: no-sentry
             args: --no-sentry
+          - variant: no-feature-flags
+            args: --no-examples --no-feature-flags
           - variant: minimal
-            args: --name acme --no-examples --no-sentry
+            args: --name acme --no-examples --no-sentry --no-feature-flags
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
