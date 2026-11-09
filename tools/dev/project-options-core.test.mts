@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   checkMarkers,
+  isInside,
   optionById,
+  type OptionId,
   parseYesNo,
+  PROJECT_OPTIONS,
   prunePaths,
+  removalProblem,
   removeDependencies,
   stripBlocks,
   summarize,
@@ -203,5 +207,51 @@ describe('sentry option', () => {
     assert.equal(sentry.marker, 'option:sentry');
     assert.deepEqual(sentry.dependencies, ['@sentry/core', '@sentry/node']);
     assert.deepEqual(sentry.regenerate, []);
+  });
+});
+
+describe('removalProblem', () => {
+  const option = {
+    ...optionById('sentry'),
+    requires: { options: ['examples'] as OptionId[], reason: "le code d'exemple s'en sert" },
+  };
+
+  it('refuses while a required option is present and kept', () => {
+    const problem = removalProblem(option, ['sentry'], ['examples', 'sentry']) ?? '';
+    assert.match(problem, /examples/);
+    assert.match(problem, /le code d'exemple s'en sert/);
+  });
+
+  it('accepts when the required option is removed in the same run or already absent', () => {
+    assert.equal(removalProblem(option, ['examples', 'sentry'], ['examples', 'sentry']), undefined);
+    assert.equal(removalProblem(option, ['sentry'], ['sentry']), undefined);
+  });
+
+  it('accepts an option without requirements', () => {
+    assert.equal(
+      removalProblem(optionById('sentry'), ['sentry'], ['examples', 'sentry']),
+      undefined,
+    );
+  });
+});
+
+describe('isInside', () => {
+  it('matches the root itself and its descendants, not a sibling sharing a prefix', () => {
+    assert.equal(isInside('libs/a', ['libs/a']), true);
+    assert.equal(isInside('libs/a/b.ts', ['libs/a']), true);
+    assert.equal(isInside('libs/ab.ts', ['libs/a']), false);
+  });
+});
+
+describe('PROJECT_OPTIONS', () => {
+  it('lists every required option before the option that requires it', () => {
+    PROJECT_OPTIONS.forEach((option, index) => {
+      for (const id of option.requires?.options ?? []) {
+        assert.ok(
+          PROJECT_OPTIONS.findIndex((other) => other.id === id) < index,
+          `${option.id} → ${id}`,
+        );
+      }
+    });
   });
 });

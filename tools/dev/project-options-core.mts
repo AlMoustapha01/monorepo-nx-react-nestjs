@@ -5,7 +5,7 @@
  */
 
 export type OptionId = 'examples' | 'sentry';
-export type Regeneration = 'migrations' | 'routes' | 'i18n';
+export type Regeneration = 'migrations' | 'routes' | 'i18n' | 'errors';
 
 export interface ProjectOption {
   id: OptionId;
@@ -18,6 +18,8 @@ export interface ProjectOption {
   /** Paquets retirés de package.json. */
   dependencies: readonly string[];
   regenerate: readonly Regeneration[];
+  /** Options à retirer avant celle-ci, ou dans le même passage ; déclarées plus haut dans la liste. */
+  requires?: { options: readonly OptionId[]; reason: string };
   /** Mentions à relire après le retrait (`git grep -i -E`). */
   leftovers: string;
   /** Consigne affichée après le retrait. */
@@ -72,6 +74,24 @@ export function optionById(id: OptionId): ProjectOption {
   const option = PROJECT_OPTIONS.find((candidate) => candidate.id === id);
   if (!option) throw new Error(`Option inconnue : ${id}`);
   return option;
+}
+
+/** Refus de retirer `option` tant qu'une option qu'elle exige est présente et gardée ; sinon undefined. */
+export function removalProblem(
+  option: ProjectOption,
+  removed: readonly OptionId[],
+  present: readonly OptionId[],
+): string | undefined {
+  const missing = (option.requires?.options ?? []).filter(
+    (id) => present.includes(id) && !removed.includes(id),
+  );
+  if (missing.length === 0) return undefined;
+  return `Retirer ${option.id} exige de retirer aussi ${missing.join(', ')} : ${option.requires?.reason}.`;
+}
+
+/** `path` est l'une des racines ou se trouve dessous. */
+export function isInside(path: string, roots: readonly string[]): boolean {
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
 }
 
 /** Formes d'une ligne de marqueur (TS, shell/YAML, JSX, Markdown) : ouverture et fermeture. */
