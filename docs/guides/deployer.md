@@ -194,4 +194,9 @@ Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer,
 - [ ] `SHUTDOWN_DRAIN_MS=5000`, et délai avant SIGKILL supérieur à `SHUTDOWN_TIMEOUT_MS`.
 - [ ] Sondes branchées : `/health` en liveness, `/ready` en readiness, pour l'API et l'identité.
 - [ ] Traces et erreurs : `OTEL_EXPORTER_OTLP_ENDPOINT` et `SENTRY_DSN`, et des alertes sur le retard de l'outbox et les jobs abandonnés (voir [Référence : métriques et alertes](../reference/metriques-et-alertes.md)).
+
+<!-- option:feature-flags:start -->
+
 - [ ] Feature flags : seules les fonctionnalités prêtes sont activées par `FEATURE_FLAGS`.
+
+<!-- option:feature-flags:end -->

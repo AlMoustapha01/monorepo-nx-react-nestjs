@@ -82,7 +82,6 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
       'apps/web/src/feature-flags.ts',
       'apps/web/src/feature-flags.spec.tsx',
       'apps/api/tests/feature-flags.e2e.spec.ts',
-      'docs/architecture/adr/0008-feature-flags-dans-le-code.md',
     ],
     dependencies: [],
     regenerate: ['errors'],

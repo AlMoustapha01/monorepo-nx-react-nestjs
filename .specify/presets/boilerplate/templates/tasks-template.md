@@ -25,7 +25,14 @@ description: 'Task list template for feature implementation'
 - API tests: unit tests next to the code (`domain/<entity>.spec.ts`, `application/<domain>.application.spec.ts` with fakes in `application/testing/`); integration tests `*.int.spec.ts`; API end-to-end `apps/api/tests/<domain>.e2e.spec.ts`
 - Front end (see `apps/web/AGENTS.md`, `libs/web/AGENTS.md`): screens and logic in a feature lib `libs/web/<feature>`, created with `pnpm new:web-feature <feature>` (never by copying another lib's configuration), with Vitest + Testing Library component tests next to them; `apps/web/src/routes/` only assembles (a protected page goes in `routes/_authenticated/`, flag guard `beforeLoad: requireFeature('<flag>')`); new strings go through Lingui and the catalogs (`web:i18n-check`)
 - Browser journeys (`apps/web-e2e/src/<journey>.spec.ts`, Playwright) only for what Vitest cannot see: redirects between services, emails, cookies, several tenants
-- Every new page gets an accessibility check (axe) in `apps/web-e2e/src/accessibility.spec.ts`, with its form in error if it has one; a page behind a flag needs the flag in `E2E_FEATURE_FLAGS` (`apps/web-e2e/src/stack.ts`), or it answers 404
+- Every new page gets an accessibility check (axe) in `apps/web-e2e/src/accessibility.spec.ts`, with its form in error if it has one.
+
+<!-- option:feature-flags:start -->
+
+- A page behind a flag needs the flag in `E2E_FEATURE_FLAGS` (`apps/web-e2e/src/stack.ts`), or it answers 404
+
+<!-- option:feature-flags:end -->
+
 - Run one project's tests: `pnpm nx test <project>`: `api-<domain>` and `web-<feature>` for the libs, `api` for the API end-to-end tests (`apps/api/tests`, there is no `e2e` target for them), `auth` for the identity service; browser journeys: `pnpm nx run web-e2e:e2e`; everything affected: `pnpm nx affected -t lint typecheck test e2e` (`e2e` only runs the browser journeys)
 
 <!--
@@ -52,7 +59,12 @@ description: 'Task list template for feature implementation'
 
 **Purpose**: What every user story needs. No user story work begins before this phase is complete. Delivered in the pull request of the first user story.
 
+<!-- option:feature-flags:start -->
+
 - [ ] T001 Declare the `[domain].[feature]` flag (default `false`) in `FEATURE_FLAGS` in `libs/shared/contracts`
+
+<!-- option:feature-flags:end -->
+
 - [ ] T002 [P] Add the zod schemas (and `defineIntegrationEvent` declarations, if any) in `libs/shared/contracts/src/lib/[domain]/`
 - [ ] T003 Write the failing unit test for the [aggregate] invariants and `restore` in `libs/api/[domain]/src/lib/domain/[aggregate].spec.ts`; run it and confirm it FAILS
 - [ ] T004 Implement the [aggregate] entity with `restore` in `libs/api/[domain]/src/lib/domain/[aggregate].ts` until T003 passes

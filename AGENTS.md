@@ -9,7 +9,7 @@ Monorepo Nx : API NestJS (`apps/api`) + front React (`apps/web`). Ce fichier est
 | Première installation : `.env`, Postgres, Redis, Mailpit, migrations          | `pnpm install && pnpm dev:setup`                                                                                                     |
 | Arrêter l'infra locale (données gardées ; `-v` pour repartir d'une base vide) | `pnpm dev:down` (ou `pnpm dev:down -v`, puis `pnpm dev:setup`)                                                                       |
 | Lancer l'API                                                                  | `pnpm nx serve api` → http://localhost:3000/api/v1, doc (Scalar) sur `/api/docs`, OpenAPI sur `/api/docs-json`                       |
-| Nouveau projet : nom et options à garder (exemples, Sentry)                   | `pnpm create:project` (arbre propre ; `--yes` sans question) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)          |
+| Nouveau projet : nom et options à garder (exemples, Sentry, flags)            | `pnpm create:project` (arbre propre ; `--yes` sans question) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)          |
 | Nouveau projet : renommer le scope `@nx-react-nestjs`                         | `pnpm init:project <nom>` (une fois, arbre propre) ; voir [Démarrer un projet](docs/guides/demarrer-un-projet.md)                    |
 | Retirer le code d'exemple, avant le premier déploiement                       | `pnpm strip:examples` (arbre propre ; `--keep-migrations` si déjà déployé) ; voir le même guide                                      |
 | Nouveau domaine métier : lib API vide, alias et module câblés                 | `pnpm new:domain <nom>` (ex. `billing`), puis le code en TDD                                                                         |
@@ -204,7 +204,12 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite. Toute route qui modifie des données partagées du tenant déclare son rôle (`@RequireRole`).
 4. Toute clé Redis a un TTL ; tout appel externe a un timeout, et passe par une queue s'il est lent.
 5. Les migrations sont générées (`db-generate`), jamais éditées à la main, et rétrocompatibles (expand/contract).
+
+<!-- option:feature-flags:start -->
+
 6. Toute nouvelle fonctionnalité passe derrière un feature flag (désactivé par défaut), côté API comme côté front (voir `apps/web/AGENTS.md`).
+
+<!-- option:feature-flags:end -->
 
 ## Conventions
 
@@ -213,7 +218,13 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 - Identifiants métier : `<PRÉFIXE>-<suffixe>` (`PRD-…`, `ORD-…`), générés par `domainIdGenerator` (api-core) et validés par `domainIdSchema` (contracts). Le suffixe commence par l'horodatage, donc les IDs se trient par création. Préfixe déclaré une fois dans les contrats du domaine (`ORDER_ID_PREFIX`). En base : `text COLLATE "C"`. `tenantId` et les IDs d'utilisateur restent des UUID : ils viennent du fournisseur d'identité.
 - Idempotence : toute route qui crée une ressource à effet métier (commande, paiement…) porte `@Idempotent({ required: true })`. Le client envoie `Idempotency-Key` (UUID) et peut réessayer : même clé et même requête → réponse rejouée (`Idempotent-Replayed: true`), même clé et requête différente → 422. La clé est écrite dans la même transaction que l'effet ; une erreur ne la consomme pas.
 - Verrou optimiste : tout agrégat modifiable a une colonne `version`. Le repository n'écrit que si la version n'a pas bougé (sinon `<AGRÉGAT>_VERSION_CONFLICT`, 409) puis appelle `markPersisted()`. Si des clients éditent la ressource, exposer `version` et `ETag` (`etagFor`), lire `If-Match` (`@IfMatchVersion()`) et appeler `assertExpectedVersion` dans le cas d'usage (412). Une projection (ex. `soldCount`) n'avance pas la version.
+
+<!-- option:feature-flags:start -->
+
 - Feature flags : déclarés dans `FEATURE_FLAGS` (contracts) avec une description, une valeur par défaut et `client` (exposé au front par `GET /api/v1/feature-flags`). Une route derrière un flag porte `@RequireFeature('<flag>')` (404 `FEATURE_DISABLED` quand il est coupé) ; ailleurs, injecter `FeatureFlags` et appeler `isEnabled`. La définition d'un flag se lit par `featureFlagDefinition(flag)`, pas `FEATURE_FLAGS[flag]` : le catalogue peut être vide. Valeurs surchargées par `FEATURE_FLAGS=mon.flag=false,...` (un nom inconnu bloque le démarrage). Tests : `StaticFeatureFlags` (`api-core/testing`), en e2e via `overrideProvider(FeatureFlags)` ; les tests du mécanisme (core, data-access, web) n'utilisent pas les flags du projet. Une fois la fonctionnalité déployée partout, supprimer le flag.
+
+<!-- option:feature-flags:end -->
+
 - Argent : entier en unités mineures (`amountMinor`) + devise ISO. Jamais de flottant.
 - Pagination : par curseur (`limit`, `cursor` → `items`, `nextCursor`), triée par `(created_at, id)` décroissants.
 - API versionnée par URI : `/api/v1/...`. `/health` et `/ready` restent hors préfixe.

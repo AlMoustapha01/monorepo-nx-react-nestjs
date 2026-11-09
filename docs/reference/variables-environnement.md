@@ -75,11 +75,15 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 | `SHUTDOWN_DRAIN_MS`   | `0`     | délai entre SIGTERM et la fermeture, `/ready` en 503 ; 5000 derrière un load balancer, 0 pour le worker |
 | `SHUTDOWN_TIMEOUT_MS` | `25000` | au-delà, le process sort en erreur ; inférieur au délai avant SIGKILL de l'orchestrateur                |
 
+<!-- option:feature-flags:start -->
+
 ### Feature flags
 
 | Variable        | Défaut | Rôle                                                                                                                                                           |
 | --------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `FEATURE_FLAGS` | vide   | surcharges du catalogue `FEATURE_FLAGS` des contrats : `mon.flag=true,autre.flag=false`. Un nom inconnu ou une valeur autre que booléenne empêche le démarrage |
+
+<!-- option:feature-flags:end -->
 
 ### Contraintes entre variables
 

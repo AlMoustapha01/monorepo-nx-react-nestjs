@@ -24,9 +24,15 @@ Every Redis key has a TTL; every external call has a timeout, and goes through a
 
 Migrations are generated (`pnpm nx run api:db-generate --name=<topic>`), never edited by hand, and backward compatible (expand/contract), because old instances keep running while they apply. See `AGENTS.md` § "Principes non négociables", point 5, and § "Déploiement".
 
-### VI. Flagged Increments
+### VI. Incremental Delivery
 
-Every new feature ships behind a feature flag, disabled by default. Each user story is delivered in its own pull request. See `AGENTS.md` § "Principes non négociables", point 6, and § "Conventions" (feature flags).
+Each user story is delivered in its own pull request. See `AGENTS.md` § "Développer une fonctionnalité (Spec Kit)".
+
+<!-- option:feature-flags:start -->
+
+Every new feature ships behind a feature flag, disabled by default. See `AGENTS.md` § "Principes non négociables", point 6, and § "Conventions" (feature flags).
+
+<!-- option:feature-flags:end -->
 
 ### VII. Domain Boundaries
 
@@ -58,4 +64,4 @@ See `AGENTS.md` § "Conventions" (tests), `apps/web/AGENTS.md` and `libs/web/AGE
 
 `AGENTS.md` is changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: 2.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-24
+**Version**: 2.2.1 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-11-09

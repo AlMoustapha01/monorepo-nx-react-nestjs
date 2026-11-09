@@ -44,7 +44,14 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design. Each un
 - [ ] III. Secure by Default: routes are authenticated; shared-data mutations declare `@RequireRole`; forbidden resources answer 404.
 - [ ] IV. Bounded External Calls: Redis keys have a TTL; external calls have a timeout, and slow ones go through a queue.
 - [ ] V. Generated, Backward-Compatible Migrations: generated with `db-generate`, expand/contract.
-- [ ] VI. Flagged Increments: behind a flag disabled by default; each user story is delivered in its own pull request.
+- [ ] VI. Incremental Delivery: each user story is delivered in its own pull request.
+
+<!-- option:feature-flags:start -->
+
+- [ ] VI (feature flag): behind a flag disabled by default.
+
+<!-- option:feature-flags:end -->
+
 - [ ] VII. Domain Boundaries: facade-only imports, port + adapter, own Postgres schema, events for asynchronous reactions.
 - [ ] VIII. Test-First: every acceptance scenario has a test in the Test Strategy below, written before the code.
 
@@ -64,12 +71,16 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design. Each un
 
 - `libs/api/[domain]`: [new | changed] — [responsibility] — facade: [methods] — ports: [Port → OtherFacade]
 
+<!-- option:feature-flags:start -->
+
 ## Feature Flag
 
 - **Name**: `[domain].[feature]`
 - **Default**: `false`
 - **Client**: [`true` if the front end reads it through `GET /api/v1/feature-flags`, else `false`]
 - **Guarded entry points**: [API routes with `@RequireFeature`, handlers calling `isEnabled`, front routes with `beforeLoad: requireFeature('<flag>')`; `libs/web/*` receive booleans as props and never read flags]
+
+<!-- option:feature-flags:end -->
 
 ## Integration Events
 
