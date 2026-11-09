@@ -7,6 +7,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { BOILERPLATE_NAME, renameProject } from './init-project-core.mts';
 import {
   checkMarkers,
+  isInside,
   optionById,
   PROJECT_OPTIONS,
   prunePaths,
@@ -102,9 +103,11 @@ export interface RemovalReport {
 /** Supprime les fichiers et les blocs des options, les alias sans cible et leurs paquets. */
 export function removeOptions(ids: readonly OptionId[]): RemovalReport {
   const options = ids.map(optionById);
+  const paths = options.flatMap((option) => option.paths).filter((path) => existsSync(path));
   const blocks: RemovalReport['blocks'] = [];
   const stripped: { path: string; text: string }[] = [];
-  for (const path of markerFiles()) {
+  // Un fichier supprimé par une option n'est pas réécrit après avoir perdu les blocs d'une autre.
+  for (const path of markerFiles().filter((file) => !isInside(file, paths))) {
     let text = readFileSync(path, 'utf8');
     let count = 0;
     for (const option of options) {
@@ -117,7 +120,6 @@ export function removeOptions(ids: readonly OptionId[]): RemovalReport {
       stripped.push({ path, text });
     }
   }
-  const paths = options.flatMap((option) => option.paths).filter((path) => existsSync(path));
 
   for (const path of paths) rmSync(path, { recursive: true });
   for (const { path, text } of stripped) writeFileSync(path, text);
@@ -148,6 +150,7 @@ export function finish(
   // Le plugin TanStack Router de Vite régénère routeTree.gen.ts au build.
   if (regenerate.has('routes')) run(['nx', 'run', 'web:build', '--skip-nx-cache']);
   if (regenerate.has('i18n')) run(['exec', 'lingui', 'extract', '--clean'], 'apps/web');
+  if (regenerate.has('errors')) run(['-s', 'docs:errors']);
   run(['-s', 'format']);
   run(['nx', 'reset']);
 }
