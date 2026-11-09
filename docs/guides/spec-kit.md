@@ -1,6 +1,6 @@
 # Spec Kit : cycle de vie et maintenance
 
-Le cycle de développement, la règle TDD et la traçabilité sont dans [`AGENTS.md`](../../AGENTS.md) § « Développer une fonctionnalité (Spec Kit) ». Ce guide détaille la vie d'une spec après son merge et la maintenance de Spec Kit (1.2.2).
+Le cycle de développement, la règle TDD et la traçabilité sont dans [`AGENTS.md`](../../AGENTS.md) § « Développer une fonctionnalité (Spec Kit) ». Ce guide détaille la vie d'une spec après son merge et la maintenance de Spec Kit (1.3.2).
 
 ## Garder une spec à jour
 
@@ -144,7 +144,7 @@ Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/sto
 La source est `tools/spec-kit/preset/`. Après une modification :
 
 ```sh
-uvx --from specify-cli==1.2.2 specify preset update boilerplate --dev tools/spec-kit/preset
+uvx --from specify-cli==1.3.2 specify preset update boilerplate --dev tools/spec-kit/preset
 ```
 
 Dans `.specify/presets/.registry`, seule la date d'installation change, plus `manifest_hash` et `registered_commands` quand `preset.yml` change. Ne jamais éditer `.specify/presets/` ni `.claude/skills/speckit-*` à la main : ils sont regénérés.
@@ -154,8 +154,8 @@ Dans `.specify/presets/.registry`, seule la date d'installation change, plus `ma
 Copilot, Cursor, Codex, Gemini… : installer [`uv`](https://docs.astral.sh/uv/), puis :
 
 ```sh
-uvx --from specify-cli==1.2.2 specify integration install <clé> --force
-uvx --from specify-cli==1.2.2 specify integration use <clé>
+uvx --from specify-cli==1.3.2 specify integration install <clé> --force
+uvx --from specify-cli==1.3.2 specify integration use <clé>
 ```
 
 Clés : `copilot`, `cursor-agent`, `codex`, `gemini`, `generic` (liste dans la doc de Spec Kit). Les règles du boilerplate s'appliquent aussi à cet agent.
@@ -173,4 +173,4 @@ uvx --from specify-cli==<version> specify init --here --force --non-interactive 
 uvx --from specify-cli==<version> specify preset update boilerplate --dev tools/spec-kit/preset
 ```
 
-Puis remplacer `1.2.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{specify,plan,tasks,analyze,implement,converge}/SKILL.md` gardent leurs sections « (boilerplate) ».
+Puis remplacer `1.3.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{specify,plan,tasks,analyze,implement,converge}/SKILL.md` gardent leurs sections « (boilerplate) ».
