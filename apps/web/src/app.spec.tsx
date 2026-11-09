@@ -13,10 +13,14 @@ import { ErrorZone } from './components/error-zone';
 import { activateLocale } from './i18n/i18n';
 import { Route as appRoot, type RouterContext } from './routes/__root';
 import {
+  // option:feature-flags:start
   API,
+  // option:feature-flags:end
   AUTH,
   api,
+  // option:feature-flags:start
   fakeToken,
+  // option:feature-flags:end
   renderAt,
   renderRouter,
   renderSignedIn,

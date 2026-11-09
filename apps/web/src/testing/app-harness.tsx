@@ -3,9 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { render } from '@testing-library/react';
-// option:feature-flags:start
 import { http, HttpResponse } from 'msw';
-// option:feature-flags:end
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 import {
