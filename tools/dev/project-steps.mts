@@ -169,7 +169,14 @@ export function printLeftovers(ids: readonly OptionId[]): void {
   for (const option of ids.map(optionById)) {
     const leftovers = grep(
       ['-c', '-i', '-E', option.leftovers],
-      [':!docs/guides/demarrer-un-projet.md'],
+      // Les fichiers installés de la méthode (speckit-artefact) suivent `flags` de .specify/stack.yml.
+      [
+        ':!docs/guides/demarrer-un-projet.md',
+        ':!.specify/presets/artefact-sdd',
+        ':!.specify/extensions/artefact-product',
+        ':!.claude/skills',
+        ':!.claude/agents',
+      ],
     );
     if (leftovers) {
       console.log(

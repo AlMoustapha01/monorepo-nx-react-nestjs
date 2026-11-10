@@ -1,0 +1,83 @@
+# artefact-sdd: the test-first core of the Artefact CI method for Spec Kit. This directory is
+# the source of truth: edit it here, then reinstall with
+# `uvx --from specify-cli==1.3.2 specify preset update artefact-sdd --dev <speckit-artefact>/preset`.
+# Never edit the installed copy in .specify/presets/artefact-sdd/ or .claude/skills/speckit-*/.
+schema_version: '1.0'
+
+preset:
+  id: 'artefact-sdd'
+  name: 'Artefact SDD'
+  version: '0.2.0'
+  description: 'Test-first templates and commands of the Artefact CI method, for any stack described in .specify/stack.yml'
+  author: 'Artefact CI'
+  repository: 'https://github.com/artefact-ci/speckit-artefact'
+  license: 'MIT'
+
+requires:
+  speckit_version: '>=1.3.2'
+
+provides:
+  templates:
+    - type: 'template'
+      name: 'spec-template'
+      file: 'templates/spec-template.md'
+      description: 'Spec template: every acceptance scenario must be testable'
+      replaces: 'spec-template'
+
+    - type: 'template'
+      name: 'plan-template'
+      file: 'templates/plan-template.md'
+      description: 'Plan template: stack read from the repo, constitution check, decisions for the user, flag, test strategy'
+      replaces: 'plan-template'
+
+    - type: 'template'
+      name: 'tasks-template'
+      file: 'templates/tasks-template.md'
+      description: 'Tasks template: mandatory tests, red-green-refactor, one user story per pull request'
+      replaces: 'tasks-template'
+
+    - type: 'template'
+      name: 'constitution-template'
+      file: 'templates/constitution-template.md'
+      description: 'Constitution template: the four principles of the Artefact CI base, then the project principles'
+      replaces: 'constitution-template'
+
+    - type: 'command'
+      name: 'speckit.specify'
+      file: 'commands/speckit.specify.md'
+      description: 'Feature branch from the git extension, reused as the spec directory; product requirements from the index'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.plan'
+      file: 'commands/speckit.plan.md'
+      description: 'Decisions left to the user, research from the repo and its conventions, prototype, appended to plan'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.tasks'
+      file: 'commands/speckit.tasks.md'
+      description: 'Mandatory, test-first task generation appended to tasks'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.analyze'
+      file: 'commands/speckit.analyze.md'
+      description: 'Design documents, code and dependencies, scenario coverage and approved deviations, appended to analyze'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.implement'
+      file: 'commands/speckit.implement.md'
+      description: 'Test-first rules appended to implement'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.converge'
+      file: 'commands/speckit.converge.md'
+      description: 'Acceptance-scenario test coverage and independent review appended to converge'
+      strategy: 'append'
+
+tags:
+  - 'tdd'
+  - 'sdd'

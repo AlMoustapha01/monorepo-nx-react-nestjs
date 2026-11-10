@@ -1,19 +1,15 @@
 {
   "schema_version": "1.0",
   "presets": {
-    "boilerplate": {
-      "version": "1.0.0",
+    "artefact-sdd": {
+      "version": "0.2.0",
       "source": "local",
-      "manifest_hash": "sha256:2daf8cf2dd28ac91addcb92436846c362b37c976ade19083c73ad8a4b2f5ba3f",
+      "manifest_hash": "sha256:c6f2c6687191198ffb56fe8b182a0e012d23a981c6fb7e5c32903114d112352b",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
         "claude": [
-          "speckit.prd",
-          "speckit.design",
-          "speckit.epics",
           "speckit.specify",
-          "speckit.prototype",
           "speckit.plan",
           "speckit.tasks",
           "speckit.analyze",
@@ -23,11 +19,7 @@
       },
       "registered_skills": {
         "claude": [
-          "speckit-prd",
-          "speckit-design",
-          "speckit-epics",
           "speckit-specify",
-          "speckit-prototype",
           "speckit-plan",
           "speckit-tasks",
           "speckit-analyze",
@@ -35,7 +27,17 @@
           "speckit-converge"
         ]
       },
-      "installed_at": "2026-11-09T13:31:07.439122+00:00"
+      "installed_at": "2026-11-10T22:21:51.550353+00:00"
+    },
+    "boilerplate-nx": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:ba27b679875b1528d9693cab4a420d6d0d314878031afce355fbf5fffc03d58a",
+      "enabled": true,
+      "priority": 5,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-11-10T22:21:59.685182+00:00"
     }
   }
 }

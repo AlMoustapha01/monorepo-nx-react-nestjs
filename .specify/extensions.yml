@@ -1,11 +1,13 @@
 installed:
+- artefact-product
 - git
 settings:
   auto_execute_hooks: true
 # Wired on purpose: branch creation before specify, and a commit after each command that writes files
 # (after analyze too: it reports only, but the corrections applied right after it get committed; with
 # nothing changed the hook does nothing). The extension's other hooks (repository initialization,
-# commits before each command, taskstoissues) are left out. `specify extension update git` re-adds them: remove them again.
+# commits before each command, taskstoissues) are left out. `specify extension update git` re-adds them:
+# `npx @artefact-ci/sdd update` reapplies them.
 hooks:
   before_specify:
   - extension: git

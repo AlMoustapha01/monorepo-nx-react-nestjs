@@ -1,0 +1,324 @@
+---
+description: Assess the current codebase against the feature's spec, plan, and tasks,
+  then append any remaining unbuilt work as new tasks to tasks.md so implement can
+  complete it.
+scripts:
+  sh: scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks --include-tasks
+  ps: scripts/powershell/check-prerequisites.ps1 -Json -RequireSpec -RequireTasks
+    -IncludeTasks
+  py: scripts/python/check_prerequisites.py --json --require-spec --require-tasks
+    --include-tasks
+---
+
+
+## User Input
+
+```text
+$ARGUMENTS
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before convergence)**:
+
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_converge` key
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+
+    ```text
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+  - **Mandatory hook** (`optional: false`):
+
+    ```text
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Goal.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Goal
+
+Close the gap between what a feature's specification, plan, and tasks call for and what the
+codebase currently implements. Read `spec.md`, `plan.md`, and `tasks.md` as the **sole
+source of intent** (with the constitution as governing constraints), assess the current
+state of the code, determine which requirements, acceptance criteria, plan decisions, and
+existing tasks are unmet, incomplete, or only partially satisfied, and **append each piece
+of remaining work as a new, traceable task** at the bottom of `tasks.md` so that
+`__SPECKIT_COMMAND_IMPLEMENT__` can complete it. This command MUST run only after
+`__SPECKIT_COMMAND_IMPLEMENT__` has run on the current `tasks.md`, and after `__SPECKIT_COMMAND_TASKS__` has produced a complete `tasks.md`.
+
+This is **not** a diff tool and does **not** track changes. It assesses the present state
+of the code relative to the feature's artifacts — no git, no branch comparison, no history.
+
+## Operating Constraints
+
+**APPEND-ONLY, NEVER REWRITE**: The command's **only** write is appending a new
+`## Phase N: Convergence` section to `tasks.md`. It MUST NOT:
+
+- modify `spec.md` or `plan.md` in any way;
+- rewrite, renumber, reorder, or delete any existing task (including tasks from a prior
+  Convergence phase);
+- modify, create, or delete any application code — completing the appended tasks is the
+  job of `__SPECKIT_COMMAND_IMPLEMENT__`.
+
+When the codebase already satisfies everything, the command MUST leave `tasks.md`
+**byte-for-byte unchanged** (no empty Convergence header) and report a clean result.
+
+**Constitution Authority**: The project constitution (`/memory/constitution.md`) is
+**non-negotiable**. Code that violates a MUST principle is the highest-severity finding and
+produces a corresponding remediation task. If the constitution is an unfilled template,
+skip constitution checks gracefully rather than failing.
+
+## Execution Steps
+
+### 1. Initialize Convergence Context
+
+Run `{SCRIPT}` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
+
+- SPEC = FEATURE_DIR/spec.md
+- PLAN = FEATURE_DIR/plan.md
+- TASKS = FEATURE_DIR/tasks.md
+- CONSTITUTION = `/memory/constitution.md` (if present)
+If `spec.md`, `plan.md`, or `tasks.md` is missing, STOP with a clear, actionable message naming the
+prerequisite command to run (`__SPECKIT_COMMAND_SPECIFY__` for a missing spec, `__SPECKIT_COMMAND_PLAN__` for a missing plan,
+`__SPECKIT_COMMAND_TASKS__` for missing tasks). Do not produce partial output.
+For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+### 2. Load Artifacts (Progressive Disclosure)
+
+Load only the minimal necessary context from each artifact:
+
+**From spec.md:**
+
+- Functional Requirements (FR-###)
+- Success Criteria (SC-###) — include only items requiring buildable work; exclude
+  post-launch outcome metrics and business KPIs
+- User Stories and their Acceptance Scenarios
+- Edge Cases (if present)
+
+**From plan.md:**
+
+- Architecture/stack choices and technical decisions
+- Data Model references
+- Phases and named touch-points (files/components the plan says will be created or edited)
+- Technical constraints
+
+**From tasks.md:**
+
+- Task IDs (to compute the next ID and next phase number)
+- Descriptions, phase grouping, and referenced file paths
+
+**From constitution (if not an unfilled template):**
+
+- Principle names and MUST/SHOULD normative statements
+
+### 3. Build the Intent Inventory
+
+Create an internal model (do not echo raw artifacts):
+
+- **Requirements inventory**: one stable key per FR-### / SC-### / user-story acceptance
+  scenario (e.g. `US1/AC2`), plus the plan decisions and constitution principles that
+  impose buildable obligations.
+- **Code-scope map**: from the file paths named in `plan.md` and `tasks.md`, plus a keyword
+  search for the concepts each requirement describes, derive the set of source files and
+  components in scope for assessment. Bound the assessment to these — do **not** infer
+  scope beyond what the artifacts define.
+
+### 4. Assess the Codebase and Classify Findings
+
+Include every existing task in the intent inventory, regardless of checkbox state or
+Convergence phase: completion claims are not evidence. Verify current behavior against
+the spec, plan, tasks, and constitution; for corrective task chains, assess the resulting
+behavior, not superseded implementation details. Check both unmet obligations and
+implementation that contradicts, exceeds, or falls outside the stated intent.
+
+For each item in the intent inventory, inspect the current code in scope and produce a
+`Finding` only where there is a gap. Classify every finding by **gap type**:
+
+- **`missing`**: the required work is absent from the code entirely.
+- **`partial`**: the work exists but does not yet fully satisfy the requirement /
+  acceptance criterion / plan decision.
+- **`contradicts`**: the code does something that conflicts with stated intent or a
+  constitution MUST principle.
+- **`unrequested`**: the code contains work not called for by the spec, plan, or tasks
+  (surfaced for awareness — converge does **not** delete code, it only appends a task to
+  review/justify or remove it).
+
+Each `Finding` records: a stable id, the `source-ref` it traces to, the `gap-type`, a
+severity, and a short human-readable description with the evidence (the file/area observed).
+
+**Edge cases:**
+
+- **Little or no code yet**: treat the entire specified scope as `missing` remaining work
+  rather than failing.
+- **Nothing remains**: produce zero findings and follow the converged branch in Step 7.
+
+### 5. Assign Severity
+
+- **CRITICAL**: violates a constitution MUST principle, or a `missing`/`contradicts` gap
+  that blocks baseline functionality of a P1 user story.
+- **HIGH**: a `missing` or `partial` gap on a core functional requirement or acceptance
+  criterion.
+- **MEDIUM**: a `partial` gap on a secondary requirement, or an `unrequested` addition with
+  unclear justification.
+- **LOW**: minor partial gaps, polish, or low-risk `unrequested` additions.
+
+### 6. Present the In-Session Findings Summary
+
+Before appending anything, output a compact, severity-graded summary (no file writes yet):
+
+## Convergence Findings
+
+| ID | Gap Type | Severity | Source | Evidence | Remaining Work |
+|----|----------|----------|--------|----------|----------------|
+| F1 | missing  | HIGH     | FR-008 | Example: no append-only guard detected in path/to/module.py when writing tasks.md | Add append-only enforcement |
+
+**Summary metrics:**
+
+- Requirements / acceptance criteria checked
+- Plan decisions checked
+- Constitution principles checked (or "skipped — template")
+- Findings by gap type (missing / partial / contradicts / unrequested)
+- Findings by severity
+
+### 7. Append Convergence Tasks (or report converged)
+
+**If there are one or more actionable findings** (`tasks_appended` outcome):
+
+Append to the **end** of `tasks.md`, per the append contract:
+
+1. Scan all existing task IDs; let `M` be the maximum. Determine the next phase number `N`
+   (highest existing phase + 1).
+2. Write a single new section header `## Phase N: Convergence`.
+3. Emit one checklist item per actionable finding, ordered CRITICAL/HIGH first, assigning
+   zero-padded IDs `T{M+1:03d}, T{M+2:03d}, …`:
+
+   ```markdown
+   - [ ] T042 <imperative description> per <source-ref> (<gap-type>)
+   ```
+
+   `<source-ref>` traces the task to its origin: e.g. `FR-003`, `SC-002`,
+   `US1/AC2`, `plan: storage decision`, `Constitution II`.
+
+   `<gap-type>` is one of `missing`, `partial`, `contradicts`, `unrequested`.
+
+   Constitution-violation tasks MUST be emitted first and described as
+   `CRITICAL`.
+4. Never reuse or renumber existing IDs. If a prior Convergence phase exists, add a new,
+   separately-numbered one below it — do not touch the old one.
+
+**If there are no actionable findings** (`converged` outcome):
+
+- Do **not** modify `tasks.md` at all — no empty phase header.
+- Report: **"✅ Converged — the implementation satisfies the spec, plan, and tasks."**
+- Include the summary counts of what was checked.
+
+### 8. Provide Next Actions (Handoff)
+
+- On `tasks_appended`: state how many tasks were appended under which phase, and recommend
+  running `__SPECKIT_COMMAND_IMPLEMENT__` to complete them; note that a follow-up converge
+  run will find fewer or no remaining items.
+- On `converged`: recommend proceeding to review / opening a PR. No further implement pass
+  is needed for this feature's specified scope.
+
+### 9. Check for extension hooks
+
+After producing the result, check if `.specify/extensions.yml` exists in the project root.
+
+- If it exists, read it and look for entries under the `hooks.after_converge` key
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- Report the convergence outcome (`converged` or `tasks_appended`) in-session before listing
+  any hooks, so users can decide whether to run optional follow-up commands.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+
+    ```text
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+  - **Mandatory hook** (`optional: false`):
+
+    ```text
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+
+<!-- artefact-sdd preset (source: preset/ of speckit-artefact). Appended to the core command. -->
+
+## Project Stack (artefact-sdd)
+
+Read `.specify/stack.yml` first: it names this project's branches, commands, test files and convention files. `commands.test` and `commands.affected` are required: when one is missing, or the file itself, stop and ask the user to write it. Any other key that is absent or `null` skips the step that uses it: say so in the report, never invent a command. An absent key never removes a test: tests always run, with what `tests.needs` lists.
+
+## Test Coverage of Acceptance Scenarios (artefact-sdd)
+
+These rules come from the constitution (Test-First principle) and take precedence over any instruction above that contradicts them. They keep the append-only contract above: existing tasks are never edited or reordered.
+
+- For every acceptance scenario (Given/When/Then) in `spec.md`, identified as `<feature number>-US<story>-AS<n>` (`003-US1-AS1`, …), find the automated test that covers it, at the level given by the plan's Test Strategy.
+- Run the trace command first (`commands.trace specs/<feature>`): it maps each scenario id to the test files whose titles cite it, and lists orphan ids (tests citing a scenario that is not in the spec). Without it, build the same matrix by searching the files of `tests.globs` for each id. Use the matrix as the starting point, then check that each mapped test actually asserts its scenario; a test that cites an id without checking the behavior is a gap.
+- A scenario without a covering test is a gap, even when the code seems to implement it. In the Convergence phase you append, emit the test task first, before any implementation task appended for the same scenario.
+- An orphan id means the spec changed or the test is mislabeled: append a task to fix the test title or the spec.
+- A test that cites a retired scenario (`N. **Retired** …` in `spec.md`, or any scenario of a `Retired` spec) is stale: append a task to remove the test, or to retire the behavior it checks.
+- When every active scenario of the spec has a test and you report **Converged**, set the spec's `**Status**` from `Draft` to `Implemented` (the only edit to `spec.md` allowed here). From then on, when CI runs the trace command, it fails if a scenario loses its test.
+- Never report **Converged** while a scenario has no test or while the trace command exits with an error. Quote its final matrix in your report.
+
+## Gaps and Tasks (artefact-sdd)
+
+These rules also take precedence over the instructions above, including "Little or no code yet: treat the entire specified scope as missing".
+
+- **Already planned.** A gap that an open task of `tasks.md` already covers, unchanged, gets no new task: list it in the summary as "covered by T0xx". Append only what no open task covers, or what an open task gets wrong (then say which one).
+- **Partial implementation.** Converge can run after `/speckit-implement` stopped part-way: assess what is done, and treat the open tasks as planned work.
+- **Blocked from outside.** A task that cannot be done as planned (an image or a service no longer available, a dependency that does not do what `research.md` assumed) is a decision for the user: append one task that names the blocker and the options, says that the decision goes back to `/speckit-plan`, and names the blocked tasks it must be done before. It is appended first in the new phase, like any other task: never move an existing task.
+- **Unrequested but justified.** Code that no task asked for but that a done task made necessary (a test fixed because a route became public), with its reason in the commit or in `tasks.md`, is not a gap.
+- **Severity in the task.** End a task appended for a CRITICAL or HIGH finding with its severity: `… per FR-001 (missing, CRITICAL)`.
+- **Fresh test runs.** Before reporting **Converged**, run the end-of-story checks without cache (`commands.fresh`, or `commands.affected` when it has no cache) and, when `e2e` is set, the journeys without cache (`e2e.fresh`, or `e2e.command` when it has none): a cached result proves nothing about the code as it is now.
+
+## Independent Review (artefact-sdd)
+
+An agent judges its own work generously: the work is reviewed by a reviewer that did not write it, in a fresh context, before converge concludes.
+
+- When this pass finds no remaining gap for the user stories implemented on this branch (one story per pull request), get an independent review following `.specify/extensions/artefact-product/agents/relecteur.md`, before handing the story over and before reporting **Converged**. Launch the `relecteur` subagent. If your agent cannot launch it, ask the user to run `.specify/extensions/artefact-product/agents/relecteur.md` in a new session, with the same inputs only, and paste its report. When the project has no `.specify/extensions/artefact-product/agents/relecteur.md` yet, ask the user who reviews and how; never report **Converged** on your own review.
+- Give the reviewer only the base (`origin/<branches.base>`, or the default branch without it) and the feature directory: never your summary, your reasoning or your opinion of the work.
+- Each blocking finding becomes appended tasks, under the append-only contract above; when it concerns an acceptance scenario, the test task comes first. Do not hand the story over, nor report **Converged**, while a blocking finding is open.
+- You may dispute a finding only with evidence (the code or test that disproves it). A disputed finding stays open: report it with that evidence, do not report **Converged**, and let the user decide (they close it, or it becomes a task); never drop it silently.
+- Quote the reviewer's verdict, and the items it left to human review, in your report.

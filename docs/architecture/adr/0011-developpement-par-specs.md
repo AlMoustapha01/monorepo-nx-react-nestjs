@@ -13,7 +13,7 @@ Les projets issus du boilerplate sont développés en grande partie avec des age
 - Les tâches de test précèdent le code et sont vues en échec avant d'être cochées.
 - Chaque scénario d'acceptation a un identifiant (`003-US1-AS2`) que citent les titres des tests qui le couvrent ; `pnpm -s spec:trace` en tire la matrice et échoue sur un scénario sans test ou un test qui cite un scénario inconnu. Il tourne en CI.
 - Une spec mergée décrit le comportement actuel : une PR qui le change modifie la spec.
-- Les personnalisations de Spec Kit vivent dans un preset versionné (`tools/spec-kit/preset/`), pour survivre aux mises à jour.
+- Les personnalisations de Spec Kit vivent dans un preset versionné (`tools/spec-kit/preset/`), pour survivre aux mises à jour. Depuis novembre 2026, la méthode commune (preset `artefact-sdd`, extension `artefact-product`) vient de speckit-artefact, installée par `npx @artefact-ci/sdd` ; le preset local ne garde que les templates de plan et de tâches de la stack.
 
 ## Conséquences
 

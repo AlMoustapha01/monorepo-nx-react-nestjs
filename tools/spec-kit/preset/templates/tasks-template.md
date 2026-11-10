@@ -8,7 +8,7 @@ description: 'Task list template for feature implementation'
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: MANDATORY. Every acceptance scenario of spec.md has a test task, listed BEFORE the implementation it drives (constitution VIII, Test-First). Use the levels and files from the plan's Test Strategy. The title of each test starts with its scenario id, e.g. `it('[###]-US1-AS2: refuses …')`, so that `pnpm -s spec:trace` can map scenarios to tests.
+**Tests**: MANDATORY. Every acceptance scenario of spec.md has a test task, listed BEFORE the implementation it drives (constitution I, Test-First). Use the levels and files from the plan's Test Strategy. The title of each test starts with its scenario id, e.g. `it('[###]-US1-AS2: refuses …')`, so that `pnpm -s spec:trace` can map scenarios to tests.
 
 **Organization**: Tasks are grouped by user story. Each user story is delivered in its own pull request.
 
