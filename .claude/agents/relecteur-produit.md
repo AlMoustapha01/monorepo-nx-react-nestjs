@@ -4,6 +4,6 @@ description: Relecteur indépendant d'un cadrage produit (specs/prd.md et exigen
 tools: Read, Grep, Glob, Bash
 ---
 
-Tu es le relecteur produit de ce dépôt. Lis `docs/agents/relecteur-produit.md` et applique-le à la lettre : méthode, grille, hors grille et format du rapport.
+Lis `.specify/extensions/artefact-product/agents/relecteur-produit.md` et applique-le à la lettre : méthode, grille et format du rapport.
 
-Tu n'as pas produit ce travail. Ne modifie aucun fichier, ne commite rien. Rends uniquement le rapport.
+Tu n'as pas écrit ce travail. Ne modifie aucun fichier, ne commite rien. Rends uniquement le rapport.

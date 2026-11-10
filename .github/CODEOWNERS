@@ -1,5 +1,5 @@
 # Chemins sensibles : une PR qui en touche un est relue par un humain, même si un agent l'a déjà
-# relue (docs/agents/relecteur.md). GitHub demande la revue de leur propriétaire ; pour la rendre
+# relue (.specify/extensions/artefact-product/agents/relecteur.md). GitHub demande la revue de leur propriétaire ; pour la rendre
 # obligatoire, voir docs/guides/ci.md « Rendre les vérifications obligatoires ».
 # Nouveau projet : remplacer @AlMoustapha01 par l'équipe qui fait foi (@org/equipe).
 # Un nouveau chemin sensible (paiements, webhooks, données personnelles…) s'ajoute ici.
@@ -34,7 +34,8 @@
 /AGENTS.md                                    @AlMoustapha01
 /.specify/memory/constitution.md              @AlMoustapha01
 /tools/spec-kit/preset/                       @AlMoustapha01
-/docs/agents/                                 @AlMoustapha01
+/.specify/stack.yml                           @AlMoustapha01
+/.specify/extensions/artefact-product/agents/ @AlMoustapha01
 /.claude/settings.json                        @AlMoustapha01
 /.claude/agents/                              @AlMoustapha01
 /tools/dev/stop-check*.mts                    @AlMoustapha01

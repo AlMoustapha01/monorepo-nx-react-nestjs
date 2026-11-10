@@ -39,21 +39,23 @@
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design. Each unchecked box needs an entry in Complexity Tracking._
 
-- [ ] I. Tenant Isolation: every new table has `tenant_id`; repositories filter on it.
-- [ ] II. Typed Business Errors: every new failure is an `AppError` subclass with a stable code.
-- [ ] III. Secure by Default: routes are authenticated; shared-data mutations declare `@RequireRole`; forbidden resources answer 404.
-- [ ] IV. Bounded External Calls: Redis keys have a TTL; external calls have a timeout, and slow ones go through a queue.
-- [ ] V. Generated, Backward-Compatible Migrations: generated with `db-generate`, expand/contract.
-- [ ] VI. Incremental Delivery: each user story is delivered in its own pull request.
+- [ ] I. Test-First: every acceptance scenario has a test in the Test Strategy below, written before the code.
+- [ ] II. Incremental Delivery: each user story is delivered in its own pull request.
 
 <!-- option:feature-flags:start -->
 
-- [ ] VI (feature flag): behind a flag disabled by default.
+- [ ] II (feature flag): behind a flag disabled by default.
 
 <!-- option:feature-flags:end -->
 
-- [ ] VII. Domain Boundaries: facade-only imports, port + adapter, own Postgres schema, events for asynchronous reactions.
-- [ ] VIII. Test-First: every acceptance scenario has a test in the Test Strategy below, written before the code.
+- [ ] III. Independent Review: the work is reviewed by a reviewer that did not write it, before it is handed over.
+- [ ] IV. Living Specs: the specs this feature changes are updated in the same pull requests.
+- [ ] V. Tenant Isolation: every new table has `tenant_id`; repositories filter on it.
+- [ ] VI. Typed Business Errors: every new failure is an `AppError` subclass with a stable code.
+- [ ] VII. Secure by Default: routes are authenticated; shared-data mutations declare `@RequireRole`; forbidden resources answer 404.
+- [ ] VIII. Bounded External Calls: Redis keys have a TTL; external calls have a timeout, and slow ones go through a queue.
+- [ ] IX. Generated, Backward-Compatible Migrations: generated with `db-generate`, expand/contract.
+- [ ] X. Domain Boundaries: facade-only imports, port + adapter, own Postgres schema, events for asynchronous reactions.
 
 ## Decisions for the User
 

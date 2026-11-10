@@ -42,7 +42,7 @@ Le récit du produit (vision, utilisateurs, problèmes, périmètre et non-objec
 
 Aucune des deux n'écrit d'état ni ne modifie une spec. Elles commitent seulement `specs/prd.md` et `specs/product.yml`.
 
-L'agent y tient le rôle de PO : il mène les questions et les propositions lui-même, parce que le cadrage se fait en conversation, avec une grille explicite, [`docs/agents/po.md`](../agents/po.md) (une exigence est une capacité testable, un epic un résultat démontrable, rien de la source ne disparaît en silence). Il écrit son brouillon dans les fichiers, puis le fait relire à froid par le sous-agent `relecteur-produit` ([`docs/agents/relecteur-produit.md`](../agents/relecteur-produit.md)), qui ne reçoit que les chemins et la source, jamais les notes de l'agent ni vos réponses. Un écart bloquant est corrigé une fois ou contesté avec sa preuve ; vous voyez ensuite le brouillon et les écarts restants, et tranchez. Si vous refusez, les fichiers sont restaurés. Avec un autre agent, la commande vous demande de lancer la relecture dans une nouvelle session et d'en coller le rapport.
+L'agent y tient le rôle de PO : il mène les questions et les propositions lui-même, parce que le cadrage se fait en conversation, avec une grille explicite, [`po.md`](../../.specify/extensions/artefact-product/agents/po.md) (une exigence est une capacité testable, un epic un résultat démontrable, rien de la source ne disparaît en silence). Il écrit son brouillon dans les fichiers, puis le fait relire à froid par le sous-agent `relecteur-produit` ([`relecteur-produit.md`](../../.specify/extensions/artefact-product/agents/relecteur-produit.md)), qui ne reçoit que les chemins et la source, jamais les notes de l'agent ni vos réponses. Un écart bloquant est corrigé une fois ou contesté avec sa preuve ; vous voyez ensuite le brouillon et les écarts restants, et tranchez. Si vous refusez, les fichiers sont restaurés. Avec un autre agent, la commande vous demande de lancer la relecture dans une nouvelle session et d'en coller le rapport.
 
 Entre les deux, `/speckit-design` fixe le cadrage design du produit (voir [Design](#design)).
 
@@ -116,18 +116,18 @@ Deux commandes du preset donnent un volet produit et UX au cycle. Toutes deux fo
 
 `/speckit-plan` cite les captures à côté des écrans à construire, prévoit l'ajout à `libs/web/ui` des composants que la maquette a dû dessiner, et vous avertit quand les captures sont plus anciennes que `specs/design.md`.
 
-Les consignes, portables, sont dans [`docs/agents/designer.md`](../agents/designer.md) (standards d'un SaaS moderne, contraintes du dépôt, livrables par mode) et [`docs/agents/relecteur-design.md`](../agents/relecteur-design.md) (grille : couverture des scénarios, cohérence avec le cadrage, accessibilité, mobile) ; les sous-agents Claude Code (`.claude/agents/`) les lisent. Le relecteur ne reçoit que les fichiers, jamais l'avis du designer ; un écart bloquant repart une fois au designer, puis vous tranchez. Avec un autre agent, la commande vous demande de lancer chacun dans une nouvelle session et d'en coller le rapport.
+Les consignes, portables, sont dans [`designer.md`](../../.specify/extensions/artefact-product/agents/designer.md) (standards d'un SaaS moderne, contraintes du dépôt, livrables par mode) et [`relecteur-design.md`](../../.specify/extensions/artefact-product/agents/relecteur-design.md) (grille : couverture des scénarios, cohérence avec le cadrage, accessibilité, mobile) ; les sous-agents Claude Code (`.claude/agents/`) les lisent. Le relecteur ne reçoit que les fichiers, jamais l'avis du designer ; un écart bloquant repart une fois au designer, puis vous tranchez. Avec un autre agent, la commande vous demande de lancer chacun dans une nouvelle session et d'en coller le rapport.
 
 ## Relecture indépendante
 
 Un agent juge généreusement son propre travail. Avant de rendre une story, `/speckit-converge` la fait relire par un relecteur qui ne l'a pas écrite (preset, section « Independent Review ») :
 
-- la grille, portable, est dans [`docs/agents/relecteur.md`](../agents/relecteur.md) ; l'adaptateur Claude Code est le sous-agent `.claude/agents/relecteur.md`, qui la lit ;
+- la grille, portable, est dans [`relecteur.md`](../../.specify/extensions/artefact-product/agents/relecteur.md) ; l'adaptateur Claude Code est le sous-agent `.claude/agents/relecteur.md`, qui la lit ;
 - le relecteur ne reçoit que la base (`origin/dev`) et le dossier de la spec, jamais le résumé de l'auteur ;
 - il ne signale que les écarts d'exigence, de correction et de principe, preuve à l'appui, et laisse ses doutes « à vérifier par un humain » ;
 - chaque écart bloquant devient une tâche ajoutée à `tasks.md` ; un écart que l'agent conteste figure dans son rapport, avec la preuve, et reste ouvert : pas de « Converged » tant que vous n'avez pas tranché.
 
-Avec un autre agent que Claude Code, `/speckit-converge` vous demande de lancer la relecture dans une nouvelle session (« applique docs/agents/relecteur.md à cette branche ») et d'en coller le rapport.
+Avec un autre agent que Claude Code, `/speckit-converge` vous demande de lancer la relecture dans une nouvelle session (« applique .specify/extensions/artefact-product/agents/relecteur.md à cette branche ») et d'en coller le rapport.
 
 Quand le jugement du relecteur diverge du vôtre (trop sévère, ou il laisse passer un vrai problème), corrigez la grille plutôt que de passer outre : c'est elle qui fait foi d'une session à l'autre.
 
@@ -139,15 +139,24 @@ Dans Claude Code, le hook `Stop` de `.claude/settings.json` lance `tools/dev/sto
 - Il ne lance pas les tests (trop lents à chaque tour) : `/speckit-implement`, `pnpm check` et la CI s'en chargent.
 - Le script tourne aussi sous Node 22 (`--experimental-strip-types`), au cas où le shell de Claude Code n'a pas fait `nvm use`.
 
-## Personnaliser les templates ou les règles TDD
+## D'où viennent les commandes, et les personnaliser
 
-La source est `tools/spec-kit/preset/`. Après une modification :
+La méthode vient de [speckit-artefact](https://github.com/artefact-ci/speckit-artefact) : le preset `artefact-sdd` (templates spec, plan, tâches et constitution, règles TDD des six commandes du cœur), l'extension `artefact-product` (`/speckit-prd`, `/speckit-design`, `/speckit-epics`, `/speckit-prototype` et les consignes des agents) et l'installeur `@artefact-ci/sdd`, qui génère `.claude/agents/` et réapplique les hooks git. Les commandes ne citent aucun outil du boilerplate : elles lisent `.specify/stack.yml` (commandes de test, branches, fichiers de conventions, front, `flags`). Pour les mettre à jour :
 
 ```sh
-uvx --from specify-cli==1.3.2 specify preset update boilerplate --dev tools/spec-kit/preset
+npx @artefact-ci/sdd update
 ```
 
-Dans `.specify/presets/.registry`, seule la date d'installation change, plus `manifest_hash` et `registered_commands` quand `preset.yml` change. Ne jamais éditer `.specify/presets/` ni `.claude/skills/speckit-*` à la main : ils sont regénérés.
+`update` ne touche ni `.specify/stack.yml` ni la constitution. Une règle propre au boilerplate va dans `AGENTS.md` (ou `apps/web/AGENTS.md`, `libs/web/AGENTS.md`), que les commandes lisent ; une règle de la méthode se change dans speckit-artefact.
+
+Les templates de plan et de tâches propres à la stack (domaines, événements, migrations, chemins `libs/api/...`) sont dans le preset local `tools/spec-kit/preset/`, installé au-dessus d'`artefact-sdd`. Après une modification :
+
+```sh
+uvx --from specify-cli==1.3.2 specify preset remove boilerplate-nx
+uvx --from specify-cli==1.3.2 specify preset add --dev tools/spec-kit/preset --priority 5
+```
+
+Ne jamais éditer `.specify/presets/`, `.specify/extensions/`, `.claude/skills/speckit-*` ni `.claude/agents/` à la main : ils sont regénérés.
 
 ## Utiliser un autre agent
 
@@ -166,11 +175,4 @@ Clés : `copilot`, `cursor-agent`, `codex`, `gemini`, `generic` (liste dans la d
 
 ## Mettre à jour Spec Kit
 
-Renovate ne suit pas Spec Kit (`uv` requis) :
-
-```sh
-uvx --from specify-cli==<version> specify init --here --force --non-interactive --integration claude --script sh
-uvx --from specify-cli==<version> specify preset update boilerplate --dev tools/spec-kit/preset
-```
-
-Puis remplacer `1.3.2` dans `AGENTS.md`, dans ce guide et dans `tools/spec-kit/preset/`. Vérifier avec `git diff` que la constitution est intacte et que `.claude/skills/speckit-{specify,plan,tasks,analyze,implement,converge}/SKILL.md` gardent leurs sections « (boilerplate) ».
+La version de Spec Kit est celle de speckit-artefact, qui la monte et la valide sur ce boilerplate avant de la publier. Ici : `npx @artefact-ci/sdd update` avec la nouvelle version, puis `git diff` pour vérifier que la constitution, `.specify/stack.yml` et `.specify/extensions.yml` (les 10 hooks git) sont intacts.

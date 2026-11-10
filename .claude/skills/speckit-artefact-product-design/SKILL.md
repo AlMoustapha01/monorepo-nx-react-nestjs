@@ -1,0 +1,1 @@
+../../../.specify/extensions/artefact-product/.specify-dev/agent-commands/claude/speckit-artefact-product-design/SKILL.md

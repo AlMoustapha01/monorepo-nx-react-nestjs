@@ -83,14 +83,16 @@ Les réponses sont consignées dans une section `## Clarifications` et reportée
 /speckit-plan
 ```
 
-Le plan suit le gabarit du boilerplate : il coche chaque principe de la constitution, puis décide domaines, flag, événements, données, règles d'accès et stratégie de test.
+Le plan suit le gabarit du boilerplate : il coche chaque principe de la constitution (les quatre de la méthode, I à IV, puis ceux du boilerplate), puis décide domaines, flag, événements, données, règles d'accès et stratégie de test.
 
 ```markdown
-- [x] I. Tenant Isolation: `announcements.announcements` has `tenant_id`; every repository query
-      goes through `tenantScope()` reading `RequestContext`.
-- [x] III. Secure by Default: all routes authenticated; publish and withdraw carry
-      `@RequireRole('staff')`; a foreign or withdrawn announcement answers 404.
-- [x] VI. Small, Flagged Increments: flag `announcements`, default `false`; …
+- [x] II. Incremental Delivery: each user story is delivered in its own pull request (US1: publish
+      and read; US2: remove).
+- [x] II (feature flag): behind a flag disabled by default (`announcements`, see below).
+- [x] V. Tenant Isolation: the only new table, `announcements.announcements`, has `tenant_id`; the
+      repository filters every query on `RequestContext.tenantId`.
+- [x] VII. Secure by Default: all routes authenticated; `POST` and `DELETE` carry
+      `@RequireRole('staff')`; an announcement of another tenant, or removed, answers 404.
 
 ## Feature Flag
 
@@ -184,7 +186,7 @@ Ce qui a coincé sur Annonces, et que vous croiserez sans doute :
 
 La commande compare le code à la spec, au plan et aux tâches, lance `pnpm -s spec:trace`, et ajoute à `tasks.md` ce qui manque encore. Elle ne conclut « Converged », et ne passe la spec en `Implemented`, que quand **tous** les scénarios de la spec ont un test.
 
-Quand la story n'a plus de manque, elle la fait relire par le relecteur indépendant (sous-agent `relecteur`, grille dans [`docs/agents/relecteur.md`](../agents/relecteur.md)), qui ne voit que le code et la spec, pas le résumé de l'agent. Ses écarts bloquants deviennent des tâches : relancez `/speckit-implement`, puis `/speckit-converge`. « Converged » attend donc aussi une relecture sans écart bloquant.
+Quand la story n'a plus de manque, elle la fait relire par le relecteur indépendant (sous-agent `relecteur`, grille dans [`relecteur.md`](../../.specify/extensions/artefact-product/agents/relecteur.md)), qui ne voit que le code et la spec, pas le résumé de l'agent. Ses écarts bloquants deviennent des tâches : relancez `/speckit-implement`, puis `/speckit-converge`. « Converged » attend donc aussi une relecture sans écart bloquant.
 
 ```sh
 pnpm -s spec:trace                          # toutes les specs, comme la CI
