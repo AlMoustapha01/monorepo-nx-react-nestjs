@@ -83,14 +83,16 @@ Les réponses sont consignées dans une section `## Clarifications` et reportée
 /speckit-plan
 ```
 
-Le plan suit le gabarit du boilerplate : il coche chaque principe de la constitution, puis décide domaines, flag, événements, données, règles d'accès et stratégie de test.
+Le plan suit le gabarit du boilerplate : il coche chaque principe de la constitution (les quatre de la méthode, I à IV, puis ceux du boilerplate), puis décide domaines, flag, événements, données, règles d'accès et stratégie de test.
 
 ```markdown
-- [x] I. Tenant Isolation: `announcements.announcements` has `tenant_id`; every repository query
-      goes through `tenantScope()` reading `RequestContext`.
-- [x] III. Secure by Default: all routes authenticated; publish and withdraw carry
-      `@RequireRole('staff')`; a foreign or withdrawn announcement answers 404.
-- [x] VI. Small, Flagged Increments: flag `announcements`, default `false`; …
+- [x] II. Incremental Delivery: each user story is delivered in its own pull request (US1: publish
+      and read; US2: remove).
+- [x] II (feature flag): behind a flag disabled by default (`announcements`, see below).
+- [x] V. Tenant Isolation: the only new table, `announcements.announcements`, has `tenant_id`; the
+      repository filters every query on `RequestContext.tenantId`.
+- [x] VII. Secure by Default: all routes authenticated; `POST` and `DELETE` carry
+      `@RequireRole('staff')`; an announcement of another tenant, or removed, answers 404.
 
 ## Feature Flag
 
