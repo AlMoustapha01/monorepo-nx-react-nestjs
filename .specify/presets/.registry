@@ -1,34 +1,6 @@
 {
   "schema_version": "1.0",
   "presets": {
-    "artefact-sdd": {
-      "version": "0.2.0",
-      "source": "local",
-      "manifest_hash": "sha256:c6f2c6687191198ffb56fe8b182a0e012d23a981c6fb7e5c32903114d112352b",
-      "enabled": true,
-      "priority": 10,
-      "registered_commands": {
-        "claude": [
-          "speckit.specify",
-          "speckit.plan",
-          "speckit.tasks",
-          "speckit.analyze",
-          "speckit.implement",
-          "speckit.converge"
-        ]
-      },
-      "registered_skills": {
-        "claude": [
-          "speckit-specify",
-          "speckit-plan",
-          "speckit-tasks",
-          "speckit-analyze",
-          "speckit-implement",
-          "speckit-converge"
-        ]
-      },
-      "installed_at": "2026-11-10T22:21:51.550353+00:00"
-    },
     "boilerplate-nx": {
       "version": "1.0.0",
       "source": "local",
@@ -38,6 +10,38 @@
       "registered_commands": {},
       "registered_skills": {},
       "installed_at": "2026-11-10T22:21:59.685182+00:00"
+    },
+    "artefact-sdd": {
+      "version": "0.3.0",
+      "source": "local",
+      "manifest_hash": "sha256:bd6b034d84482cb9d63acb9b7ff96645419f8988460480f7f60cf9226b42e182",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.specify",
+          "speckit.plan",
+          "speckit.tasks",
+          "speckit.analyze",
+          "speckit.implement",
+          "speckit.converge",
+          "speckit.clarify",
+          "speckit.checklist"
+        ]
+      },
+      "registered_skills": {
+        "claude": [
+          "speckit-specify",
+          "speckit-plan",
+          "speckit-tasks",
+          "speckit-analyze",
+          "speckit-implement",
+          "speckit-converge",
+          "speckit-clarify",
+          "speckit-checklist"
+        ]
+      },
+      "installed_at": "2026-11-13T23:24:03.278621+00:00"
     }
   }
 }

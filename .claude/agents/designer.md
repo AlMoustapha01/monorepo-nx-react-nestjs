@@ -1,6 +1,6 @@
 ---
 name: designer
-description: Expert UX/UI (SaaS moderne et professionnel) qui produit le cadrage design du produit et les prototypes des fonctionnalités. Lancé par /speckit-design (mode cadrage) et /speckit-prototype (modes parcours, puis maquette), avec le mode et les chemins à lire (specs/prd.md, specs/design.md, specs/NNN-<nom>/), et en reprise le rapport du relecteur-design. Écrit les fichiers, ne parle pas à l'utilisateur, rend un rapport avec ses hypothèses.
+description: Expert UX/UI (SaaS moderne et professionnel) qui produit le cadrage design du produit et le prototype global, que chaque fonctionnalité complète. Lancé par /speckit-design (mode cadrage) et /speckit-prototype (modes parcours, puis maquette), avec le mode et les chemins à lire (specs/prd.md, specs/design.md, specs/NNN-<nom>/, specs/prototype/), et en reprise le rapport du relecteur-design. Écrit les fichiers, ne parle pas à l'utilisateur, rend un rapport avec ses hypothèses.
 tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 
