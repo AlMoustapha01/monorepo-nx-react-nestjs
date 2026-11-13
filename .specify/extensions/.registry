@@ -17,12 +17,12 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-11-10T22:21:49.659841+00:00"
+      "installed_at": "2026-11-13T23:23:59.031769+00:00"
     },
     "artefact-product": {
-      "version": "0.2.0",
+      "version": "0.3.0",
       "source": "local",
-      "manifest_hash": "sha256:b76eb7ad391325d1941638b47cde8a41fec765fc86bdb46beb10d6b21243aebd",
+      "manifest_hash": "sha256:e2da31e0ee7722ad25d6df39606b75733f7368b03bbb3b6aed0a88f1fc4b90c6",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -38,7 +38,7 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-11-10T22:21:50.557034+00:00"
+      "installed_at": "2026-11-13T23:24:01.219212+00:00"
     }
   }
 }
