@@ -12,6 +12,8 @@
 # Isolation des tenants : contexte de requête, sessions et accès à la base
 /libs/api/core/src/lib/context/               @AlMoustapha01
 /libs/api/core/src/lib/database/              @AlMoustapha01
+/libs/api/core/src/migrations.ts              @AlMoustapha01
+/tools/docker/                                @AlMoustapha01
 /libs/api/*/src/lib/infra/*.schema.ts         @AlMoustapha01
 
 # Migrations : générées, rétrocompatibles, irréversibles une fois déployées

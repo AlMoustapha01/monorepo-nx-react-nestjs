@@ -54,7 +54,18 @@ export async function startStack(): Promise<Stack> {
   const cwd = mkdtempSync(join(tmpdir(), 'web-e2e-'));
   const processes: ChildProcess[] = [];
   const containers = await Promise.all([
-    new PostgreSqlContainer('postgres:17-alpine').start(),
+    // Comme en dev et en production : l'API et le service d'identité se connectent avec `app`, soumis à la RLS.
+    new PostgreSqlContainer('postgres:17-alpine')
+      .withUsername('postgres')
+      .withPassword('postgres')
+      .withDatabase('app')
+      .withCopyFilesToContainer([
+        {
+          source: join(ROOT, 'tools/docker/postgres-init.sql'),
+          target: '/docker-entrypoint-initdb.d/01-app-role.sql',
+        },
+      ])
+      .start(),
     new RedisContainer('redis:7-alpine').start(),
     new GenericContainer('axllent/mailpit:v1.31.3')
       .withExposedPorts(1025, 8025)
@@ -74,7 +85,7 @@ export async function startStack(): Promise<Stack> {
     const contract = {
       NODE_ENV: 'test',
       LOG_LEVEL: 'warn',
-      DATABASE_URL: postgres.getConnectionUri(),
+      DATABASE_URL: `postgres://app:app@${postgres.getHost()}:${postgres.getPort()}/app`,
       SMTP_URL: `smtp://${mailpit.getHost()}:${mailpit.getMappedPort(1025)}`,
       AUTH_JWT_ISSUER: 'https://auth.e2e.local',
       AUTH_JWT_AUDIENCE: 'api',

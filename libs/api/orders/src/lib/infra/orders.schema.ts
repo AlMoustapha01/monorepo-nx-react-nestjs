@@ -1,4 +1,5 @@
 // Lu par drizzle-kit pour générer les migrations : ce fichier n'importe que drizzle-orm.
+import { sql } from 'drizzle-orm';
 import {
   bigint,
   char,
@@ -6,6 +7,7 @@ import {
   foreignKey,
   index,
   integer,
+  pgPolicy,
   pgSchema,
   primaryKey,
   timestamp,
@@ -18,6 +20,16 @@ const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C
 
 /** Le domaine commandes possède son schéma Postgres ; aucun autre domaine n'y fait de jointure. */
 export const ordersSchema = pgSchema('orders');
+
+/**
+ * Seconde barrière d'isolation (ADR 0013) : sur une connexion de l'API, Postgres ne montre et n'accepte que les
+ * lignes du tenant qu'elle porte, même si une requête oublie son filtre ; aucune sans tenant. Une connexion qui
+ * n'a jamais posé `app.tenant_id` (migrations, Drizzle Studio, instance d'avant la RLS) n'est pas filtrée.
+ */
+const tenantRows = () =>
+  sql`current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
+const tenantIsolation = () =>
+  pgPolicy('tenant_isolation', { using: tenantRows(), withCheck: tenantRows() });
 
 export const orderStatus = ordersSchema.enum('order_status', ['placed', 'cancelled']);
 
@@ -43,6 +55,7 @@ export const orders = ordersSchema.table(
       table.createdAt.desc(),
       table.id.desc(),
     ),
+    tenantIsolation(),
   ],
 );
 
@@ -62,6 +75,7 @@ export const orderLines = ordersSchema.table(
   (table) => [
     primaryKey({ columns: [table.orderId, table.position] }),
     foreignKey({ columns: [table.orderId], foreignColumns: [orders.id] }).onDelete('cascade'),
+    tenantIsolation(),
   ],
 );
 

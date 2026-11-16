@@ -8,6 +8,7 @@
     "apps/web-e2e/src/**/*.spec.ts",
     "apps/api/drizzle.config.ts",
     "libs/*/*/src/index.ts",
+    "libs/api/core/src/migrations.ts",
     "libs/api/core/src/testing.ts",
     "libs/api/*/src/lib/infra/*.schema.ts",
     "libs/api/core/src/lib/**/*.schema.ts",

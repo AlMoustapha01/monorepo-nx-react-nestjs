@@ -1,0 +1,6 @@
+ALTER TABLE "catalog"."products" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "orders"."order_lines" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "orders"."orders" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "tenant_isolation" ON "catalog"."products" AS PERMISSIVE FOR ALL TO public USING (current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid);--> statement-breakpoint
+CREATE POLICY "tenant_isolation" ON "orders"."order_lines" AS PERMISSIVE FOR ALL TO public USING (current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid);--> statement-breakpoint
+CREATE POLICY "tenant_isolation" ON "orders"."orders" AS PERMISSIVE FOR ALL TO public USING (current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid);

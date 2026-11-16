@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { DatabaseSession, domainIdGenerator } from '@nx-react-nestjs/api-core';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import {
   createTestRequestContext,
+  describeTenantIsolation,
   startTestDatabase,
   type TestDatabase,
 } from '@nx-react-nestjs/api-core/testing';
@@ -14,13 +15,12 @@ const newProductId = domainIdGenerator('PRD');
 describe('DrizzleProductRepository (real Postgres)', () => {
   const context = createTestRequestContext();
   const tenantA = { userId: randomUUID(), tenantId: randomUUID() };
-  const tenantB = { userId: randomUUID(), tenantId: randomUUID() };
   let database: TestDatabase;
   let repository: DrizzleProductRepository;
 
   beforeAll(async () => {
     database = await startTestDatabase();
-    repository = new DrizzleProductRepository(new DatabaseSession(database.db), context);
+    repository = new DrizzleProductRepository(database.session(context), context);
   });
 
   afterAll(() => database?.stop());
@@ -52,32 +52,26 @@ describe('DrizzleProductRepository (real Postgres)', () => {
       expect(found?.price.equals(product.price)).toBe(true);
     }));
 
-  it('never reads or modifies the products of another tenant', async () => {
-    const foreign = newProduct(tenantB.tenantId, 'FOREIGN');
-    await context.runAs(tenantB, () => repository.insert(foreign));
-
-    await context.runAs(tenantA, async () => {
-      expect(await repository.findById(foreign.id)).toBeNull();
-      expect(await repository.findBySku('FOREIGN')).toBeNull();
-      expect(await repository.findManyByIds([foreign.id])).toEqual([]);
-
-      foreign.archive(new Date());
-      // L'écriture conditionnelle ne trouve aucune ligne de ce tenant : rien n'est écrit.
-      await expect(repository.update(foreign)).rejects.toMatchObject({
-        code: 'PRODUCT_VERSION_CONFLICT',
-      });
-    });
-
-    const untouched = await context.runAs(tenantB, () => repository.findById(foreign.id));
-    expect(untouched?.status).toBe('draft');
-  });
-
-  it('always writes to the context tenant, not the entity tenant', async () => {
-    const forged = newProduct(tenantB.tenantId, 'FORGED');
-    await context.runAs(tenantA, () => repository.insert(forged));
-
-    expect(await context.runAs(tenantB, () => repository.findById(forged.id))).toBeNull();
-    expect(await context.runAs(tenantA, () => repository.findById(forged.id))).not.toBeNull();
+  describeTenantIsolation('DrizzleProductRepository', {
+    database: () => database,
+    repository: (session, context) => new DrizzleProductRepository(session, context),
+    entity: (tenantId) => newProduct(tenantId, `ISO-${randomUUID()}`),
+    insert: (repository, product) => repository.insert(product),
+    find: (repository, product) => repository.findById(product.id),
+    reads: {
+      findById: (repository, product) => repository.findById(product.id),
+      findBySku: (repository, product) => repository.findBySku(product.sku),
+      findManyByIds: (repository, product) => repository.findManyByIds([product.id]),
+      list: (repository) => repository.list({ limit: 10 }),
+    },
+    writes: {
+      update: (repository, product) => {
+        product.archive(new Date());
+        return repository.update(product);
+      },
+      adjustSoldCounts: (repository, product) =>
+        repository.adjustSoldCounts([{ productId: product.id, delta: 5 }]),
+    },
   });
 
   it('adjusts sales atomically, without update overwriting them', () =>
@@ -97,16 +91,6 @@ describe('DrizzleProductRepository (real Postgres)', () => {
 
       expect((await repository.findById(product.id))?.soldCount).toBe(4);
     }));
-
-  it('does not adjust the sales of a product from another tenant', async () => {
-    const foreign = newProduct(tenantB.tenantId, 'SOLD-FOREIGN');
-    await context.runAs(tenantB, () => repository.insert(foreign));
-    await context.runAs(tenantA, () =>
-      repository.adjustSoldCounts([{ productId: foreign.id, delta: 5 }]),
-    );
-    const untouched = await context.runAs(tenantB, () => repository.findById(foreign.id));
-    expect(untouched?.soldCount).toBe(0);
-  });
 
   it('filters the list by status', async () => {
     const tenant = { userId: randomUUID(), tenantId: randomUUID() };
