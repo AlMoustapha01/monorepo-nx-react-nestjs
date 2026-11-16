@@ -6,13 +6,13 @@ Ce guide décrit ce qu'il faut faire tourner en production, dans quel ordre, et 
 
 Deux images, construites par le même `Dockerfile` :
 
-| Image                                            | Commande          | Rôle                                                 | Instances                 |
-| ------------------------------------------------ | ----------------- | ---------------------------------------------------- | ------------------------- |
-| API (`docker build .`)                           | `node main.js`    | API HTTP, port 3000                                  | selon le trafic           |
-|                                                  | `node worker.js`  | relais de l'outbox, worker BullMQ, purge quotidienne | selon le volume de jobs   |
-|                                                  | `node migrate.js` | migrations de l'API, puis sortie                     | une, à chaque déploiement |
-| Identité (`docker build --build-arg APP=auth .`) | `node main.js`    | Better Auth, port 3100                               | selon le trafic           |
-|                                                  | `node migrate.js` | tables de Better Auth (schéma `auth`), puis sortie   | une, à chaque déploiement |
+| Image                                            | Commande          | Rôle                                               | Instances                 |
+| ------------------------------------------------ | ----------------- | -------------------------------------------------- | ------------------------- |
+| API (`docker build .`)                           | `node main.js`    | API HTTP, port 3000                                | selon le trafic           |
+|                                                  | `node worker.js`  | file de jobs (Graphile Worker), tâches planifiées  | selon le volume de jobs   |
+|                                                  | `node migrate.js` | migrations de l'API et de la file, puis sortie     | une, à chaque déploiement |
+| Identité (`docker build --build-arg APP=auth .`) | `node main.js`    | Better Auth, port 3100                             | selon le trafic           |
+|                                                  | `node migrate.js` | tables de Better Auth (schéma `auth`), puis sortie | une, à chaque déploiement |
 
 Plus le front (fichiers statiques), Postgres et Redis. L'API et le service d'identité partagent la même base Postgres, chacun dans ses schémas.
 
@@ -22,7 +22,7 @@ navigateur ──► front (statique)
     ├────────────────────────────┘                 ▲
     │ Bearer (token 15 min)                        │ JWKS (réseau interne)
     └──────────────────────────────► api :3000 ────┘──► Postgres, Redis
-                                     worker ─────────► Postgres, Redis, SMTP
+                                     worker ─────────► Postgres, SMTP
 ```
 
 ## Vérifier la topologie en local
@@ -60,6 +60,14 @@ Pourquoi l'étape 3 : les repositories lisent avec `.select()`, qui nomme chaque
 Même logique pour une colonne obligatoire (ajoutée avec une valeur par défaut, ou nullable puis remplie), une table renommée ou un type changé. Supprimer une colonne encore lue par le code en production est l'erreur classique.
 
 Les migrations restent générées (`pnpm nx run api:db-generate --name=<sujet>`) et relues. Celles de Better Auth sont additives par construction : `migrate.js` du service d'identité ne fait qu'ajouter tables, colonnes et index.
+
+### Depuis une version à BullMQ
+
+Un projet déjà déployé avec l'ancienne file (ADR 0005) passe à Graphile Worker ([ADR 0012](../architecture/adr/0012-file-de-jobs-graphile-worker.md)) sans perdre d'événement :
+
+1. `migrate.js` crée le schéma `graphile_worker` ; l'outbox ne change pas.
+2. Déployer l'API et le worker. Les lignes d'outbox que les anciennes instances écrivent encore, non publiées, sont mises en file par le nouveau worker dans la minute (`messaging:relay-pending`).
+3. Garder un ancien worker jusqu'à ce que sa file BullMQ soit vide, puis l'arrêter. Redis peut ensuite quitter `noeviction` et sa persistance.
 
 ## Configuration
 
@@ -120,13 +128,13 @@ Le cookie de session de Better Auth est en `SameSite=Lax` : le front et le servi
 
 | Process  | Liveness  | Readiness | `/ready` vérifie                                                               |
 | -------- | --------- | --------- | ------------------------------------------------------------------------------ |
-| API      | `/health` | `/ready`  | Postgres (et Redis si `JOBS_ENABLED=true`)                                     |
+| API      | `/health` | `/ready`  | Postgres                                                                       |
 | Identité | `/health` | `/ready`  | Postgres                                                                       |
 | Worker   | aucune    | aucune    | pas de port HTTP : un crash fait sortir le process, l'orchestrateur le relance |
 
 Les sondes sont hors du préfixe `/api/v1`, publiques et non comptées par le rate limiting. `/ready` passe à 503 dès le signal d'arrêt.
 
-L'API sans jobs ne vérifie pas Redis : une panne Redis ne doit pas retirer toutes les instances du load balancer, puisque le rate limiting la laisse passer.
+L'API ne vérifie pas Redis : une panne Redis ne doit pas retirer toutes les instances du load balancer, puisque le rate limiting la laisse passer.
 
 ## Arrêt et redémarrage
 
@@ -163,21 +171,17 @@ Exemple : limite de 512 Mo → `--max-old-space-size=384`.
 
 ## Redis
 
-Redis porte les jobs BullMQ et les compteurs de rate limiting. Il doit être configuré avec :
+Redis ne porte que les compteurs du rate limiting, tous avec un TTL : ni persistance ni `noeviction` ne sont nécessaires, un Redis managé par défaut convient. Les jobs sont dans Postgres ([ADR 0012](../architecture/adr/0012-file-de-jobs-graphile-worker.md)).
 
-- `maxmemory-policy noeviction` : sous pression mémoire, une autre politique supprimerait des jobs ;
-- la persistance AOF (`appendonly yes`) : un redémarrage ne doit pas vider la file.
-
-Un Redis managé (ElastiCache, Memorystore, Upstash…) se règle souvent par défaut en `volatile-lru` ou sans persistance : à vérifier. Toutes les clés applicatives ont un TTL.
-
-Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer, avec un avertissement par minute), les événements s'accumulent dans l'outbox Postgres, et le worker les relaie à son retour. Aucun événement n'est perdu.
+Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer, avec un avertissement par minute) et les événements sont traités normalement.
 
 ## Postgres
 
-- **Connexions** : chaque process ouvre jusqu'à `DATABASE_POOL_MAX` connexions (10 pour l'API et le worker, 5 pour l'identité). Le total, toutes instances comprises, doit rester sous `max_connections`, migrations comprises. Au-delà de quelques dizaines d'instances, placer un pooler (PgBouncer en mode transaction).
+- **Connexions** : chaque process ouvre jusqu'à `DATABASE_POOL_MAX` connexions (10 pour l'API et le worker, 5 pour l'identité) ; le worker y ajoute son pool de jobs, `JOBS_CONCURRENCY` + 2 (7 par défaut), dont une connexion gardée pour `LISTEN`. Le total, toutes instances comprises, doit rester sous `max_connections`, migrations comprises. Au-delà de quelques dizaines d'instances, placer un pooler (PgBouncer en mode transaction) devant l'API, mais pas devant le worker : `LISTEN` exige une connexion directe.
 - **Timeouts** : une requête SQL est annulée après `DATABASE_STATEMENT_TIMEOUT_MS` (30 s), une transaction restée ouverte sans requête après 60 s, et l'attente d'une connexion (pool plein, Postgres injoignable) échoue après 5 s : une requête lente ou bloquée ne garde ni connexion ni verrous indéfiniment. Les migrations n'ont pas de `statement_timeout` (un index sur une grosse table peut être long). Derrière PgBouncer, ces réglages sont envoyés au démarrage de la connexion : ajoutez `statement_timeout` et `idle_in_transaction_session_timeout` à `ignore_startup_parameters`, et réglez-les sur le rôle Postgres (`alter role … set statement_timeout = '30s'`).
 - **Droits** : `migrate.js` crée des schémas et des tables ; les process applicatifs n'ont besoin que de lire et écrire. Deux rôles Postgres distincts limitent les dégâts d'une injection.
-- **Rétention** : le worker purge chaque jour l'outbox (7 jours) et les marques d'idempotence (30 jours). Les jobs restent dans Redis 24 h en cas de succès, 7 jours en cas d'échec.
+- **Rétention** : le worker purge chaque jour l'outbox (7 jours), les marques d'idempotence (30 jours) et les jobs abandonnés (7 jours). Un job réussi est supprimé tout de suite.
+- **File de jobs** : le schéma `graphile_worker` reçoit une insertion et une suppression par job. Surveiller l'autovacuum de ses tables au-delà de quelques centaines de jobs par seconde.
 
 ## Avant la première mise en production
 
@@ -188,7 +192,7 @@ Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer,
 - [ ] SMTP réel configuré, domaine d'expédition vérifié (SPF, DKIM).
 - [ ] Front, API et identité sur le même site ; `CORS_ORIGINS`, `BETTER_AUTH_URL` et `AUTH_APP_URL` en HTTPS.
 - [ ] `TRUST_PROXY_HOPS` égal au nombre de proxys réels.
-- [ ] Redis en `noeviction` avec AOF.
+- [ ] Le worker atteint Postgres en direct, sans pooler en mode transaction.
 - [ ] Les migrations tournent comme étape bloquante avant les nouvelles instances.
 - [ ] Limite mémoire des conteneurs, et `--max-old-space-size` en dessous (voir [Mémoire](#mémoire)).
 - [ ] `SHUTDOWN_DRAIN_MS=5000`, et délai avant SIGKILL supérieur à `SHUTDOWN_TIMEOUT_MS`.

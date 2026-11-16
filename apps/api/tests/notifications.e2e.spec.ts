@@ -20,7 +20,7 @@ interface MailpitMessage {
   To: { Address: string }[];
 }
 
-/** Commande passée → outbox → BullMQ → email reçu par un vrai serveur SMTP (Mailpit). */
+/** Commande passée → outbox → file de jobs → email reçu par un vrai serveur SMTP (Mailpit). */
 describe('Order confirmation email (e2e)', () => {
   let database: TestDatabase;
   let redis: TestRedis;

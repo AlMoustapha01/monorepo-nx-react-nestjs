@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { runMigrations } from 'graphile-worker';
 import { Client } from 'pg';
 import { loadEnvFiles } from './load-env';
 
@@ -8,7 +9,7 @@ import { loadEnvFiles } from './load-env';
 const MIGRATION_LOCK_KEY = 7_316_221;
 
 /**
- * Applique les migrations générées, avant le démarrage des nouvelles instances (étape de
+ * Applique les migrations générées, puis celles de la file de jobs, avant le démarrage des nouvelles instances (étape de
  * déploiement à part). Sans drizzle-kit : l'image de production n'a que les dépendances runtime.
  */
 async function main() {
@@ -24,6 +25,8 @@ async function main() {
   try {
     await client.query('select pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
     await migrate(drizzle({ client }), { migrationsFolder: join(__dirname, 'migrations') });
+    // Schéma graphile_worker (file de jobs, ADR 0012) : jamais au démarrage du worker.
+    await runMigrations({ connectionString });
     console.log('Migrations applied');
   } finally {
     await client.end();

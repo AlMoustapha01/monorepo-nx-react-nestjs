@@ -37,10 +37,12 @@ export const envSchema = z.object({
   /** Durée maximum d'une requête SQL (`statement_timeout`) ; 0 la désactive. */
   DATABASE_STATEMENT_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(30_000),
 
+  /** Compteurs du rate limiting. */
   REDIS_URL: z.url(),
-  /** false pour un process API sans relais ni worker (ex. workers déployés à part). */
+  /** false pour un process API sans worker de jobs (ex. workers déployés à part). */
   JOBS_ENABLED: z.stringbool().default(true),
-  OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(1000),
+  /** Sondage de la file pour les jobs différés (retries) ; les nouveaux jobs réveillent le worker (LISTEN/NOTIFY). */
+  JOBS_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(2000),
   JOBS_CONCURRENCY: z.coerce.number().int().positive().default(5),
 
   /** Absent hors production : les emails sont seulement journalisés. */

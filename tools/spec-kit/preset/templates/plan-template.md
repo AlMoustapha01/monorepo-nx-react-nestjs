@@ -19,7 +19,7 @@
 
 **Language/Version**: TypeScript, Node 24 LTS, Nx monorepo (pnpm)
 
-**Back end**: NestJS 11, Drizzle ORM, Postgres (one schema per domain), Redis, BullMQ (transactional outbox), zod contracts in `libs/shared/contracts`
+**Back end**: NestJS 11, Drizzle ORM, Postgres (one schema per domain), transactional outbox and job queue in Postgres (Graphile Worker), Redis (rate limiting), zod contracts in `libs/shared/contracts`
 
 **Front end**: React, TanStack Router and Query, Tailwind 4, shadcn components (`libs/web/ui`), Lingui (i18n)
 

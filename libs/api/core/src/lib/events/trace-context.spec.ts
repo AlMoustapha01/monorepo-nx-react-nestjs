@@ -1,6 +1,6 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { startTestTelemetry } from '../../testing';
-import type { IntegrationEventJob } from './integration-event.queue';
+import type { IntegrationEventJob } from './job-queue';
 import { captureTraceContext, inHandlerSpan } from './trace-context';
 
 const job = (traceContext?: Record<string, string>): IntegrationEventJob => ({

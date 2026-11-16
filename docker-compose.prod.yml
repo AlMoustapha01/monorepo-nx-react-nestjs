@@ -134,8 +134,8 @@ services:
 
   redis:
     image: redis:7-alpine
-    # BullMQ : une éviction ferait perdre des jobs.
-    command: ['redis-server', '--maxmemory-policy', 'noeviction', '--appendonly', 'yes']
+    # Compteurs du rate limiting seulement, tous avec un TTL : rien à persister.
+    command: ['redis-server', '--maxmemory-policy', 'volatile-ttl']
 
   mailpit:
     image: axllent/mailpit:v1.31.6

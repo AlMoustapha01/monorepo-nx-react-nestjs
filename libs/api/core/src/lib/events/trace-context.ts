@@ -6,7 +6,7 @@ import {
   SpanStatusCode,
   trace,
 } from '@opentelemetry/api';
-import { INTEGRATION_EVENTS_QUEUE_NAME, type IntegrationEventJob } from './integration-event.queue';
+import { INTEGRATION_EVENT_TASK, type IntegrationEventJob } from './job-queue';
 
 /** Contexte W3C (`traceparent`, `tracestate`) stocké avec l'événement. */
 export type TraceCarrier = Record<string, string>;
@@ -34,9 +34,9 @@ export function inHandlerSpan<T>(
     {
       kind: SpanKind.CONSUMER,
       attributes: {
-        'messaging.system': 'bullmq',
+        'messaging.system': 'graphile_worker',
         'messaging.operation.type': 'process',
-        'messaging.destination.name': INTEGRATION_EVENTS_QUEUE_NAME,
+        'messaging.destination.name': INTEGRATION_EVENT_TASK,
         'messaging.message.id': event.id,
         'app.event.type': event.type,
         'app.event.handler': handler,

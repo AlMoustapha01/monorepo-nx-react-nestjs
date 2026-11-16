@@ -9,9 +9,9 @@ Boilerplate de produit SaaS multi-tenant : une API NestJS découpée en domaines
                     │                                              │
                     └── access token JWT ──► apps/api (NestJS) ◄── JWKS
                                                   │
-                          Postgres (un schéma par domaine) + outbox
+                 Postgres (un schéma par domaine) + outbox + file de jobs
                                                   │
-                                    worker (BullMQ, Redis) ──► handlers des domaines
+                                  worker (Graphile Worker) ──► handlers des domaines
 ```
 
 - **API** (`apps/api`, `libs/api/*`) : un domaine métier par lib Nx (domaine, cas d'usage, adapters, controllers), frontières vérifiées par le lint, isolation par tenant dans chaque repository, erreurs RFC 9457, idempotence, verrou optimiste, rate limiting.
@@ -22,7 +22,7 @@ Boilerplate de produit SaaS multi-tenant : une API NestJS découpée en domaines
 
 <!-- option:feature-flags:end -->
 
-- **Événements** : outbox transactionnelle relayée vers BullMQ, handlers idempotents, livraison au moins une fois.
+- **Événements** : outbox transactionnelle et file de jobs dans Postgres (Graphile Worker), alimentée dans la transaction métier ; handlers idempotents, livraison au moins une fois.
 - **Identité** (`apps/auth`) : Better Auth dans un service à part (comptes, organisations = tenants, rôles). L'API ne fait que vérifier des JWT : le fournisseur se remplace par configuration.
 - **Front** (`apps/web`, `libs/web/*`) : TanStack Router et Query, design system Tailwind 4 + shadcn avec Storybook, i18n Lingui, budget de poids du bundle.
 - **Exploitation** : une image Docker par service, migrations en étape séparée, sondes, arrêt propre, OpenTelemetry (traces, métriques, logs corrélés), Sentry.
@@ -34,7 +34,7 @@ Boilerplate de produit SaaS multi-tenant : une API NestJS découpée en domaines
 
 <!-- example:end -->
 
-Stack : Node 24, TypeScript, Nx, NestJS 11, Drizzle + Postgres 17, Redis 7 + BullMQ, Better Auth, React 19, Vite, Tailwind 4, zod, Vitest, Playwright, oxlint et oxfmt, knip.
+Stack : Node 24, TypeScript, Nx, NestJS 11, Drizzle + Postgres 17, Graphile Worker, Redis 7 (rate limiting), Better Auth, React 19, Vite, Tailwind 4, zod, Vitest, Playwright, oxlint et oxfmt, knip.
 
 ## Démarrer
 

@@ -11,7 +11,7 @@ flowchart LR
   api[API HTTP<br>apps/api · main.js]
   worker[Worker<br>apps/api · worker.js]
   pg[(Postgres<br>un schéma par domaine)]
-  redis[(Redis<br>BullMQ, rate limit)]
+  redis[(Redis<br>rate limit)]
   smtp[SMTP]
 
   browser -- "cookie de session<br>GET /api/auth/token" --> auth
@@ -21,16 +21,15 @@ flowchart LR
   api --> pg
   api --> redis
   worker --> pg
-  worker --> redis
   worker --> smtp
   auth --> smtp
 ```
 
 - **`apps/web`** : une SPA React (Vite) qui ne parle qu'à deux services. Elle obtient un access token du service d'identité avec son cookie de session, le garde en mémoire et l'envoie à l'API.
 - **`apps/auth`** : Better Auth dans son propre process. Il gère les comptes, les organisations (une organisation = un tenant) et signe les JWT, et il expose ses clés publiques (JWKS). Ses tables sont dans le schéma Postgres `auth`.
-- **`apps/api`** : une seule image, trois commandes. `main.js` sert le HTTP, `worker.js` fait tourner le relais de l'outbox et les handlers d'événements, `migrate.js` applique les migrations au déploiement. En dev, `nx serve api` fait tout dans un seul process.
-- **Postgres** : chaque domaine a son schéma, du nom du domaine (`pgSchema('<domaine>')`), sans jointure ni clé étrangère vers un autre domaine. `api-core` y ajoute `messaging` (outbox, marques d'idempotence des handlers) et `idempotency` (réponses rejouées des routes `@Idempotent`).
-- **Redis** : files BullMQ et compteurs du rate limiting. Toute clé a un TTL.
+- **`apps/api`** : une seule image, trois commandes. `main.js` sert le HTTP, `worker.js` fait tourner la file de jobs (Graphile Worker) et les handlers d'événements, `migrate.js` applique les migrations au déploiement. En dev, `nx serve api` fait tout dans un seul process.
+- **Postgres** : chaque domaine a son schéma, du nom du domaine (`pgSchema('<domaine>')`), sans jointure ni clé étrangère vers un autre domaine. `api-core` y ajoute `messaging` (outbox, marques d'idempotence des handlers) et `idempotency` (réponses rejouées des routes `@Idempotent`) ; Graphile Worker, `graphile_worker` (la file de jobs).
+- **Redis** : compteurs du rate limiting, rien d'autre. Toute clé a un TTL.
 
 ## Les libs et leurs dépendances
 
@@ -89,16 +88,12 @@ Le tenant ne vient jamais de la requête : il est lu dans le token et placé dan
 sequenceDiagram
   participant U as Cas d'usage
   participant DB as Postgres
-  participant Rel as Relais (worker)
-  participant Q as BullMQ (Redis)
   participant H as Handler (worker)
-  U->>DB: transaction : écriture métier + ligne d'outbox
-  Rel->>DB: lit l'outbox (SKIP LOCKED)
-  Rel->>Q: un job par (événement, handler)
-  Q->>H: job
+  U->>DB: transaction : écriture métier + ligne d'outbox + un job par handler
+  DB-->>H: NOTIFY, puis le worker prend le job (SKIP LOCKED)
   H->>H: RequestContext = tenant et auteur de l'événement
   H->>DB: effet + marque d'idempotence (même transaction)
-  Note over H: échec → 10 tentatives, backoff exponentiel<br>handler externe (email) : transactional false,<br>event.id comme clé d'idempotence
+  Note over H: échec → 10 tentatives, backoff exponentiel (e^n s)<br>handler externe (email) : transactional false,<br>event.id comme clé d'idempotence
 ```
 
 L'événement est écrit dans la même transaction que la donnée métier : il n'y a pas d'événement sans effet, ni d'effet sans événement. La livraison est garantie au moins une fois, et la marque d'idempotence ne laisse passer qu'une fois un effet en base. Un domaine qui réagit ne dépend que du contrat de l'événement (`libs/shared/contracts`), jamais du domaine émetteur.

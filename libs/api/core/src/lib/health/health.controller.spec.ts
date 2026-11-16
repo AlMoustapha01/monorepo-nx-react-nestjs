@@ -1,13 +1,7 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import type { HealthCheckService } from '@nestjs/terminus';
-import { AppConfig } from '../config/app-config';
-import type { Env } from '../config/env';
 import { ShutdownState } from '../lifecycle/graceful-shutdown';
-import {
-  type DatabaseHealthIndicator,
-  HealthController,
-  type RedisHealthIndicator,
-} from './health.controller';
+import { type DatabaseHealthIndicator, HealthController } from './health.controller';
 
 describe('HealthController', () => {
   const healthy = { status: 'ok' };
@@ -21,23 +15,12 @@ describe('HealthController', () => {
     },
   } as unknown as HealthCheckService;
   const database = { check: async () => 'database' } as unknown as DatabaseHealthIndicator;
-  const redis = { check: async () => 'redis' } as unknown as RedisHealthIndicator;
   const state = new ShutdownState();
-  const controllerWith = (jobsEnabled: boolean) =>
-    new HealthController(
-      health,
-      database,
-      redis,
-      state,
-      new AppConfig({ JOBS_ENABLED: jobsEnabled } as Env),
-    );
-  const controller = controllerWith(true);
+  const controller = new HealthController(health, database, state);
 
-  it('depends on Redis only if the process runs jobs', async () => {
-    await controllerWith(false).readiness();
+  it('depends on Postgres only: Redis carries nothing but the rate limiting, which fails open', async () => {
+    await controller.readiness();
     expect(checked).toEqual(['database']);
-    await controllerWith(true).readiness();
-    expect(checked).toEqual(['database', 'redis']);
   });
 
   it('checks dependencies while the process serves traffic', async () => {

@@ -24,7 +24,7 @@ Pourquoi ce modèle plutôt qu'un schéma ou une base par tenant :
 
 - **Un tenant ne coûte rien** : une organisation se crée en libre-service depuis le front, sans provisionner de schéma ni de base.
 - **Une migration pour tous** : un seul schéma à faire évoluer, en une étape de déploiement, au lieu d'une migration par tenant à orchestrer et à surveiller.
-- **L'infrastructure transverse reste simple** : le relais de l'outbox, la purge, les métriques parcourent une table, pas N.
+- **L'infrastructure transverse reste simple** : la file de jobs, la purge, les métriques parcourent une table, pas N.
 
 La contrepartie : l'isolation repose sur le code. Une requête qui oublie le filtre lit les données de tous les tenants. Le boilerplate réduit ce risque par construction et par les tests (ci-dessous) ; il n'utilise pas la Row Level Security de Postgres, qui pourrait s'ajouter comme seconde barrière.
 
@@ -58,7 +58,7 @@ Un nouveau repository reprend ces cas (voir [Référence : un domaine de l'API](
 
 | Donnée                             | Portée                                                                                                                                |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Outbox (`messaging.outbox`)        | chaque événement porte le tenant et l'auteur ; le relais les lit tous (infrastructure) et les transmet au handler                     |
+| Outbox (`messaging.outbox`)        | chaque événement porte le tenant et l'auteur ; le worker traite tous les tenants (infrastructure) et transmet le sien au handler      |
 | Marques d'idempotence des handlers | `tenant_id` enregistré ; clé `(handler, event_id)`                                                                                    |
 | `Idempotency-Key`                  | clé `(tenant_id, user_id, key)` : deux utilisateurs peuvent envoyer la même valeur                                                    |
 | Rate limiting                      | par utilisateur (`user:<id>`), par IP sans token                                                                                      |
@@ -107,7 +107,7 @@ Un handler s'exécute au nom du tenant et de l'auteur de l'événement, **sans r
 - les repositories restent filtrés par tenant, sans rien changer ;
 - le handler passe par les repositories, pas par les cas d'usage : leurs règles d'accès visent l'utilisateur d'une requête et refuseraient à tort (le client qui a passé la commande ne voit pas les produits archivés, mais le compteur de ventes doit bouger quand même).
 
-Le relais de l'outbox est la seule pièce qui lit tous les tenants : c'est de l'infrastructure, et il transmet le tenant de chaque événement au job.
+Le worker de la file de jobs (et son rattrapage des lignes d'outbox non publiées) est la seule pièce qui lit tous les tenants : c'est de l'infrastructure, et il transmet le tenant de chaque événement au handler.
 
 ## Limites connues
 
