@@ -1,6 +1,6 @@
 # 0003. Multi-tenant en base partagée, filtré par `tenant_id` dans les repositories
 
-- **Statut** : Acceptée
+- **Statut** : Acceptée, complétée par [0013](0013-row-level-security.md) (Row Level Security en seconde barrière)
 - **Date** : 2026-10-20
 
 ## Contexte

@@ -36,7 +36,7 @@ Once merged, `spec.md` describes the current behavior and stays current: a pull 
 
 ### V. Tenant Isolation
 
-Every business table has a `tenant_id` column, and no repository reads or writes without filtering on it. The tenant comes from `RequestContext`, never from a request parameter. See `AGENTS.md` § "Principes non négociables", point 1.
+Every business table has a `tenant_id` column, and no repository reads or writes without filtering on it. The tenant comes from `RequestContext`, never from a request parameter. Postgres Row Level Security is the second barrier: every such table carries the `tenant_isolation` policy, and the API connects with a role that is neither a superuser nor `BYPASSRLS`. See `AGENTS.md` § "Principes non négociables", point 1.
 
 ### VI. Typed Business Errors
 
@@ -69,4 +69,4 @@ Each business domain is an Nx library under `libs/api/<domain>` and exposes only
 
 The convention files are changed first; this constitution follows when a principle changes (`/speckit-constitution`), with a version bump: MAJOR when a principle is removed or redefined, MINOR when one is added, PATCH for wording. The four principles of the Artefact CI base (I to IV) change only through a release of speckit-artefact. A plan that must violate a principle justifies it in its "Complexity Tracking" section, and the review decides.
 
-**Version**: 3.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-11-10
+**Version**: 3.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-11-16

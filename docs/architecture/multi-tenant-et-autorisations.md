@@ -26,7 +26,7 @@ Pourquoi ce modèle plutôt qu'un schéma ou une base par tenant :
 - **Une migration pour tous** : un seul schéma à faire évoluer, en une étape de déploiement, au lieu d'une migration par tenant à orchestrer et à surveiller.
 - **L'infrastructure transverse reste simple** : la file de jobs, la purge, les métriques parcourent une table, pas N.
 
-La contrepartie : l'isolation repose sur le code. Une requête qui oublie le filtre lit les données de tous les tenants. Le boilerplate réduit ce risque par construction et par les tests (ci-dessous) ; il n'utilise pas la Row Level Security de Postgres, qui pourrait s'ajouter comme seconde barrière.
+La contrepartie : une requête qui oublie le filtre lirait les données de tous les tenants. Deux barrières indépendantes l'empêchent : le filtre de chaque repository (ci-dessous) et la Row Level Security de Postgres ([ADR 0013](adr/0013-row-level-security.md)).
 
 ### Le tenant vient du token, jamais de la requête
 
@@ -44,12 +44,23 @@ Chaque repository Drizzle a une méthode privée `tenantScope()` (`eq(table.tena
 
 Les ports des repositories ne prennent jamais de tenant en paramètre : l'implémentation le lit dans le contexte, et le cas d'usage ne peut pas se tromper de tenant.
 
+### Postgres filtre aussi : la Row Level Security
+
+Chaque table d'un domaine porte la politique `tenant_isolation`, déclarée dans son `*.schema.ts` et générée dans la migration. Postgres n'y montre et n'y accepte que les lignes du tenant posé sur la connexion, même si la requête n'a pas de filtre :
+
+- **Le tenant sur la connexion** : le pool de l'API (`TenantScopedPool`) pose `app.tenant_id` sur chaque connexion qu'il prête, avec le tenant de `RequestContext`. Cela couvre les transactions, les lectures hors transaction et les handlers d'événements. Sans tenant dans le contexte, la connexion porte `''` : aucune ligne.
+- **Un rôle sans privilège** : la RLS ne s'applique ni à un superutilisateur, ni à un rôle `BYPASSRLS`, ni au propriétaire d'une table, sauf si elle est forcée. L'API se connecte avec `app`, propriétaire de la base sans autre privilège (`tools/docker/postgres-init.sql` en local), et les migrations forcent la RLS sur chaque table qui a la politique. En production, l'API refuse de démarrer si son rôle échappe à la RLS.
+- **Hors de l'API** : une connexion qui n'a jamais posé `app.tenant_id` (migrations, Drizzle Studio, `psql`, instance d'avant la RLS pendant un déploiement) n'est pas filtrée. La RLS protège contre les oublis du code, pas contre quelqu'un qui détient le rôle, qui pourrait de toute façon la désactiver.
+
+Les tables d'infrastructure (outbox, marques d'idempotence, `Idempotency-Key`) n'ont pas de politique : le worker les parcourt pour tous les tenants. Elles gardent leur `tenant_id` et le filtre du code.
+
 ### Ce qui le vérifie
 
-Pas de mécanisme global : une convention, vérifiée par des tests à chaque niveau.
+Des tests à chaque niveau :
 
 - **Fakes en mémoire** : ils filtrent par tenant comme la base, donc les tests unitaires des cas d'usage échouent si une règle suppose l'inverse.
-- **Tests d'intégration des repositories** (vrai Postgres) : pour chaque méthode, une ligne d'un autre tenant n'est ni lue ni modifiée, et une insertion va dans le tenant du contexte même si l'entité en porte un autre.
+- **Tests d'intégration des repositories** (vrai Postgres) : `describeTenantIsolation` (`api-core/testing`) vérifie, pour chaque lecture et chaque écriture, qu'une ligne d'un autre tenant n'est ni lue ni modifiée, et qu'une insertion va dans le tenant du contexte même si l'entité en porte un autre. Il le fait deux fois : avec le filtre du repository seul (session superutilisateur, sans RLS), puis avec la session de l'API. Un `tenantScope()` oublié fait échouer le premier passage.
+- **RLS** (`row-level-security.int.spec.ts`, api-core) : chaque table qui a une colonne `tenant_id`, hors infrastructure, porte la politique, active et forcée, avec l'expression de référence ; et le mécanisme tient (hors et dans une transaction, sans tenant, connexion attendue quand le pool est plein).
 - **Tests e2e** : une ressource d'un autre tenant répond 404.
 
 Un nouveau repository reprend ces cas (voir [Référence : un domaine de l'API](../reference/domaine-api.md#mapper-et-repository-drizzle-infra)). En revue, une requête Drizzle sans `tenantScope()` est un défaut bloquant.
@@ -111,6 +122,6 @@ Le worker de la file de jobs (et son rattrapage des lignes d'outbox non publiée
 
 ## Limites connues
 
-- **Isolation par le code** : pas de RLS. Un repository écrit sans `tenantScope()` et sans ses tests fuit.
+- **Une connexion hors de l'API n'est pas filtrée** : un script qui ouvre son propre pool avec `DATABASE_URL`, sans poser `app.tenant_id`, lit tous les tenants. Le code de l'API passe toujours par `DatabaseSession`.
 - **Un tenant à la fois** : un utilisateur membre de plusieurs organisations agit dans celle de sa session ; il en change par le service d'identité.
 - **Rôles à l'échelle du tenant** : `staff` vaut pour tout le tenant. Des droits plus fins (par équipe, par ressource) se modélisent dans le domaine, comme règle d'accès d'un cas d'usage.
