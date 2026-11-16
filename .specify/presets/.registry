@@ -1,16 +1,6 @@
 {
   "schema_version": "1.0",
   "presets": {
-    "boilerplate-nx": {
-      "version": "1.0.0",
-      "source": "local",
-      "manifest_hash": "sha256:ba27b679875b1528d9693cab4a420d6d0d314878031afce355fbf5fffc03d58a",
-      "enabled": true,
-      "priority": 5,
-      "registered_commands": {},
-      "registered_skills": {},
-      "installed_at": "2026-11-10T22:21:59.685182+00:00"
-    },
     "artefact-sdd": {
       "version": "0.3.0",
       "source": "local",
@@ -42,6 +32,16 @@
         ]
       },
       "installed_at": "2026-11-13T23:24:03.278621+00:00"
+    },
+    "boilerplate-nx": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:ba27b679875b1528d9693cab4a420d6d0d314878031afce355fbf5fffc03d58a",
+      "enabled": true,
+      "priority": 5,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-11-16T22:55:59.179891+00:00"
     }
   }
 }

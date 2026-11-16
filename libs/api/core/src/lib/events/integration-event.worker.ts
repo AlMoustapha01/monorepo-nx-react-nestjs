@@ -9,7 +9,6 @@ import { type BatchObservableCallback, metrics } from '@opentelemetry/api';
 import { and, eq, lt, sql } from 'drizzle-orm';
 import {
   type Job,
-  Logger as GraphileLogger,
   makeWorkerUtils,
   run,
   type Runner,
@@ -25,6 +24,7 @@ import { reportError } from '../errors/error-reporter';
 // option:sentry:end
 import { idempotencyKeys } from '../http/idempotency/idempotency.schema';
 import type { IntegrationEvent } from './integration-event';
+import { graphileLogger } from './graphile-logger';
 import { IntegrationEventRegistry } from './integration-event.registry';
 import {
   INTEGRATION_EVENT_TASK,
@@ -113,14 +113,17 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
     this.pool = new Pool({
       connectionString: this.config.get('DATABASE_URL'),
       max: concurrency + 2,
+      // Principe 4 : aucune requête ni attente de connexion sans limite.
       connectionTimeoutMillis: 5_000,
+      statement_timeout: this.config.get('DATABASE_STATEMENT_TIMEOUT_MS'),
     });
-    // Sans écouteur, une connexion inactive coupée par le serveur fait planter le process.
-    this.pool.on('error', (error) =>
-      this.logger.warn({ err: error }, 'Idle job queue connection lost'),
-    );
+    // Sans écouteur, une connexion coupée par le serveur (redémarrage, bascule) fait planter le
+    // process : sur le pool (connexion inactive) comme sur chaque client (celle de LISTEN).
+    const onLost = (error: Error) => this.logger.warn({ err: error }, 'Job queue connection lost');
+    this.pool.on('error', onLost);
+    this.pool.on('connect', (client) => client.on('error', onLost));
 
-    const logger = this.graphileLogger();
+    const logger = graphileLogger(new Logger('GraphileWorker'));
     this.utils = await makeWorkerUtils({ pgPool: this.pool, logger });
     this.runner = await run({
       pgPool: this.pool,
@@ -290,7 +293,8 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
     return claimed !== undefined;
   }
 
-  private async cleanup(): Promise<void> {
+  /** Purge quotidienne des tables techniques et des jobs abandonnés. */
+  async cleanup(): Promise<void> {
     const now = Date.now();
     await this.session.db
       .delete(outbox)
@@ -311,22 +315,5 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
     if (rows.length > 0) {
       await this.utils?.completeJobs(rows.map((row) => row.id));
     }
-  }
-
-  /** Les journaux de Graphile passent par le logger de Nest (pino). */
-  private graphileLogger(): GraphileLogger {
-    const logger = new Logger('GraphileWorker');
-    return new GraphileLogger(() => (level, message, meta) => {
-      switch (level) {
-        case 'error':
-          return logger.error(meta ?? {}, message);
-        case 'warning':
-          return logger.warn(meta ?? {}, message);
-        case 'info':
-          return logger.log(meta ?? {}, message);
-        default:
-          return logger.debug(meta ?? {}, message);
-      }
-    });
   }
 }

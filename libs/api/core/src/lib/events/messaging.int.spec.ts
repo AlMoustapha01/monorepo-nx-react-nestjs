@@ -279,6 +279,27 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
     expect(recorder.numbers().filter((n) => n === 7)).toHaveLength(1);
   });
 
+  it('purges the jobs abandoned for more than 7 days, and keeps the recent ones', async () => {
+    // Une tâche qu'aucun worker n'exécute : le job reste en file tel qu'on le prépare.
+    const park = async (key: string, failedDaysAgo: number) => {
+      await database.db.execute(
+        sql`select graphile_worker.add_job('test:parked', job_key => ${key})`,
+      );
+      await database.db.execute(sql`
+        update graphile_worker._private_jobs set attempts = max_attempts,
+          updated_at = now() - make_interval(days => ${failedDaysAgo}::int)
+        where key = ${key}
+      `);
+    };
+    await park('abandoned-long-ago', 8);
+    await park('abandoned-recently', 1);
+
+    await app.get(IntegrationEventWorker).cleanup();
+
+    expect(await jobsWithKey('abandoned-long-ago')).toEqual([]);
+    expect(await jobsWithKey('abandoned-recently')).toHaveLength(1);
+  });
+
   describe('metrics', () => {
     const pointsOf = async (name: string) => (await telemetry.collectMetrics())[name] ?? [];
 

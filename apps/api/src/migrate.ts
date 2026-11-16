@@ -25,7 +25,7 @@ async function main() {
   try {
     await client.query('select pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
     await migrate(drizzle({ client }), { migrationsFolder: join(__dirname, 'migrations') });
-    // Schéma graphile_worker (file de jobs, ADR 0012) : jamais au démarrage du worker.
+    // Schéma graphile_worker (file de jobs, ADR 0012) : ici plutôt qu'au démarrage du worker.
     await runMigrations({ connectionString });
     console.log('Migrations applied');
   } finally {
