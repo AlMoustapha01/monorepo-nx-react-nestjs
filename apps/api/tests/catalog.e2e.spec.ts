@@ -60,7 +60,7 @@ describe('Catalog API (e2e)', () => {
       .expect(200)
       .expect(({ body }) => {
         expect(body.info.database.status).toBe('up');
-        expect(body.info.redis.status).toBe('up');
+        expect(body.info.redis).toBeUndefined();
       });
   });
 

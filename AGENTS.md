@@ -53,7 +53,7 @@ Dépendances : audit bloquant en CI (`pnpm audit --prod` en local), Renovate ; c
 ```
 apps/api/                   bootstrap uniquement : main.ts (HTTP), worker.ts, migrate.ts, AppModule, migrations/
 apps/auth/                  service d'identité (Better Auth) : comptes, organisations (tenants), access tokens, JWKS
-libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + BullMQ, email, logs, health
+libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + file de jobs (Graphile Worker), email, logs, health
 libs/api/<domaine>/         un domaine métier = une lib Nx
   src/index.ts              FAÇADE : seul point d'entrée public
   src/lib/domain/           entités et règles, TypeScript pur
@@ -113,16 +113,16 @@ Domaines d'exemple dont s'inspirer : `libs/api/catalog` (agrégat simple, compte
 
 <!-- example:end -->
 
-## Événements d'intégration (outbox + BullMQ)
+## Événements d'intégration (outbox + Graphile Worker)
 
 Les façades servent aux lectures et commandes synchrones entre domaines ; les événements servent aux réactions asynchrones. Un domaine qui réagit ne dépend que du contrat de l'événement, jamais du domaine émetteur (le catalogue écoute les commandes alors que les commandes dépendent du catalogue).
 
 - **Déclarer** : `defineIntegrationEvent('<domaine>.<fait-au-passé>.v1', schemaZod)` dans `libs/shared/contracts/src/lib/<domaine>/*.events.ts`. Une version publiée ne change plus : on crée `v2`. Le payload porte tout ce dont les consommateurs ont besoin.
-- **Publier** : dans le cas d'usage, `transactions.transaction(async () => { await repo.insert(x); await outbox.publish(Event, payload); })`. L'outbox refuse de publier hors transaction : l'événement et l'écriture métier sont atomiques.
-- **Consommer** : un provider `@OnIntegrationEvent(Event, { name: '<domaine>.<action>' })` qui implémente `IntegrationEventHandler`, déclaré dans le module du domaine. Le `name` est stable (clé d'idempotence et ID de job).
+- **Publier** : dans le cas d'usage, `transactions.transaction(async () => { await repo.insert(x); await outbox.publish(Event, payload); })`. L'outbox refuse de publier hors transaction : l'événement, un job par handler (file Graphile Worker, dans Postgres) et l'écriture métier sont atomiques.
+- **Consommer** : un provider `@OnIntegrationEvent(Event, { name: '<domaine>.<action>' })` qui implémente `IntegrationEventHandler`, déclaré dans le module du domaine. Le `name` est stable (clé d'idempotence et clé de job).
 - **Garanties** : livraison au moins une fois. Le worker exécute le handler dans une transaction avec sa marque d'idempotence : un effet en base n'a lieu qu'une fois. Un handler qui appelle surtout un service externe (email, API) déclare `transactional: false` : il s'exécute hors transaction, pour ne pas garder une connexion Postgres pendant l'appel, et la marque est posée après succès. Un crash entre les deux fait rejouer l'appel : utiliser `event.id` comme clé d'idempotence chez le fournisseur.
 - **Contexte** : le handler s'exécute au nom du tenant et de l'auteur de l'événement (`RequestContext`) ; les repositories restent filtrés par tenant sans rien changer.
-- **Exploitation** : 10 tentatives avec backoff exponentiel ; un payload invalide échoue sans retry. Rétention : outbox 7 jours, marques d'idempotence 30 jours, jobs Redis 24 h (succès) et 7 jours (échecs). `JOBS_ENABLED=false` donne un process API sans relais ni worker.
+- **Exploitation** : 10 tentatives avec le backoff de Graphile (e^n s, environ 3 h 30 au total) ; un payload invalide est abandonné sans retry, un handler inconnu est réessayé (déploiement en cours). Rétention : outbox 7 jours, marques d'idempotence 30 jours, jobs supprimés au succès et gardés 7 jours après un abandon. `JOBS_ENABLED=false` donne un process API sans worker : il met toujours ses jobs en file. Décision : [ADR 0012](docs/architecture/adr/0012-file-de-jobs-graphile-worker.md).
 - **Tests** : `RecordingOutbox` et `InlineTransactionManager` (`api-core/testing`) pour les cas d'usage ; `eventually()` pour attendre un traitement asynchrone en e2e.
 - **Email** : injecter `Mailer` (api-core, fourni par `CoreModule`) dans un handler `transactional: false`, jamais dans la requête. SMTP si `SMTP_URL` est défini (Mailpit en local, obligatoire en production ; timeouts de 10 s), sinon l'email est seulement journalisé. Passer `event.id` en `idempotencyKey` : il devient le `Message-ID`, identique d'un retry à l'autre. Tests : `RecordingMailer` (`api-core/testing`) ; en e2e, un conteneur Mailpit (Testcontainers) dont on lit les messages par son API HTTP (`/api/v1/messages`).
 
@@ -130,22 +130,22 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 
 Procédure complète (ordre, configuration, expand/contract, liste avant la première mise en production) : [Déployer](docs/guides/deployer.md).
 
-- **Une image** (`Dockerfile`), trois commandes : `node main.js` (HTTP), `node worker.js` (relais de l'outbox, worker BullMQ, purge quotidienne), `node migrate.js`. `docker-compose.prod.yml` montre l'enchaînement.
+- **Une image** (`Dockerfile`), trois commandes : `node main.js` (HTTP), `node worker.js` (worker de la file de jobs, tâches planifiées : purge quotidienne, rattrapage des événements non publiés), `node migrate.js`. `docker-compose.prod.yml` montre l'enchaînement.
 - **Service d'identité** : même Dockerfile avec `--build-arg APP=auth`, deux commandes : `node main.js` et `node migrate.js` (tables de Better Auth : ajouts seulement, rétrocompatibles). `BETTER_AUTH_SECRET` chiffre les clés privées du JWKS en base : le changer rend ces clés illisibles.
-- **Migrations** : étape de déploiement à part, avant le démarrage des nouvelles instances, jamais au boot de l'API. `migrate.js` prend un verrou Postgres : deux déploiements simultanés se sérialisent. Comme les anciennes instances tournent encore pendant la migration, elle doit rester rétrocompatible (principe 5).
+- **Migrations** : celles de Drizzle puis celles de Graphile Worker (schéma `graphile_worker`), étape de déploiement à part, avant le démarrage des nouvelles instances, jamais au boot de l'API. `migrate.js` prend un verrou Postgres : deux déploiements simultanés se sérialisent. Comme les anciennes instances tournent encore pendant la migration, elle doit rester rétrocompatible (principe 5).
 - **Rôles** : l'API tourne avec `JOBS_ENABLED=false` ; le worker force les jobs. Chacun se met à l'échelle séparément. En dev, `nx serve api` fait tout dans un seul process.
-- **Sondes** : `/health` (liveness : le process répond) et `/ready` (readiness : Postgres et Redis joignables, et pas d'arrêt en cours). Le worker n'a pas de port HTTP : un crash fait sortir le process et l'orchestrateur le relance.
+- **Sondes** : `/health` (liveness : le process répond) et `/ready` (readiness : Postgres joignable et pas d'arrêt en cours ; Redis n'y figure pas, le rate limiting laissant passer sans lui). Le worker n'a pas de port HTTP : un crash fait sortir le process et l'orchestrateur le relance.
 - **Arrêt** : sur SIGTERM, `/ready` passe en 503, le process attend `SHUTDOWN_DRAIN_MS` (le temps que le load balancer retire l'instance ; 5 s derrière Kubernetes), puis termine les requêtes et les jobs en cours et ferme Redis et Postgres. Au-delà de `SHUTDOWN_TIMEOUT_MS` (25 s), il sort en erreur : rester sous le délai avant SIGKILL de l'orchestrateur (30 s par défaut).
-- **Redis** en production : `maxmemory-policy noeviction` et persistance (AOF), sinon BullMQ peut perdre des jobs.
+- **Redis** ne porte que les compteurs du rate limiting : pas de persistance requise. **Postgres** porte les jobs : le worker écoute par `LISTEN`, donc son `DATABASE_URL` contourne un pooler en mode transaction (PgBouncer).
 - **Rate limiting** : `RATE_LIMIT_MAX` requêtes par `RATE_LIMIT_TTL_MS`, compteurs dans Redis partagés par toutes les instances. Un utilisateur authentifié a son compteur ; sans token, c'est par IP : derrière un load balancer, `TRUST_PROXY_HOPS=1`, sinon tous les anonymes partagent l'IP du proxy. Au-delà : 429 `TOO_MANY_REQUESTS` avec `Retry-After`. Redis en panne : on laisse passer (avertissement journalisé, une fois par minute). Une requête au token invalide est refusée avant d'être comptée : les floods anonymes se filtrent en amont (load balancer, WAF). `@SkipThrottle()` pour exclure une route (sondes).
 
 ## Observabilité
 
 En pratique : [Observabilité en local](docs/guides/observabilite-en-local.md) (Grafana, traces, logs, span sur mesure) et [Référence : métriques et alertes](docs/reference/metriques-et-alertes.md).
 
-- **Traces** : OpenTelemetry, activé par `OTEL_EXPORTER_OTLP_ENDPOINT` (OTLP/HTTP) et configuré par les variables standard (`OTEL_SERVICE_NAME`, `OTEL_TRACES_SAMPLER`…). `apps/api/src/instrumentation.ts` est le premier import de `main.ts` et `worker.ts` : HTTP, Express, Nest et Postgres sont instrumentés. `/health` et `/ready` ne sont pas tracés ; une requête SQL hors span (sondage du relais) non plus.
+- **Traces** : OpenTelemetry, activé par `OTEL_EXPORTER_OTLP_ENDPOINT` (OTLP/HTTP) et configuré par les variables standard (`OTEL_SERVICE_NAME`, `OTEL_TRACES_SAMPLER`…). `apps/api/src/instrumentation.ts` est le premier import de `main.ts` et `worker.ts` : HTTP, Express, Nest et Postgres sont instrumentés. `/health` et `/ready` ne sont pas tracés ; une requête SQL hors span (sondage de la file par le worker) non plus.
 - **Événements** : l'outbox stocke le contexte W3C de la requête (`trace_context`) ; le worker exécute chaque handler dans un span `process <handler>` enfant de cette requête. Une seule trace va de la requête HTTP jusqu'aux handlers, dans le service `api-worker`.
-- **Métriques** (OTLP, toutes les 60 s ; `OTEL_METRIC_EXPORT_INTERVAL`) : durée des requêtes HTTP par route, et pour la messagerie `outbox.pending_events`, `outbox.oldest_pending_age` (retard du relais), `integration_events.handler.duration` (par handler et issue), `integration_events.queue.jobs` (par état) et `integration_events.jobs.exhausted` (jobs abandonnés). Alertes conseillées : retard de l'outbox au-delà d'une minute, tout job abandonné. Les jauges sont lues par le process qui a `JOBS_ENABLED=true`.
+- **Métriques** (OTLP, toutes les 60 s ; `OTEL_METRIC_EXPORT_INTERVAL`) : durée des requêtes HTTP par route, et pour la messagerie `integration_events.queue.oldest_waiting_age` (retard du traitement), `integration_events.handler.duration` (par handler et issue), `integration_events.queue.jobs` (par état) et `integration_events.jobs.exhausted` (jobs abandonnés). Alertes conseillées : retard de traitement au-delà d'une minute, tout job abandonné. Les jauges sont lues par le process qui a `JOBS_ENABLED=true`.
 - **Logs** : chaque ligne émise pendant un span porte `trace_id` et `span_id` (instrumentation pino).
 
 <!-- option:sentry:start -->
@@ -245,7 +245,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 <!-- option:sentry:end -->
 
 - `pg` : un `Pool` sans écouteur `error` fait planter le process quand Postgres coupe une connexion inactive (redémarrage, bascule). Tout nouveau pool en déclare un.
-- BullMQ v6 : `ioredis` est une dépendance optionnelle chargée à la demande, et un ID de job ne peut pas contenir `:`.
+- Graphile Worker : ESM uniquement, chargé par `require` comme `jose`. Un nom de tâche de sa crontab n'accepte pas de point (`messaging:cleanup`). La vue `graphile_worker.jobs` n'expose pas le payload. Ses migrations ne s'éditent pas : `migrate.js` et `api:db-migrate` les appliquent. Une version dont une migration est « breaking » (changelog) casse les anciens workers : arrêter les workers avant de migrer. Son logger joint le job entier, payload compris : passer par `graphileLogger` (api-core), qui n'en garde que l'ID.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).
 - Une classe de base abstraite injectée par héritage doit porter `@Injectable()`, sinon Nest ne voit pas les dépendances de son constructeur.
 - `pnpm create:project` et `pnpm strip:examples` traitent toute ligne qui ne contient qu'un marqueur `example:start`, `example:end` ou `option:<id>:start|end` (en commentaire), y compris dans un template literal de test, partout sauf dans leurs propres fichiers. Un test qui a besoin de ces marqueurs les construit par interpolation (``const START = `// example:${'start'}`;``), sinon le script retire ou rejette sa fixture. Un bloc d'une option ne contient jamais le marqueur d'une autre.

@@ -2,7 +2,7 @@
 # Image d'une app Node du monorepo, choisie par APP (api par défaut).
 # api : une seule image, trois commandes.
 #   node main.js     API HTTP (JOBS_ENABLED=false en prod : les jobs tournent dans le worker)
-#   node worker.js   relais de l'outbox, worker BullMQ, purge quotidienne
+#   node worker.js   worker de la file de jobs (Graphile Worker), tâches planifiées
 #   node migrate.js  migrations, en étape de déploiement avant les nouvelles instances
 # auth (docker build --build-arg APP=auth) : node main.js (service d'identité), node migrate.js.
 # Base épinglée par digest (node 24.22.0) : un tag peut changer, un digest non.

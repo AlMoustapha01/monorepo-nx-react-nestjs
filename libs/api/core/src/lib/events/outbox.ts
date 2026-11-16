@@ -7,10 +7,15 @@ import { RequestContext } from '../context/request-context';
 import { DatabaseSession } from '../database/database-session';
 import { CoreError } from '../errors/app-error';
 import { domainIdGenerator } from '../ids/domain-id';
+import { IntegrationEventRegistry } from './integration-event.registry';
+import { enqueueIntegrationEvent } from './job-queue';
 import { outbox } from './messaging.schema';
 import { captureTraceContext } from './trace-context';
 
-/** Publication d'événements d'intégration, à appeler dans la transaction de l'écriture métier. */
+/**
+ * Publication d'événements d'intégration, à appeler dans la transaction de l'écriture métier :
+ * l'événement et un job par handler abonné sont validés ou annulés avec elle.
+ */
 export abstract class Outbox {
   abstract publish<TDefinition extends IntegrationEventDefinition>(
     definition: TDefinition,
@@ -25,6 +30,7 @@ export class DrizzleOutbox extends Outbox {
   constructor(
     private readonly session: DatabaseSession,
     private readonly context: RequestContext,
+    private readonly registry: IntegrationEventRegistry,
   ) {
     super();
   }
@@ -40,14 +46,30 @@ export class DrizzleOutbox extends Outbox {
         `Event ${definition.type} must be published inside a transaction`,
       );
     }
-    await this.session.db.insert(outbox).values({
+    const occurredAt = new Date();
+    const event = {
       id: newEventId(),
+      type: definition.type,
       tenantId: this.context.tenantId,
       actorId: this.context.userId,
-      type: definition.type,
+      occurredAt: occurredAt.toISOString(),
       payload: definition.schema.parse(payload),
-      occurredAt: new Date(),
-      traceContext: captureTraceContext(),
+    };
+    const traceContext = captureTraceContext();
+
+    // Journal des événements ; publié dès l'écriture, puisque ses jobs partent avec la transaction.
+    await this.session.db.insert(outbox).values({
+      ...event,
+      occurredAt,
+      publishedAt: occurredAt,
+      traceContext,
     });
+    for (const handler of this.registry.handlersFor(definition.type)) {
+      await enqueueIntegrationEvent(this.session.db, {
+        handler: handler.name,
+        event,
+        ...(traceContext && { traceContext }),
+      });
+    }
   }
 }

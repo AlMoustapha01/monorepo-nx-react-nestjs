@@ -86,15 +86,15 @@ Le reste au besoin, quand on touche au sujet.
 
 ## Événements et fiabilité
 
-- **Outbox transactionnelle** : l'événement est écrit dans la même transaction que la donnée métier, puis publié par un relais ; on ne perd ni n'invente d'événement.
-  Ici : `libs/api/core/src/lib/events/outbox.ts` et `outbox-relay.ts`, [Outbox et événements](architecture/outbox-et-evenements.md), [ADR 0005](architecture/adr/0005-outbox-et-bullmq.md).
-  Apprendre : [Transactional outbox](https://microservices.io/patterns/data/transactional-outbox.html) (Chris Richardson), [`FOR UPDATE SKIP LOCKED`](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE) (Postgres, utilisé par le relais).
+- **Outbox transactionnelle** : l'événement est écrit dans la même transaction que la donnée métier ; on ne perd ni n'invente d'événement. Ici, ses jobs sont mis en file dans cette même transaction, sans relais.
+  Ici : `libs/api/core/src/lib/events/outbox.ts`, [Outbox et événements](architecture/outbox-et-evenements.md), [ADR 0012](architecture/adr/0012-file-de-jobs-graphile-worker.md).
+  Apprendre : [Transactional outbox](https://microservices.io/patterns/data/transactional-outbox.html) (Chris Richardson), [`FOR UPDATE SKIP LOCKED`](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE) (Postgres, utilisé par la file de jobs).
 - **Consommateur idempotent et livraison au moins une fois** : un message peut arriver deux fois ; le consommateur garde une marque pour n'appliquer son effet qu'une fois.
   Ici : `processed_events`, `transactional: false`.
   Apprendre : [Idempotent Consumer](https://microservices.io/patterns/communication-style/idempotent-consumer.html) (Chris Richardson).
-- **Files de jobs (BullMQ)** : des jobs stockés dans Redis, traités par des workers, réessayés avec un délai croissant (_backoff exponentiel_).
-  Ici : `libs/api/core/src/lib/events/integration-event.queue.ts`, `worker.ts`.
-  Apprendre : [What is BullMQ](https://docs.bullmq.io/), [Retrying failing jobs](https://docs.bullmq.io/guide/retrying-failing-jobs), [Going to production](https://docs.bullmq.io/guide/going-to-production) (BullMQ).
+- **File de jobs dans Postgres (Graphile Worker)** : des jobs stockés dans une table, pris par des workers réveillés par `LISTEN/NOTIFY`, réessayés avec un délai croissant (_backoff exponentiel_).
+  Ici : `libs/api/core/src/lib/events/job-queue.ts`, `integration-event.worker.ts`.
+  Apprendre : [Graphile Worker](https://worker.graphile.org/docs), [`LISTEN`](https://www.postgresql.org/docs/current/sql-listen.html) et [`NOTIFY`](https://www.postgresql.org/docs/current/sql-notify.html) (Postgres).
 - **Clé d'idempotence HTTP** : le client joint une clé à une requête qui crée quelque chose ; s'il la renvoie, il obtient la même réponse au lieu d'un doublon.
   Ici : `@Idempotent` (`libs/api/core/src/lib/http/idempotency/`), `useIdempotentMutation` côté front.
   Apprendre : [Designing robust and predictable APIs with idempotency](https://stripe.com/blog/idempotency) (Stripe), [The Idempotency-Key HTTP header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/) (brouillon IETF).
@@ -139,8 +139,6 @@ Le reste au besoin, quand on touche au sujet.
 - **Images Docker multi-étapes** : construire dans une étape, ne copier que le résultat dans l'image finale.
   Ici : `Dockerfile`.
   Apprendre : [Multi-stage builds](https://docs.docker.com/build/building/multi-stage/) (Docker).
-- **Persistance de Redis** : sans persistance (AOF) ni politique `noeviction`, Redis peut perdre ou évincer des jobs.
-  Apprendre : [Redis persistence](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/), [Going to production](https://docs.bullmq.io/guide/going-to-production) (BullMQ).
 
 ## Observabilité
 

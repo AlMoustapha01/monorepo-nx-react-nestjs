@@ -17,7 +17,7 @@ const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C
 /** Infrastructure de messagerie, commune à tous les domaines. */
 export const messaging = pgSchema('messaging');
 
-/** Événements écrits dans la transaction métier, puis relayés vers BullMQ. */
+/** Journal des événements, écrits dans la transaction métier avec leurs jobs (graphile_worker). */
 export const outbox = messaging.table(
   'outbox',
   {

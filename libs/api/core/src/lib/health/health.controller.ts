@@ -9,14 +9,8 @@ import { HealthCheck, HealthCheckService, HealthIndicatorService } from '@nestjs
 import { SkipThrottle } from '@nestjs/throttler';
 import { sql } from 'drizzle-orm';
 import { Public } from '../auth/public.decorator';
-import { AppConfig } from '../config/app-config';
 import { ShutdownState } from '../lifecycle/graceful-shutdown';
 import { type Database, InjectDatabase } from '../database/database.tokens';
-import type { Queue } from 'bullmq';
-import {
-  InjectIntegrationEventsQueue,
-  type IntegrationEventJob,
-} from '../events/integration-event.queue';
 
 @Injectable()
 export class DatabaseHealthIndicator {
@@ -36,32 +30,6 @@ export class DatabaseHealthIndicator {
   }
 }
 
-const REDIS_CHECK_TIMEOUT_MS = 1000;
-
-@Injectable()
-export class RedisHealthIndicator {
-  constructor(
-    private readonly indicator: HealthIndicatorService,
-    @InjectIntegrationEventsQueue() private readonly queue: Queue<IntegrationEventJob>,
-  ) {}
-
-  async check(key: string) {
-    const session = this.indicator.check(key);
-    try {
-      // Sans timeout, ioredis met la commande en attente tant que Redis est injoignable.
-      await Promise.race([
-        this.queue.getWorkersCount(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), REDIS_CHECK_TIMEOUT_MS).unref(),
-        ),
-      ]);
-      return session.up();
-    } catch {
-      return session.down();
-    }
-  }
-}
-
 /** /health = le process répond (liveness) ; /ready = il peut servir du trafic (readiness). */
 @Public()
 @SkipThrottle()
@@ -70,9 +38,7 @@ export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly database: DatabaseHealthIndicator,
-    private readonly redis: RedisHealthIndicator,
     private readonly shutdown: ShutdownState,
-    private readonly config: AppConfig,
   ) {}
 
   @Get('health')
@@ -90,9 +56,8 @@ export class HealthController {
     }
     return this.health.check([
       () => this.database.check('database'),
-      // Sans jobs (API en prod), Redis ne sert pas à répondre : une panne Redis ne doit pas
-      // retirer toutes les instances du load balancer. Le worker, lui, en dépend.
-      ...(this.config.get('JOBS_ENABLED') ? [() => this.redis.check('redis')] : []),
+      // Pas de Redis : il ne porte que le rate limiting, qui laisse passer quand Redis tombe. Une
+      // panne Redis ne doit pas retirer toutes les instances du load balancer.
     ]);
   }
 }

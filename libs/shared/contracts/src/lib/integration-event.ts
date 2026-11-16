@@ -2,7 +2,7 @@ import type { z } from 'zod';
 
 /**
  * Événement d'intégration : un fait publié par un domaine, que d'autres domaines consomment
- * de façon asynchrone (outbox → BullMQ). Le schéma est le contrat : il est validé à la
+ * de façon asynchrone (outbox → file de jobs). Le schéma est le contrat : il est validé à la
  * publication et à la consommation.
  */
 export interface IntegrationEventDefinition<

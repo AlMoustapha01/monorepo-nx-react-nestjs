@@ -31,15 +31,15 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 | `DATABASE_URL`                  | obligatoire | URL Postgres, partagée avec le service d'identité ; aussi lue par `migrate.js`                        |
 | `DATABASE_POOL_MAX`             | `10`        | connexions maximum par process ; le total des instances reste sous `max_connections`                  |
 | `DATABASE_STATEMENT_TIMEOUT_MS` | `30000`     | durée maximum d'une requête SQL (`statement_timeout`) ; `0` la désactive. Sans effet sur `migrate.js` |
-| `REDIS_URL`                     | obligatoire | jobs BullMQ et compteurs du rate limiting                                                             |
+| `REDIS_URL`                     | obligatoire | compteurs du rate limiting                                                                            |
 
 ### Événements et jobs
 
-| Variable                  | Défaut | Rôle                                                                                                                          |
-| ------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `JOBS_ENABLED`            | `true` | relais de l'outbox, worker BullMQ et purge dans ce process ; `false` pour l'API en production, forcé à `true` par `worker.js` |
-| `OUTBOX_POLL_INTERVAL_MS` | `1000` | intervalle de sondage de l'outbox quand elle est vide ; le relais enchaîne sans attendre tant qu'il reste des événements      |
-| `JOBS_CONCURRENCY`        | `5`    | handlers exécutés en parallèle par process worker                                                                             |
+| Variable                | Défaut | Rôle                                                                                                                              |
+| ----------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `JOBS_ENABLED`          | `true` | worker de la file de jobs et tâches planifiées dans ce process ; `false` pour l'API en production, forcé à `true` par `worker.js` |
+| `JOBS_POLL_INTERVAL_MS` | `2000` | sondage de la file pour les jobs différés (retries) ; un nouveau job réveille le worker sans attendre (`LISTEN/NOTIFY`)           |
+| `JOBS_CONCURRENCY`      | `5`    | handlers exécutés en parallèle par process worker                                                                                 |
 
 ### Email
 

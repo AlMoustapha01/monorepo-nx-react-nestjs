@@ -18,6 +18,7 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { RedisContainer } from '@testcontainers/redis';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { Logger as GraphileLogger, runMigrations } from 'graphile-worker';
 import { SignJWT } from 'jose';
 import { ClsService } from 'nestjs-cls';
 import { Pool } from 'pg';
@@ -43,8 +44,8 @@ export function testEnv(urls: { databaseUrl: string; redisUrl: string }): Record
     LOG_LEVEL: 'silent',
     DATABASE_URL: urls.databaseUrl,
     REDIS_URL: urls.redisUrl,
-    // Relais rapide pour que les tests n'attendent pas la seconde par défaut.
-    OUTBOX_POLL_INTERVAL_MS: '50',
+    // Retries pris vite : les tests n'attendent pas les 2 s de sondage par défaut.
+    JOBS_POLL_INTERVAL_MS: '100',
     AUTH_JWT_SECRET: TEST_AUTH.secret,
     AUTH_JWT_ISSUER: TEST_AUTH.issuer,
     AUTH_JWT_AUDIENCE: TEST_AUTH.audience,
@@ -77,7 +78,7 @@ export interface TestDatabase {
   stop(): Promise<void>;
 }
 
-/** Démarre un Postgres jetable et y applique les migrations du repo. */
+/** Démarre un Postgres jetable et y applique les migrations du repo et de la file de jobs. */
 export async function startTestDatabase(): Promise<TestDatabase> {
   const container: StartedPostgreSqlContainer = await new PostgreSqlContainer(
     'postgres:17-alpine',
@@ -86,6 +87,7 @@ export async function startTestDatabase(): Promise<TestDatabase> {
   const pool = new Pool({ connectionString: url });
   const db = drizzle({ client: pool });
   await migrate(db, { migrationsFolder: join(findWorkspaceRoot(), 'apps/api/migrations') });
+  await runMigrations({ pgPool: pool, logger: new GraphileLogger(() => () => undefined) });
 
   return {
     url,
@@ -102,7 +104,7 @@ export interface TestRedis {
   stop(): Promise<void>;
 }
 
-/** Démarre un Redis jetable (BullMQ). */
+/** Démarre un Redis jetable (rate limiting). */
 export async function startTestRedis(): Promise<TestRedis> {
   const container = await new RedisContainer('redis:7-alpine').start();
   return {

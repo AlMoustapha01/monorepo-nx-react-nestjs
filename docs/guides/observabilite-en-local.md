@@ -53,7 +53,7 @@ Les handlers s'exécutent plus tard, dans le worker, mais restent dans la même 
 
 En local, `nx serve api` fait tout dans un seul process : tous les spans sont dans le service `api`. En production, ceux des handlers sont dans le service `api-worker` (`OTEL_SERVICE_NAME`), et ceux de Better Auth dans `auth`.
 
-Ne sont pas tracés : `/health` et `/ready`, et les requêtes SQL hors span (le relais qui sonde l'outbox chaque seconde ne crée pas une trace par sondage).
+Ne sont pas tracés : `/health` et `/ready`, et les requêtes SQL hors span (le worker qui sonde la file ne crée pas une trace par sondage).
 
 ## Lire les logs d'une requête
 
@@ -78,8 +78,8 @@ En JSON (hors dev), le code est aussi un champ, `code`, à filtrer dans Loki (`|
 **Explore → Prometheus**. Les noms OpenTelemetry y sont traduits : points en soulignés, unité en suffixe, `_total` pour un compteur. Quelques requêtes :
 
 ```promql
-# Retard du relais de l'outbox, en secondes
-outbox_oldest_pending_age_seconds
+# Retard du traitement des événements, en secondes
+integration_events_queue_oldest_waiting_age_seconds
 
 # Requêtes par route et code de réponse, sur 5 min
 sum by (http_route, http_response_status_code) (rate(http_server_request_duration_seconds_count[5m]))

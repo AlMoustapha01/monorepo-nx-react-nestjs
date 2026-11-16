@@ -21,9 +21,10 @@ import {
   type IntegrationEventHandler,
   OnIntegrationEvent,
 } from './integration-event';
-import { INTEGRATION_EVENTS_QUEUE, type IntegrationEventJob } from './integration-event.queue';
+import { sql } from 'drizzle-orm';
+import { enqueueIntegrationEvent, type IntegrationEventJob } from './job-queue';
 import { IntegrationEventWorker } from './integration-event.worker';
-import type { Queue } from 'bullmq';
+import { outbox as outboxTable } from './messaging.schema';
 import { Outbox } from './outbox';
 
 const Pinged = defineIntegrationEvent('test.pinged.v1', z.object({ n: z.number().int() }));
@@ -92,7 +93,7 @@ class NotifyPing implements IntegrationEventHandler<typeof Pinged> {
 @Module({ providers: [RecordPing, CountPing, NotifyPing] })
 class TestHandlersModule {}
 
-describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', () => {
+describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', () => {
   const principal = { userId: randomUUID(), tenantId: randomUUID() };
   let database: TestDatabase;
   let redis: TestRedis;
@@ -117,6 +118,22 @@ describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', 
   afterAll(async () => {
     await app?.close();
     await Promise.all([database?.stop(), redis?.stop(), telemetry.stop()]);
+  });
+
+  const jobsWithKey = async (key: string) => {
+    const { rows } = await database.db.execute<{ attempts: number; last_error: string | null }>(
+      sql`select attempts, last_error from graphile_worker.jobs where key = ${key}`,
+    );
+    return rows;
+  };
+
+  const event = (id: string, payload: unknown) => ({
+    id,
+    type: 'test.pinged.v1',
+    tenantId: principal.tenantId,
+    actorId: principal.userId,
+    occurredAt: new Date().toISOString(),
+    payload,
   });
 
   const publish = (n: number) =>
@@ -170,6 +187,47 @@ describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', 
     expect(recorder.numbers()).not.toContain(3);
   });
 
+  it('enqueues one job per handler in the business transaction, under a stable key', async () => {
+    const { rows } = await context.runAs(principal, () =>
+      transactions.transaction(async () => {
+        await outbox.publish(Pinged, { n: 40 });
+        // Lu dans la même transaction : les jobs existent avant même la validation. La vue
+        // publique n'expose pas le payload, d'où la table interne de Graphile.
+        return app.get(DatabaseSession).db.execute<{ key: string }>(
+          sql`select key from graphile_worker._private_jobs
+              where payload->'event'->'payload'->>'n' = '40'`,
+        );
+      }),
+    );
+    expect(rows.map((row) => row.key).sort()).toEqual([
+      expect.stringMatching(/^EVT-.+:test\.count-ping$/),
+      expect.stringMatching(/^EVT-.+:test\.notify-ping$/),
+      expect.stringMatching(/^EVT-.+:test\.record-ping$/),
+    ]);
+    await eventually(() => expect(recorder.numbers()).toContain(40));
+  });
+
+  it('relays the events left unpublished by a previous version', async () => {
+    // Écrit comme le faisait l'ancienne version, avant son relais.
+    await database.db.insert(outboxTable).values({
+      id: 'EVT-01jb4x7k2m9qwfzp3hdc',
+      tenantId: principal.tenantId,
+      actorId: principal.userId,
+      type: 'test.pinged.v1',
+      payload: { n: 41 },
+      occurredAt: new Date(),
+    });
+
+    await app.get(IntegrationEventWorker).relayPending();
+
+    await eventually(() => expect(recorder.numbers()).toContain(41));
+    const [row] = await database.db
+      .select({ publishedAt: outboxTable.publishedAt })
+      .from(outboxTable)
+      .where(sql`${outboxTable.id} = 'EVT-01jb4x7k2m9qwfzp3hdc'`);
+    expect(row?.publishedAt).toBeInstanceOf(Date);
+  });
+
   it('refuses to publish outside a transaction', async () => {
     await expect(
       context.runAs(principal, () => outbox.publish(Pinged, { n: 5 })),
@@ -191,21 +249,28 @@ describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', 
     expect(recorder.failuresBeforeSuccess).toBe(0);
   });
 
+  it('retries a job whose handler is not deployed yet on this worker', async () => {
+    // Pendant un déploiement, une API à jour met en file un job qu'un ancien worker ne connaît pas.
+    await enqueueIntegrationEvent(database.db, {
+      handler: 'test.not-deployed-yet',
+      event: event('EVT-01jb4x7k2m9qwfzp3hdd', { n: 42 }),
+    });
+
+    await eventually(async () =>
+      expect(await jobsWithKey('EVT-01jb4x7k2m9qwfzp3hdd:test.not-deployed-yet')).toEqual([
+        expect.objectContaining({
+          attempts: 1,
+          last_error: expect.stringContaining('test.not-deployed-yet'),
+        }),
+      ]),
+    );
+  });
+
   it('ignores an event already processed by the same handler', async () => {
     const worker = app.get(IntegrationEventWorker);
-    const job = {
-      name: 'test.record-ping',
-      data: {
-        handler: 'test.record-ping',
-        event: {
-          id: 'EVT-01jb4x7k2m9qwfzp3hd8',
-          type: 'test.pinged.v1',
-          tenantId: principal.tenantId,
-          actorId: principal.userId,
-          occurredAt: new Date().toISOString(),
-          payload: { n: 7 },
-        },
-      },
+    const job: IntegrationEventJob = {
+      handler: 'test.record-ping',
+      event: event('EVT-01jb4x7k2m9qwfzp3hd8', { n: 7 }),
     };
 
     await worker.process(job);
@@ -214,10 +279,31 @@ describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', 
     expect(recorder.numbers().filter((n) => n === 7)).toHaveLength(1);
   });
 
+  it('purges the jobs abandoned for more than 7 days, and keeps the recent ones', async () => {
+    // Une tâche qu'aucun worker n'exécute : le job reste en file tel qu'on le prépare.
+    const park = async (key: string, failedDaysAgo: number) => {
+      await database.db.execute(
+        sql`select graphile_worker.add_job('test:parked', job_key => ${key})`,
+      );
+      await database.db.execute(sql`
+        update graphile_worker._private_jobs set attempts = max_attempts,
+          updated_at = now() - make_interval(days => ${failedDaysAgo}::int)
+        where key = ${key}
+      `);
+    };
+    await park('abandoned-long-ago', 8);
+    await park('abandoned-recently', 1);
+
+    await app.get(IntegrationEventWorker).cleanup();
+
+    expect(await jobsWithKey('abandoned-long-ago')).toEqual([]);
+    expect(await jobsWithKey('abandoned-recently')).toHaveLength(1);
+  });
+
   describe('metrics', () => {
     const pointsOf = async (name: string) => (await telemetry.collectMetrics())[name] ?? [];
 
-    it('measures handler duration, the outbox and the queue', async () => {
+    it('measures handler duration and the queue', async () => {
       await publish(30);
       await eventually(() => expect(recorder.numbers()).toContain(30));
 
@@ -227,54 +313,45 @@ describe('messaging: outbox → BullMQ → handlers (real Postgres and Redis)', 
         }),
       );
       await eventually(async () =>
-        expect(await pointsOf('outbox.pending_events')).toEqual([
+        expect(await pointsOf('integration_events.queue.oldest_waiting_age')).toEqual([
           expect.objectContaining({ value: 0 }),
         ]),
       );
       expect((await pointsOf('integration_events.queue.jobs')).map((p) => p.attributes)).toEqual(
-        expect.arrayContaining([{ state: 'waiting' }, { state: 'failed' }]),
+        expect.arrayContaining([
+          { state: 'waiting' },
+          { state: 'active' },
+          { state: 'delayed' },
+          { state: 'failed' },
+        ]),
       );
     });
 
     it('counts an exhausted job, with no retry for an invalid payload', async () => {
-      const queue = app.get<Queue<IntegrationEventJob>>(INTEGRATION_EVENTS_QUEUE);
-      await queue.add('test.record-ping', {
-        handler: 'test.record-ping',
-        event: {
-          id: 'EVT-01jb4x7k2m9qwfzp3hdb',
-          type: 'test.pinged.v1',
-          tenantId: principal.tenantId,
-          actorId: principal.userId,
-          occurredAt: new Date().toISOString(),
-          payload: { n: 'pas un nombre' },
-        },
+      await enqueueIntegrationEvent(database.db, {
+        handler: 'test.count-ping',
+        event: event('EVT-01jb4x7k2m9qwfzp3hdb', { n: 'not a number' }),
       });
 
       await eventually(async () =>
         expect(await pointsOf('integration_events.jobs.exhausted')).toContainEqual(
           expect.objectContaining({
-            attributes: { 'app.event.handler': 'test.record-ping' },
+            attributes: { 'app.event.handler': 'test.count-ping' },
             value: 1,
           }),
         ),
+      );
+      // Terminé sans retry : rejouer ne corrigera pas le payload.
+      await eventually(async () =>
+        expect(await jobsWithKey('EVT-01jb4x7k2m9qwfzp3hdb:test.count-ping')).toEqual([]),
       );
     });
   });
 
   describe('non-transactional handler', () => {
-    const jobFor = (n: number, eventId: string) => ({
-      name: 'test.notify-ping',
-      data: {
-        handler: 'test.notify-ping',
-        event: {
-          id: eventId,
-          type: 'test.pinged.v1',
-          tenantId: principal.tenantId,
-          actorId: principal.userId,
-          occurredAt: new Date().toISOString(),
-          payload: { n },
-        },
-      },
+    const jobFor = (n: number, eventId: string): IntegrationEventJob => ({
+      handler: 'test.notify-ping',
+      event: event(eventId, { n }),
     });
 
     it('runs outside a transaction, on behalf of the tenant', async () => {

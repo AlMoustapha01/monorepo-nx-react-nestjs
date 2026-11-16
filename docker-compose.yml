@@ -16,7 +16,7 @@ services:
       interval: 5s
       retries: 10
 
-  # Files BullMQ (événements d'intégration).
+  # Compteurs du rate limiting (les jobs sont dans Postgres).
   redis:
     image: redis:7-alpine
     ports:

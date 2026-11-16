@@ -19,11 +19,7 @@ import { ConfiguredFeatureFlags, FeatureFlags } from './feature-flags/feature-fl
 import { FeatureFlagsController } from './feature-flags/feature-flags.controller';
 import { FeatureFlagsGuard } from './feature-flags/feature-flags.guard';
 // option:feature-flags:end
-import {
-  DatabaseHealthIndicator,
-  HealthController,
-  RedisHealthIndicator,
-} from './health/health.controller';
+import { DatabaseHealthIndicator, HealthController } from './health/health.controller';
 import { ShutdownState } from './lifecycle/graceful-shutdown';
 import { Mailer, mailerProvider } from './mail/mailer';
 import { RateLimitModule } from './http/rate-limit/rate-limit.module';
@@ -82,7 +78,6 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     RequestContext,
     JwtVerifier,
     DatabaseHealthIndicator,
-    RedisHealthIndicator,
     ShutdownState,
     // option:feature-flags:start
     { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },

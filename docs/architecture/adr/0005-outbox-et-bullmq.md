@@ -1,6 +1,6 @@
 # 0005. Événements d'intégration par outbox transactionnelle et BullMQ
 
-- **Statut** : Acceptée
+- **Statut** : Remplacée par [0012](0012-file-de-jobs-graphile-worker.md) (transport des jobs ; l'outbox transactionnelle reste)
 - **Date** : 2026-10-20
 
 ## Contexte
