@@ -1,15 +1,18 @@
 ---
-name: "speckit-clarify"
-description: "Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec."
+name: speckit-clarify
+description: Identify underspecified areas in the current feature spec by asking up
+  to 5 highly targeted clarification questions and encoding answers back into the
+  spec.
 argument-hint: "Optional areas to clarify in the spec"
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
-  author: "github-spec-kit"
-  source: "templates/commands/clarify.md"
+  author: github-spec-kit
+  source: preset:artefact-sdd
 user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Clarify Skill
 
 ## User Input
 
@@ -292,3 +295,10 @@ Report completion (after questioning loop ends or early termination):
 - [ ] Spec quality checklist re-validated against updated spec (if `FEATURE_DIR/checklists/requirements.md` exists)
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
 - [ ] Completion reported to user with questions answered, sections touched, checklist status, and coverage summary
+
+
+<!-- artefact-sdd preset (source: preset/ of speckit-artefact). Appended to the core command. -->
+
+## Language (artefact-sdd)
+
+Write the artifacts in the project language: `language` in `.specify/memory/language.yml`, a BCP 47 code (`fr`); English when the file does not exist. What stays as the template or the tools write it, in every language: the headings of the templates (`## Requirements`, `### User Story 1 - …`, `## Complexity Tracking`: commands and reviewers find sections by them), the markers that the trace command reads (`**Status**:` and its values `Draft`, `Implemented`, `Shipped`, `Retired`; `**Product Requirements**:`; `**Acceptance Scenarios**`; `**Retired**`), the `[NEEDS CLARIFICATION]` markers that commands look for, the task lines (`- [ ] T001 [P] [US1] …`), the ids (`003-US1-AS2`, `PAY-03`, `E03-J1`, `P1`) and the YAML keys of `specs/product.yml`. Commit messages, code, identifiers and test titles stay in English. A file still written in another language: write what you add or rewrite in the project language, and leave the rest as it is.

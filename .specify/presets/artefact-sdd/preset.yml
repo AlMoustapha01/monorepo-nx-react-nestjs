@@ -7,7 +7,7 @@ schema_version: '1.0'
 preset:
   id: 'artefact-sdd'
   name: 'Artefact SDD'
-  version: '0.2.0'
+  version: '0.3.0'
   description: 'Test-first templates and commands of the Artefact CI method, for any stack described in .specify/stack.yml'
   author: 'Artefact CI'
   repository: 'https://github.com/artefact-ci/speckit-artefact'
@@ -76,6 +76,18 @@ provides:
       name: 'speckit.converge'
       file: 'commands/speckit.converge.md'
       description: 'Acceptance-scenario test coverage and independent review appended to converge'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.clarify'
+      file: 'commands/speckit.clarify.md'
+      description: 'Language of the artifacts appended to clarify'
+      strategy: 'append'
+
+    - type: 'command'
+      name: 'speckit.checklist'
+      file: 'commands/speckit.checklist.md'
+      description: 'Language of the artifacts appended to checklist'
       strategy: 'append'
 
 tags:
