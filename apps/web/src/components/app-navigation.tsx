@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useRouteContext } from '@tanstack/react-router';
+import { Link, useNavigate, useRouteContext } from '@tanstack/react-router';
+import { Trans } from '@lingui/react/macro';
 import { toast } from 'sonner';
 import { AccountMenu, sessionQueryOptions } from '@nx-react-nestjs/web-auth';
 // example:start
@@ -7,9 +8,9 @@ import { StorefrontNav } from '@nx-react-nestjs/web-storefront';
 // example:end
 import { Stack } from '@nx-react-nestjs/web-ui';
 
-// example:start
+// option:feature-flags:start
 import { useFeatureFlag } from '../feature-flags';
-// example:end
+// option:feature-flags:end
 import { reloadForNewTenant, resetSession, ROOT_ROUTE } from '../session';
 
 /** En-tête d'un utilisateur connecté : navigation métier et compte. */
@@ -19,6 +20,11 @@ export function AppNavigation() {
   // example:start
   const storefront = useFeatureFlag('storefront');
   // example:end
+  // Sans feature flags (create:project), le lien est toujours là.
+  const visible = { auditLog: true };
+  // option:feature-flags:start
+  visible.auditLog = useFeatureFlag('audit.log');
+  // option:feature-flags:end
   const { data: current } = useQuery({
     ...sessionQueryOptions(context.session.auth),
     enabled: !context.session.devMode,
@@ -29,6 +35,11 @@ export function AppNavigation() {
       {/* example:start */}
       {storefront && <StorefrontNav />}
       {/* example:end */}
+      {visible.auditLog && (
+        <Link to="/journal" className="text-sm underline-offset-4 hover:underline">
+          <Trans>Journal d’audit</Trans>
+        </Link>
+      )}
       {current && (
         <AccountMenu
           auth={context.session.auth}

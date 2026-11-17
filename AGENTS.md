@@ -54,6 +54,7 @@ Dépendances : audit bloquant en CI (`pnpm audit --prod` en local), Renovate ; c
 apps/api/                   bootstrap uniquement : main.ts (HTTP), worker.ts, migrate.ts, AppModule, migrations/
 apps/auth/                  service d'identité (Better Auth) : comptes, organisations (tenants), access tokens, JWKS
 libs/api/core/              transverse : config, erreurs, auth, contexte tenant, DB, outbox + file de jobs (Graphile Worker), email, logs, health
+libs/api/audit/             journal d'audit du tenant : handlers d'événements, table audit.entries, lecture par le staff
 libs/api/<domaine>/         un domaine métier = une lib Nx
   src/index.ts              FAÇADE : seul point d'entrée public
   src/lib/domain/           entités et règles, TypeScript pur
@@ -97,6 +98,7 @@ Domaines d'exemple dont s'inspirer : `libs/api/catalog` (agrégat simple, compte
 - **Contrat** : l'API accepte un access token JWT signé par le fournisseur d'identité, vérifié avec ses clés publiques (`AUTH_JWKS_URL`, algorithmes EdDSA, ES256 ou RS256) ; `iss` et `aud` obligatoires. `sub` (utilisateur) et le tenant sont des UUID ; tenant et rôles sont lus dans `AUTH_TENANT_CLAIM` et `AUTH_ROLES_CLAIM` (`tenant_id`, `roles` par défaut ; chemin pointé accepté). Changer de fournisseur ne demande que de la configuration, s'il fournit des UUID.
 - **Fournisseur** : `apps/auth`, Better Auth dans un service à part, tables dans le schéma Postgres `auth`. Email et mot de passe avec vérification de l'email ; une **organisation** Better Auth est un tenant ; `owner` et `admin` donnent le rôle `staff`, `member` aucun (`apps/auth/src/claims.ts`). Le front obtient un token de 15 min par `GET /api/auth/token` (cookie de session) et l'envoie en `Authorization: Bearer`.
 - **Contenu du token** : `tenant_id` = organisation active de la session, et seulement si l'utilisateur en est encore membre ; à la connexion, la première organisation de l'utilisateur devient active. `email` seulement s'il est vérifié. Rien d'autre.
+- **Journal d'audit** : les hooks de Better Auth (`apps/auth/src/audit.ts`) écrivent connexions, invitations, arrivées, retraits et changements de rôle dans `audit.entries`, après l'action : une écriture perdue est journalisée et signalée, jamais renvoyée à l'utilisateur ([ADR 0015](docs/architecture/adr/0015-journal-d-audit.md)).
 - **Dev et tests** : `AUTH_JWT_SECRET` (HS256) remplace le JWKS, pour `dev:token`, `signTestToken` et les e2e ; refusé en production. L'un ou l'autre, jamais les deux. Vrai service et comptes de démo en local : [Authentification en local](docs/guides/auth-en-local.md).
 - **Anti-brute-force** : Better Auth limite les tentatives par IP (3 connexions par 10 s). Le serveur lui passe l'IP du socket, ou celle de `X-Forwarded-For` derrière `TRUST_PROXY_HOPS` proxys : sans ça, tous les clients partageraient un compteur, et un attaquant bloquerait la connexion de tout le monde.
 - **Fournisseur injoignable** : les clés déjà téléchargées restent en cache ; seul un token signé par une clé inconnue échoue (401, journalisé en `warn`).
@@ -126,6 +128,14 @@ Les façades servent aux lectures et commandes synchrones entre domaines ; les �
 - **Exploitation** : 10 tentatives avec le backoff de Graphile (e^n s, environ 3 h 30 au total) ; un payload invalide est abandonné sans retry, un handler inconnu est réessayé (déploiement en cours). Rétention : outbox 7 jours, marques d'idempotence 30 jours, jobs supprimés au succès et gardés 7 jours après un abandon. `JOBS_ENABLED=false` donne un process API sans worker : il met toujours ses jobs en file. Décision : [ADR 0012](docs/architecture/adr/0012-file-de-jobs-graphile-worker.md).
 - **Tests** : `RecordingOutbox` et `InlineTransactionManager` (`api-core/testing`) pour les cas d'usage ; `eventually()` pour attendre un traitement asynchrone en e2e.
 - **Email** : injecter `Mailer` (api-core, fourni par `CoreModule`) dans un handler `transactional: false`, jamais dans la requête. SMTP si `SMTP_URL` est défini (Mailpit en local, obligatoire en production ; timeouts de 10 s), sinon l'email est seulement journalisé. Passer `event.id` en `idempotencyKey` : il devient le `Message-ID`, identique d'un retry à l'autre. Tests : `RecordingMailer` (`api-core/testing`) ; en e2e, un conteneur Mailpit (Testcontainers) dont on lit les messages par son API HTTP (`/api/v1/messages`).
+
+## Journal d'audit
+
+Qui a fait quoi, quand, dans le tenant ([ADR 0015](docs/architecture/adr/0015-journal-d-audit.md)) : `libs/api/audit`, table `audit.entries`, lue par le staff (`GET /api/v1/audit/entries`, page `/journal`, flag `audit.log`).
+
+- **Auditer une action de l'API** : son événement d'intégration, puis une entrée `auditEvent(Event, { name: 'audit.<domaine>.<fait>', describe })` dans `AUDITED_EVENT_HANDLERS` (`libs/api/audit`). `describe` rend l'action (`<domaine>.<fait-au-passé>`), la ressource et des détails en valeurs simples. Le domaine émetteur ne dépend pas de l'audit.
+- **Jamais de donnée personnelle** dans une ligne (email, nom, adresse) : des IDs, des rôles, des montants. Le nom de l'auteur s'affiche à la lecture.
+- Une ligne ne se modifie ni ne se supprime ; pas de purge par défaut.
 
 ## Déploiement
 

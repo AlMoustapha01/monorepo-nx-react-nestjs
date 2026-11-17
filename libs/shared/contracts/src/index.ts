@@ -1,3 +1,4 @@
+export * from './lib/audit/audit';
 export * from './lib/auth/auth';
 export * from './lib/domain-id';
 // option:feature-flags:start

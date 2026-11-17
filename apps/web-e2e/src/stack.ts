@@ -29,6 +29,7 @@ const E2E_FEATURE_FLAGS: string[] = [
   'storefront=true',
   // example:end
   // option:feature-flags:start
+  'audit.log=true',
 ];
 // option:feature-flags:end
 

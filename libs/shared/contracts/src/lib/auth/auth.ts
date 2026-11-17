@@ -56,6 +56,22 @@ export const invitationSchema = z.object({
 });
 export type Invitation = z.infer<typeof invitationSchema>;
 
+/** Membre de l'organisation active, tel que l'affiche le front (Better Auth : `organization/list-members`). */
+export const organizationMembersSchema = z
+  .object({
+    members: z.array(
+      z.object({
+        userId: z.string(),
+        role: z.string(),
+        user: z.object({ name: z.string(), email: z.string() }),
+      }),
+    ),
+  })
+  .transform(({ members }) =>
+    members.map(({ userId, role, user }) => ({ userId, role, name: user.name, email: user.email })),
+  );
+export type OrganizationMember = z.output<typeof organizationMembersSchema>[number];
+
 export const accessTokenSchema = z.object({ token: z.string() });
 
 /** Corps d'erreur de Better Auth : `code` stable (`INVALID_EMAIL_OR_PASSWORD`…), `message` lisible. */
