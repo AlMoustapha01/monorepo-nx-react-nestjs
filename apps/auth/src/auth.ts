@@ -3,6 +3,7 @@ import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/a
 import { jwt, organization } from 'better-auth/plugins';
 import { Pool } from 'pg';
 import type { Logger } from 'pino';
+import { createAccessRevoker } from './access-revocation';
 import { createAuditWriter, identityAuditEntries } from './audit';
 import { apiClaims } from './claims';
 import type { AuthEnv } from './env';
@@ -68,6 +69,16 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
   };
 
   const writeAudit = createAuditWriter(pool, logger);
+  const revoker = createAccessRevoker(pool, logger);
+  /** Membres d'une organisation en cours de suppression, lus avant : sa fin les révoque à nouveau. */
+  const membersOfDeleted = new Map<string, string[]>();
+  const membersOf = async (organizationId: string) =>
+    (
+      await pool.query<{ userId: string }>(
+        'select "userId" from member where "organizationId" = $1',
+        [organizationId],
+      )
+    ).rows.map((row) => row.userId);
 
   return betterAuth({
     appName: 'Shop',
@@ -123,11 +134,27 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
         }),
     },
     hooks: {
+      // Départ d'un membre : le plugin d'organisation n'a pas de hook pour lui (ADR 0016).
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== '/organization/leave') return;
+        const organizationId = (ctx.body as { organizationId?: unknown } | undefined)
+          ?.organizationId;
+        const session = await getSessionFromCtx(ctx).catch(() => null);
+        if (session && typeof organizationId === 'string') {
+          await revoker.before(organizationId, [session.user.id]);
+        }
+      }),
       // Journal d'audit (ADR 0015) : après l'action, jamais à sa place ; une erreur n'est pas auditée.
       after: createAuthMiddleware(async (ctx) => {
         const { returned, newSession } = ctx.context;
         if (returned instanceof Error) {
           return;
+        }
+        if (ctx.path === '/organization/leave') {
+          const left = returned as { userId?: unknown; organizationId?: unknown } | undefined;
+          if (typeof left?.userId === 'string' && typeof left.organizationId === 'string') {
+            await revoker.after(left.organizationId, [left.userId]);
+          }
         }
         // Le contexte d'un hook `after` ne porte pas la session de l'appelant : relue depuis ses cookies.
         const session =
@@ -168,6 +195,28 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     },
     plugins: [
       organization({
+        // Révocation des accès (ADR 0016) : avant l'action, qui est refusée si elle ne s'écrit pas, puis à sa fin.
+        organizationHooks: {
+          beforeRemoveMember: ({ member }) =>
+            revoker.before(member.organizationId, [member.userId]),
+          afterRemoveMember: ({ member }) => revoker.after(member.organizationId, [member.userId]),
+          beforeUpdateMemberRole: async ({ member }) => {
+            await revoker.before(member.organizationId, [member.userId]);
+          },
+          afterUpdateMemberRole: ({ member }) =>
+            revoker.after(member.organizationId, [member.userId]),
+          beforeDeleteOrganization: async ({ organization: deleted }) => {
+            const members = await membersOf(deleted.id);
+            membersOfDeleted.set(deleted.id, members);
+            await revoker.before(deleted.id, members);
+          },
+          // Les membres n'existent plus : ceux lus avant la suppression.
+          afterDeleteOrganization: async ({ organization: deleted }) => {
+            const members = membersOfDeleted.get(deleted.id) ?? [];
+            membersOfDeleted.delete(deleted.id);
+            await revoker.after(deleted.id, members);
+          },
+        },
         sendInvitationEmail: async ({ id, email, organization: invitedTo }) =>
           sendInBackground({
             to: email,

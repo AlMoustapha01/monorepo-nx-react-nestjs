@@ -24,6 +24,9 @@ const ISSUER = 'https://auth.test.local';
 const AUDIENCE = 'api';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+/** Schémas de l'API où le service d'identité écrit. */
+const API_SCHEMAS = ['audit', 'access'];
+
 describe('Authentication service', () => {
   let container: StartedPostgreSqlContainer;
   let server: Server;
@@ -53,7 +56,7 @@ describe('Authentication service', () => {
     });
     // option:sentry:end
     container = await new PostgreSqlContainer('postgres:17-alpine').start();
-    await createAuditTable(container.getConnectionUri());
+    await createApiTables(container.getConnectionUri());
     server = createServer();
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -198,7 +201,7 @@ describe('Authentication service', () => {
   it('creates its tables in the auth schema, with UUIDs', async () => {
     const { rows } = await pool.query<{ table_schema: string; table_name: string }>(
       `select table_schema, table_name from information_schema.tables
-       where table_schema not in ('pg_catalog', 'information_schema', 'audit') order by table_name`,
+       where table_schema not in ('pg_catalog', 'information_schema', ${API_SCHEMAS.map((schema) => `'${schema}'`).join(', ')}) order by table_name`,
     );
     expect(rows.every((row) => row.table_schema === 'auth')).toBe(true);
     expect(rows.map((row) => row.table_name)).toEqual(
@@ -322,26 +325,144 @@ describe('Authentication service', () => {
     });
   });
 
+  describe('access revocation', () => {
+    const revokedAt = async (tenantId: string, userId: string) =>
+      (
+        await pool.query<{ revoked_at: Date }>(
+          'select revoked_at from access.revocations where tenant_id = $1 and user_id = $2',
+          [tenantId, userId],
+        )
+      ).rows[0]?.revoked_at;
+
+    /** Une organisation, son owner connecté, et un membre `admin` connecté lui aussi. */
+    async function organizationWithMember(name: string) {
+      const ownerCookie = await verifiedSignUp(`${name}-owner@shop.test`);
+      const organization = await call('/api/auth/organization/create', {
+        body: { name, slug: name },
+        cookie: ownerCookie,
+      });
+      const tenantId = (organization.body as { id: string }).id;
+      const memberCookie = await verifiedSignUp(`${name}-member@shop.test`);
+      const memberId = (await accessToken(memberCookie)).sub ?? '';
+      await auth.api.addMember({
+        body: { userId: memberId, role: 'admin', organizationId: tenantId },
+      });
+      return {
+        tenantId,
+        ownerCookie,
+        memberCookie,
+        memberId,
+        memberEmail: `${name}-member@shop.test`,
+      };
+    }
+
+    it('revokes the access of a removed member, from the moment of the removal', async () => {
+      const { tenantId, ownerCookie, memberId, memberEmail } =
+        await organizationWithMember('revoke-remove');
+      const before = Date.now();
+      const removed = await call('/api/auth/organization/remove-member', {
+        body: { memberIdOrEmail: memberEmail, organizationId: tenantId },
+        cookie: ownerCookie,
+      });
+      expect(removed.response.status).toBe(200);
+      expect((await revokedAt(tenantId, memberId))?.getTime()).toBeGreaterThanOrEqual(before - 1);
+    });
+
+    it('revokes the access of a member whose role changes, and of a member who leaves', async () => {
+      const { tenantId, ownerCookie, memberCookie, memberId } =
+        await organizationWithMember('revoke-role');
+      const beforeRoleChange = Date.now();
+      const changed = await call('/api/auth/organization/update-member-role', {
+        body: {
+          memberId: await memberRowId(tenantId, memberId),
+          role: 'member',
+          organizationId: tenantId,
+        },
+        cookie: ownerCookie,
+      });
+      expect(changed.response.status).toBe(200);
+      const afterRoleChange = await revokedAt(tenantId, memberId);
+      expect(afterRoleChange?.getTime()).toBeGreaterThanOrEqual(beforeRoleChange);
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      const left = await call('/api/auth/organization/leave', {
+        body: { organizationId: tenantId },
+        cookie: memberCookie,
+      });
+      expect(left.response.status).toBe(200);
+      expect((await revokedAt(tenantId, memberId))?.getTime()).toBeGreaterThan(
+        afterRoleChange?.getTime() ?? 0,
+      );
+    });
+
+    it('revokes the access of every member of a deleted organization', async () => {
+      const { tenantId, ownerCookie, memberId } = await organizationWithMember('revoke-delete');
+      const ownerId = (await accessToken(ownerCookie)).sub ?? '';
+      const beforeDelete = Date.now();
+      const deleted = await call('/api/auth/organization/delete', {
+        body: { organizationId: tenantId },
+        cookie: ownerCookie,
+      });
+      expect(deleted.response.status).toBe(200);
+      expect((await revokedAt(tenantId, memberId))?.getTime()).toBeGreaterThanOrEqual(beforeDelete);
+      expect((await revokedAt(tenantId, ownerId))?.getTime()).toBeGreaterThanOrEqual(beforeDelete);
+    });
+
+    it('refuses to remove a member while the revocation cannot be written', async () => {
+      const { tenantId, ownerCookie, memberId, memberEmail } =
+        await organizationWithMember('revoke-down');
+      await pool.query('alter table access.revocations rename to revocations_unavailable');
+      try {
+        const removed = await call('/api/auth/organization/remove-member', {
+          body: { memberIdOrEmail: memberEmail, organizationId: tenantId },
+          cookie: ownerCookie,
+        });
+        expect(removed.response.status).toBe(503);
+        expect(await memberRowId(tenantId, memberId)).toBeDefined();
+      } finally {
+        await pool.query('alter table access.revocations_unavailable rename to revocations');
+      }
+    });
+
+    const memberRowId = async (tenantId: string, userId: string) =>
+      (
+        await pool.query<{ id: string }>(
+          'select id from member where "organizationId" = $1 and "userId" = $2',
+          [tenantId, userId],
+        )
+      ).rows[0]?.id;
+  });
+
   it('answers the probes', async () => {
     expect((await call('/health')).response.status).toBe(200);
     expect((await call('/ready')).response.status).toBe(200);
   });
 });
 
-/** La table du journal appartient à l'API (ses migrations) ; le service d'identité y écrit (ADR 0015). */
-async function createAuditTable(connectionString: string): Promise<void> {
+/**
+ * Tables de l'API où le service d'identité écrit : journal d'audit (ADR 0015) et révocations (ADR 0016). Elles
+ * appartiennent aux migrations de l'API ; seules leurs instructions sont appliquées, car un projet neuf
+ * (create:project) n'a qu'une migration, avec tous les schémas.
+ */
+async function createApiTables(connectionString: string): Promise<void> {
   const folder = new URL('../../api/migrations/', import.meta.url);
-  const migration = readdirSync(folder)
+  const statements = readdirSync(folder)
     .filter((file) => file.endsWith('.sql'))
-    .map((file) => readFileSync(new URL(file, folder), 'utf8'))
-    .find((sql) => sql.includes('CREATE SCHEMA "audit"'));
-  if (!migration) throw new Error('No API migration creates the audit schema');
+    .sort()
+    .flatMap((file) =>
+      readFileSync(new URL(file, folder), 'utf8').split('--> statement-breakpoint'),
+    )
+    .filter((statement) => API_SCHEMAS.some((schema) => statement.includes(`"${schema}"`)));
+  if (
+    !API_SCHEMAS.every((schema) => statements.some((s) => s.includes(`CREATE SCHEMA "${schema}"`)))
+  ) {
+    throw new Error(`No API migration creates the schemas ${API_SCHEMAS.join(', ')}`);
+  }
   const client = new Client({ connectionString });
   await client.connect();
   try {
-    // Seulement le schéma audit : un projet neuf (create:project) n'a qu'une migration, avec tous les schémas.
-    for (const statement of migration.split('--> statement-breakpoint')) {
-      if (statement.includes('"audit"')) await client.query(statement);
+    for (const statement of statements) {
+      await client.query(statement);
     }
   } finally {
     await client.end();
