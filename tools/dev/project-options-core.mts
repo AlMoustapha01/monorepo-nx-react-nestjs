@@ -17,6 +17,8 @@ export interface ProjectOption {
   paths: readonly string[];
   /** Paquets retirés de package.json. */
   dependencies: readonly string[];
+  /** Scripts retirés de package.json (`pnpm <script>`). */
+  scripts?: readonly string[];
   regenerate: readonly Regeneration[];
   /** Options à retirer avant celle-ci, ou dans le même passage ; déclarées plus haut dans la liste. */
   requires?: { options: readonly OptionId[]; reason: string };
@@ -82,9 +84,12 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
       'apps/web/src/feature-flags.ts',
       'apps/web/src/feature-flags.spec.tsx',
       'apps/api/tests/feature-flags.e2e.spec.ts',
+      'apps/api/src/feature-flags.ts',
     ],
     dependencies: [],
-    regenerate: ['errors'],
+    scripts: ['dev:flag'],
+    // La table des surcharges par tenant disparaît avec son schéma.
+    regenerate: ['errors', 'migrations'],
     requires: { options: ['examples'], reason: "le code d'exemple utilise les feature flags" },
     leftovers: 'feature.?flag|requireFeature|FEATURE_DISABLED',
     afterRemoval:
@@ -247,6 +252,18 @@ export function removeDependencies(
   }
   if (removed.size === 0) return { text: packageJson, removed: [] };
   return { text: `${JSON.stringify(json, null, 2)}\n`, removed: [...removed] };
+}
+
+/** Retire de package.json les scripts propres aux options retirées. */
+export function removeScripts(
+  packageJson: string,
+  names: readonly string[],
+): { text: string; removed: string[] } {
+  const json = JSON.parse(packageJson) as { scripts?: Record<string, string> };
+  const removed = names.filter((name) => json.scripts && name in json.scripts);
+  if (removed.length === 0) return { text: packageJson, removed: [] };
+  for (const name of removed) delete json.scripts?.[name];
+  return { text: `${JSON.stringify(json, null, 2)}\n`, removed };
 }
 
 /** Récapitulatif affiché avant la confirmation. */

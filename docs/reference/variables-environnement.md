@@ -79,9 +79,9 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 
 ### Feature flags
 
-| Variable        | Défaut | Rôle                                                                                                                                                           |
-| --------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FEATURE_FLAGS` | vide   | surcharges du catalogue `FEATURE_FLAGS` des contrats : `mon.flag=true,autre.flag=false`. Un nom inconnu ou une valeur autre que booléenne empêche le démarrage |
+| Variable        | Défaut | Rôle                                                                                                                                                                                                                                                                  |
+| --------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FEATURE_FLAGS` | vide   | surcharges du catalogue `FEATURE_FLAGS` des contrats : `mon.flag=true,autre.flag=false`. Un nom inconnu ou une valeur autre que booléenne empêche le démarrage. La surcharge d'un tenant l'emporte ([ADR 0014](../architecture/adr/0014-feature-flags-par-tenant.md)) |
 
 <!-- option:feature-flags:end -->
 

@@ -14,10 +14,14 @@ module.exports = {
       target: 'node',
       compiler: 'tsc',
       main: './src/main.ts',
-      // Même image, trois commandes : node main.js (HTTP), worker.js (jobs), migrate.js (migrations).
+      // Même image, une commande par rôle : node main.js (HTTP), worker.js (jobs), migrate.js (migrations).
       additionalEntryPoints: [
         { entryName: 'worker', entryPath: './src/worker.ts' },
         { entryName: 'migrate', entryPath: './src/migrate.ts' },
+        // option:feature-flags:start
+        // Commande d'exploitation : surcharges des feature flags par tenant (ADR 0014).
+        { entryName: 'feature-flags', entryPath: './src/feature-flags.ts' },
+        // option:feature-flags:end
       ],
       tsConfig: './tsconfig.app.json',
       assets: ['./src/assets', { input: './migrations', glob: '**/*', output: 'migrations' }],

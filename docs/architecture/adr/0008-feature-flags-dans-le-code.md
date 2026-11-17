@@ -1,6 +1,6 @@
 # 0008. Feature flags déclarés dans le code, surchargés par l'environnement
 
-- **Statut** : Acceptée
+- **Statut** : Acceptée, complétée par [0014](0014-feature-flags-par-tenant.md) (surcharge par tenant)
 - **Date** : 2026-10-21
 
 ## Contexte
@@ -17,6 +17,6 @@ Toute nouvelle fonctionnalité doit pouvoir être livrée désactivée, puis act
 ## Conséquences
 
 - Les flags sont typés : une faute de frappe ne compile pas, et un flag supprimé du code disparaît partout.
-- Activer un flag demande un redémarrage avec une nouvelle variable d'environnement, pas un clic : pas de ciblage par tenant ou par pourcentage.
+- Activer un flag pour tous demande un redémarrage avec une nouvelle variable d'environnement. Le ciblage par tenant est venu ensuite ([0014](0014-feature-flags-par-tenant.md)) ; pas de ciblage par pourcentage.
 - Le port permet de brancher plus tard un service (Unleash, LaunchDarkly…) ou un ciblage par tenant, sans toucher aux appelants.
 - Un flag livré partout doit être supprimé ; sinon les branches mortes s'accumulent.

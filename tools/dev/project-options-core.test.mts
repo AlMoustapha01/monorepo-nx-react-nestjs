@@ -10,6 +10,7 @@ import {
   prunePaths,
   removalProblem,
   removeDependencies,
+  removeScripts,
   stripBlocks,
   summarize,
 } from './project-options-core.mts';
@@ -257,11 +258,33 @@ describe('PROJECT_OPTIONS', () => {
 });
 
 describe('feature-flags option', () => {
-  it('requires the examples to be removed and regenerates the error codes', () => {
+  it('requires the examples to be removed and regenerates the error codes and the migrations', () => {
     const flags = optionById('feature-flags');
     assert.equal(flags.marker, 'option:feature-flags');
     assert.deepEqual(flags.requires?.options, ['examples']);
-    assert.deepEqual(flags.regenerate, ['errors']);
+    assert.deepEqual(flags.regenerate, ['errors', 'migrations']);
     assert.deepEqual(flags.dependencies, []);
+    assert.deepEqual(flags.scripts, ['dev:flag']);
+  });
+});
+
+describe('removeScripts', () => {
+  const packageJson = `${JSON.stringify(
+    { name: 'x', scripts: { 'dev:flag': 'node flag.js', check: 'nx check' } },
+    null,
+    2,
+  )}\n`;
+
+  it('removes the scripts of the removed options, keeping the others', () => {
+    const result = removeScripts(packageJson, ['dev:flag']);
+    assert.deepEqual(result.removed, ['dev:flag']);
+    assert.equal(
+      result.text,
+      `${JSON.stringify({ name: 'x', scripts: { check: 'nx check' } }, null, 2)}\n`,
+    );
+  });
+
+  it('rewrites nothing when no script is present', () => {
+    assert.deepEqual(removeScripts(packageJson, ['dev:other']), { text: packageJson, removed: [] });
   });
 });

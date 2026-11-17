@@ -42,6 +42,11 @@ export function featureFlagDefinition(flag: FeatureFlag): FeatureFlagDefinition 
   return FEATURE_FLAGS[flag];
 }
 
+/** Vrai si `name` est un flag du catalogue (valeur lue en base ou saisie, par exemple). */
+export function isFeatureFlag(name: string): name is FeatureFlag {
+  return Object.hasOwn(FEATURE_FLAGS, name);
+}
+
 export const featureFlagSchema = z.enum(
   Object.keys(FEATURE_FLAGS) as [FeatureFlag, ...FeatureFlag[]],
 );
