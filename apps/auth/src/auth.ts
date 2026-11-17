@@ -102,6 +102,16 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
           ? body.organizationId
           : caller.activeOrganizationId;
       if (body?.data?.requireTwoFactor !== true || !organizationId) return undefined;
+      // Before passe avant le contrôle de droit de Better Auth : seul qui gère l'organisation révoque ses membres,
+      // sinon n'importe quel compte couperait l'accès d'un tenant qu'il désigne.
+      const callerRole = await pool.query<{ role: string }>(
+        'select role from member where "userId" = $1 and "organizationId" = $2',
+        [caller.userId, organizationId],
+      );
+      const manager = callerRole.rows[0]?.role
+        .split(',')
+        .some((role) => ['owner', 'admin'].includes(role.trim()));
+      if (!manager) return undefined;
       const { rows } = await pool.query<{ userId: string }>(
         `select m."userId" from member m join "user" u on u.id = m."userId"
          where m."organizationId" = $1 and not coalesce(u."twoFactorEnabled", false)`,
@@ -228,6 +238,7 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       before: createAuthMiddleware(async (ctx) => {
         if (
           ctx.path !== '/organization/leave' &&
+          ctx.path !== '/organization/create' &&
           ctx.path !== '/organization/update' &&
           ctx.path !== '/two-factor/disable'
         ) {
@@ -243,10 +254,13 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
           }
           return;
         }
+        const body = ctx.body as
+          | { requireTwoFactor?: unknown; data?: { requireTwoFactor?: unknown } }
+          | undefined;
         const requiring =
-          ctx.path === '/organization/update' &&
-          (ctx.body as { data?: { requireTwoFactor?: unknown } } | undefined)?.data
-            ?.requireTwoFactor === true;
+          ctx.path === '/organization/create'
+            ? body?.requireTwoFactor === true
+            : ctx.path === '/organization/update' && body?.data?.requireTwoFactor === true;
         // Sans 2FA lui-même, celui qui l'exige perdrait aussitôt l'accès à son organisation.
         if (
           requiring &&
@@ -270,11 +284,14 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       session: {
         create: {
           // Une nouvelle session ouvre la première organisation de l'utilisateur : le token porte
-          // un tenant dès la connexion.
+          // un tenant dès la connexion. Une session qui en remplace une autre (2FA confirmée) garde
+          // son organisation active, si l'utilisateur en est encore membre.
           before: async (session) => {
+            const current = (session as { activeOrganizationId?: unknown }).activeOrganizationId;
             const { rows } = await pool.query<{ organizationId: string }>(
-              'select "organizationId" from member where "userId" = $1 order by "createdAt" limit 1',
-              [session.userId],
+              `select "organizationId" from member where "userId" = $1
+               order by ("organizationId" = $2) desc, "createdAt" limit 1`,
+              [session.userId, typeof current === 'string' ? current : null],
             );
             return { data: { ...session, activeOrganizationId: rows[0]?.organizationId ?? null } };
           },

@@ -490,6 +490,51 @@ describe('Authentication service', () => {
       expect(await accessToken(afterDisable)).not.toHaveProperty('tenant_id');
     });
 
+    it('lets nobody but a manager of the organization require 2FA, nor revoke its members', async () => {
+      const ownerCookie = await verifiedSignUp('2fa-guard-owner@shop.test');
+      const tenantId = await organizationOf(ownerCookie, '2fa-guard');
+      const plainCookie = await verifiedSignUp('2fa-guard-plain@shop.test');
+      const plainId = (await accessToken(plainCookie)).sub ?? '';
+      await auth.api.addMember({
+        body: { userId: plainId, role: 'member', organizationId: tenantId },
+      });
+      const outsider = await enableTwoFactor(await verifiedSignUp('2fa-guard-outsider@shop.test'));
+      const plain = await enableTwoFactor(plainCookie);
+
+      for (const cookie of [plain.cookie, outsider.cookie]) {
+        const refused = await call('/api/auth/organization/update', {
+          body: { organizationId: tenantId, data: { requireTwoFactor: true } },
+          cookie,
+        });
+        expect(refused.response.ok).toBe(false);
+      }
+      // L'owner, sans 2FA, garde l'accès : aucune révocation n'a été écrite pour ce tenant.
+      const { rows } = await pool.query('select 1 from access.revocations where tenant_id = $1', [
+        tenantId,
+      ]);
+      expect(rows).toEqual([]);
+    });
+
+    it('refuses to create an organization that requires 2FA without having it', async () => {
+      const cookie = await verifiedSignUp('2fa-create@shop.test');
+      const created = await call('/api/auth/organization/create', {
+        body: { name: '2fa-create', slug: '2fa-create', requireTwoFactor: true },
+        cookie,
+      });
+      expect(created.response.status).toBe(403);
+      expect(created.body).toMatchObject({ code: 'TWO_FACTOR_REQUIRED_FIRST' });
+    });
+
+    it('keeps the active organization when turning 2FA on', async () => {
+      const cookie = await verifiedSignUp('2fa-two-orgs@shop.test');
+      await organizationOf(cookie, '2fa-first');
+      const second = await organizationOf(cookie, '2fa-second');
+      await call('/api/auth/organization/set-active', { body: { organizationId: second }, cookie });
+
+      const { cookie: afterSetup } = await enableTwoFactor(cookie);
+      expect((await accessToken(afterSetup))['tenant_id']).toBe(second);
+    });
+
     const revokedAt = async (tenantId: string, userId: string) =>
       (
         await pool.query<{ revoked_at: Date }>(

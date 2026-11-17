@@ -124,8 +124,13 @@ export function identityAuditEntries(request: AuditedRequest): IdentityAuditEntr
     case '/organization/remove-member':
       member(field(returned, 'member'), IDENTITY_AUDIT_ACTIONS.memberRemoved);
       break;
+    case '/organization/create':
     case '/organization/update': {
-      const requireTwoFactor = field(field(body, 'data'), 'requireTwoFactor');
+      // Création : seule une exigence posée d'emblée est un réglage à tracer.
+      const requireTwoFactor =
+        path === '/organization/create'
+          ? field(returned, 'requireTwoFactor') === true || undefined
+          : field(field(body, 'data'), 'requireTwoFactor');
       const id = field(returned, 'id');
       if (typeof requireTwoFactor === 'boolean' && typeof id === 'string') {
         entries.push({

@@ -87,6 +87,19 @@ describe('identityAuditEntries', () => {
         returned: organization,
       }),
     ).toEqual([]);
+    // Créée en l'exigeant déjà : la trace commence avec l'organisation.
+    expect(request({ path: '/organization/create', returned: organization })).toEqual([
+      expect.objectContaining({
+        action: 'identity.two-factor-requirement-changed',
+        details: { required: true },
+      }),
+    ]);
+    expect(
+      request({
+        path: '/organization/create',
+        returned: { ...organization, requireTwoFactor: false },
+      }),
+    ).toEqual([]);
   });
 
   it('records nothing for a sign-in without organization: there is no tenant to write to', () => {
