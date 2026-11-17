@@ -115,8 +115,10 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       if (!manager) return undefined;
       const { rows } = await pool.query<{ userId: string }>(
         `select m."userId" from member m join "user" u on u.id = m."userId"
-         where m."organizationId" = $1 and not coalesce(u."twoFactorEnabled", false)`,
-        [organizationId],
+         where m."organizationId" = $1 and not coalesce(u."twoFactorEnabled", false)
+           and m."userId" <> $2`,
+        // L'appelant a passé le contrôle (2FA ou session par passkey) : il garde son accès.
+        [organizationId, caller.userId],
       );
       return [{ tenantId: organizationId, userIds: rows.map((row) => row.userId) }];
     }
@@ -205,7 +207,11 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       },
     },
     // En base : partagé entre les instances, contrairement à la mémoire.
-    rateLimit: { storage: 'database' },
+    rateLimit: {
+      storage: 'database',
+      // Une connexion par passkey compte comme les autres connexions (3 par 10 s et par IP).
+      customRules: { '/passkey/verify-authentication': { window: 10, max: 3 } },
+    },
     advanced: {
       // L'API attend des UUID pour `sub` et `tenant_id`.
       database: { generateId: 'uuid' },
@@ -330,6 +336,9 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
         rpID: new URL(env.AUTH_APP_URL).hostname,
         rpName: 'Shop',
         origin: new URL(env.AUTH_APP_URL).origin,
+        // Empreinte, visage ou code de l'appareil exigés : la seule présence (une clé sans PIN)
+        // ne prouve que la possession, et ne vaudrait pas la 2FA (ADR 0018).
+        authenticatorSelection: { userVerification: 'required' },
       }),
       organization({
         schema: {

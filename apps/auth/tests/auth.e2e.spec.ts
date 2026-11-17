@@ -578,6 +578,8 @@ describe('Authentication service', () => {
       expect(body).toMatchObject({
         rpId: new URL(APP_URL).hostname,
         challenge: expect.any(String),
+        // La seule présence ne vaut pas la 2FA : empreinte, visage ou code exigés (ADR 0018).
+        userVerification: 'required',
       });
     });
   });
