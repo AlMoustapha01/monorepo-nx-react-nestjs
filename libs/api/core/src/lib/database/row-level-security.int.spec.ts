@@ -158,6 +158,31 @@ describe('Row Level Security', () => {
     expect(await waiting).not.toContain('a-1');
   });
 
+  it('leaves no tenant on the connection after a query or a transaction (safe behind PgBouncer)', async () => {
+    const pool = new TenantScopedPool(
+      { connectionString: database.url, max: 1 },
+      () => context.principal?.tenantId,
+    );
+    pools.push(pool);
+    const single = new DatabaseSession(drizzle({ client: pool }));
+    const settingOnConnection = async () => {
+      const client = await pool.connect();
+      try {
+        const { rows } = await client.query<{ tenant: string | null }>(
+          `select current_setting('app.tenant_id', true) as tenant`,
+        );
+        return rows[0]?.tenant ?? null;
+      } finally {
+        client.release();
+      }
+    };
+
+    await context.runAs(tenantA, () => labels(single.db));
+    expect([null, '']).toContain(await settingOnConnection());
+    await context.runAs(tenantA, () => single.transaction(() => labels(single.db)));
+    expect([null, '']).toContain(await settingOnConnection());
+  });
+
   it('does not filter a connection that never set a tenant (migrations, an instance from before RLS)', async () => {
     const pool = new Pool({ connectionString: database.url });
     pools.push(pool);

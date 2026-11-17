@@ -81,7 +81,7 @@ export interface TestDatabase {
   /** Superutilisateur, qui ignore la RLS : préparer ou inspecter des lignes de tous les tenants. */
   adminUrl: string;
   adminDb: Database;
-  /** Session comme celle de l'API : rôle `app`, tenant du contexte posé sur chaque connexion. */
+  /** Session comme celle de l'API : rôle `app`, tenant du contexte posé dans chaque transaction. */
   session(context: RequestContext): DatabaseSession;
   /** Session superutilisateur : seul le filtre du code isole les tenants (la RLS ne s'applique pas). */
   adminSession(): DatabaseSession;

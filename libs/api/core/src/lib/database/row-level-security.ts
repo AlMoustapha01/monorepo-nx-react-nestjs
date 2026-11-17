@@ -1,18 +1,15 @@
 // Seconde barrière d'isolation des tenants (ADR 0013) : sans import, pour servir aussi aux migrations.
 
-/** Réglage Postgres qui porte le tenant de la connexion ; les politiques `tenant_isolation` le lisent. */
-const TENANT_SETTING = 'app.tenant_id';
+/** Réglage Postgres qui porte le tenant de la transaction ; les politiques `tenant_isolation` le lisent. */
+export const TENANT_SETTING = 'app.tenant_id';
 
 /**
  * Lignes visibles et acceptées par la politique `tenant_isolation` de chaque table d'un tenant, recopiée dans les
  * `*.schema.ts` (lus par drizzle-kit, qui n'importent que drizzle-orm) ; un test vérifie que chaque copie est
- * identique. Une connexion de l'API porte toujours le réglage : `''` sans tenant, donc aucune ligne. Une connexion
- * qui ne l'a jamais posé (migrations, Drizzle Studio, instance d'avant la RLS) n'est pas filtrée.
+ * identique. Chaque requête de l'API porte le réglage dans sa transaction : `''` sans tenant, donc aucune ligne. Une
+ * connexion qui ne l'a jamais posé (migrations, Drizzle Studio, instance d'avant la RLS) n'est pas filtrée.
  */
 export const TENANT_ROWS_SQL = `current_setting('${TENANT_SETTING}', true) is null or tenant_id = nullif(current_setting('${TENANT_SETTING}', true), '')::uuid`;
-
-/** Pose le tenant pour toute la session Postgres : `''` quand il n'y en a pas, et la base ne montre rien. */
-export const SET_TENANT_SQL = `select set_config('${TENANT_SETTING}', $1, false)`;
 
 /** Nom de la politique de chaque table d'un tenant. */
 export const TENANT_POLICY = 'tenant_isolation';
