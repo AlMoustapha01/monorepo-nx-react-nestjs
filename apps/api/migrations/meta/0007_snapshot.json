@@ -1,5 +1,5 @@
 {
-  "id": "eb204d36-8614-4872-b01d-f45adb3c5687",
+  "id": "1158ce26-8be4-4b9d-8c4e-75f3efae2122",
   "prevId": "b4c0226b-605b-4d58-811e-8d9ec0c75fae",
   "version": "7",
   "dialect": "postgresql",
@@ -143,8 +143,8 @@
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": ["public"],
-          "using": "current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
-          "withCheck": "current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+          "using": "coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+          "withCheck": "coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
         }
       },
       "checkConstraints": {},
@@ -229,8 +229,8 @@
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": ["public"],
-          "using": "current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
-          "withCheck": "current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+          "using": "coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+          "withCheck": "coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
         }
       },
       "checkConstraints": {},
@@ -362,8 +362,8 @@
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": ["public"],
-          "using": "current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
-          "withCheck": "current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+          "using": "coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+          "withCheck": "coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
         }
       },
       "checkConstraints": {},

@@ -189,4 +189,20 @@ describe('Row Level Security', () => {
     const all = await labels(drizzle({ client: pool }));
     expect(all).toEqual(expect.arrayContaining(['a-1', 'b-1']));
   });
+
+  it('does not filter a connection whose setting a previous transaction left empty (shared behind PgBouncer)', async () => {
+    const pool = new Pool({ connectionString: database.url, max: 1 });
+    pools.push(pool);
+    const client = await pool.connect();
+    try {
+      // Ce qu'une nouvelle instance laisse sur une connexion serveur partagée : le réglage revient à ''.
+      await client.query(
+        `begin; select set_config('app.tenant_id', '${tenantA.tenantId}', true); commit`,
+      );
+      const { rows } = await client.query<{ label: string }>('select label from rls_probe.items');
+      expect(rows.map((row) => row.label)).toEqual(expect.arrayContaining(['a-1', 'b-1']));
+    } finally {
+      client.release();
+    }
+  });
 });

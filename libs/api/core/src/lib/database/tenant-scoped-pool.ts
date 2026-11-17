@@ -1,5 +1,5 @@
 import { Pool, type PoolConfig } from 'pg';
-import { TENANT_SETTING } from './row-level-security';
+import { NO_TENANT, TENANT_SETTING } from './row-level-security';
 
 /**
  * Pool qui pose le tenant du contexte, pour la seule transaction en cours (`set_config(…, true)`), avant toute
@@ -18,9 +18,9 @@ export class TenantScopedPool extends Pool {
     super(config);
   }
 
-  /** Tenant du contexte de l'appelant ; `''` sans tenant, et la base ne montre rien. */
+  /** Tenant du contexte de l'appelant ; `NO_TENANT` sans tenant, et la base ne montre rien. */
   tenant(): string {
-    return this.currentTenant() ?? '';
+    return this.currentTenant() ?? NO_TENANT;
   }
 
   // Une signature large plutôt que les surcharges de `pg` : drizzle n'utilise que la forme promesse. La forme

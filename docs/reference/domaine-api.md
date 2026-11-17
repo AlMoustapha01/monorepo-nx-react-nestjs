@@ -236,7 +236,7 @@ const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C
 
 /** Seconde barrière d'isolation (ADR 0013) : recopiée telle quelle, un test d'api-core compare l'expression. */
 const tenantRows = () =>
-  sql`current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
+  sql`coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
 const tenantIsolation = () =>
   pgPolicy('tenant_isolation', { using: tenantRows(), withCheck: tenantRows() });
 

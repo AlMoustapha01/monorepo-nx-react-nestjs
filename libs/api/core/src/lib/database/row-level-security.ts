@@ -6,10 +6,15 @@ export const TENANT_SETTING = 'app.tenant_id';
 /**
  * Lignes visibles et acceptées par la politique `tenant_isolation` de chaque table d'un tenant, recopiée dans les
  * `*.schema.ts` (lus par drizzle-kit, qui n'importent que drizzle-orm) ; un test vérifie que chaque copie est
- * identique. Chaque requête de l'API porte le réglage dans sa transaction : `''` sans tenant, donc aucune ligne. Une
- * connexion qui ne l'a jamais posé (migrations, Drizzle Studio, instance d'avant la RLS) n'est pas filtrée.
+ * identique. Chaque requête de l'API porte le réglage dans sa transaction : `NO_TENANT` sans tenant, donc aucune
+ * ligne. Un réglage non posé n'est pas filtré : NULL sur une connexion qui ne l'a jamais posé, `''` sur une connexion
+ * où une transaction l'a posé puis s'est terminée (connexion serveur partagée derrière PgBouncer). C'est le cas des
+ * migrations, de Drizzle Studio et d'une instance d'avant la RLS pendant un déploiement.
  */
-export const TENANT_ROWS_SQL = `current_setting('${TENANT_SETTING}', true) is null or tenant_id = nullif(current_setting('${TENANT_SETTING}', true), '')::uuid`;
+export const TENANT_ROWS_SQL = `coalesce(current_setting('${TENANT_SETTING}', true), '') = '' or tenant_id = nullif(current_setting('${TENANT_SETTING}', true), '')::uuid`;
+
+/** Valeur posée par l'API sans tenant dans le contexte : l'UUID nul, qu'aucun tenant ne porte. */
+export const NO_TENANT = '00000000-0000-0000-0000-000000000000';
 
 /** Nom de la politique de chaque table d'un tenant. */
 export const TENANT_POLICY = 'tenant_isolation';

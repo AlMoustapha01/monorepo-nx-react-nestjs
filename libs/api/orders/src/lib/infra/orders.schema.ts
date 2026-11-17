@@ -23,11 +23,12 @@ export const ordersSchema = pgSchema('orders');
 
 /**
  * Seconde barrière d'isolation (ADR 0013) : sur une connexion de l'API, Postgres ne montre et n'accepte que les
- * lignes du tenant qu'elle porte, même si une requête oublie son filtre ; aucune sans tenant. Une connexion qui
- * n'a jamais posé `app.tenant_id` (migrations, Drizzle Studio, instance d'avant la RLS) n'est pas filtrée.
+ * lignes du tenant qu'elle porte, même si une requête oublie son filtre ; aucune sans tenant (UUID nul). Une
+ * connexion où `app.tenant_id` n'est pas posé, NULL ou `''` (migrations, Drizzle Studio, instance d'avant la RLS),
+ * n'est pas filtrée.
  */
 const tenantRows = () =>
-  sql`current_setting('app.tenant_id', true) is null or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
+  sql`coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
 const tenantIsolation = () =>
   pgPolicy('tenant_isolation', { using: tenantRows(), withCheck: tenantRows() });
 
