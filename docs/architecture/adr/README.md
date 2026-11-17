@@ -19,6 +19,7 @@ Une décision structurante par fichier : le contexte, ce qui a été décidé, c
 | [0013](0013-row-level-security.md)           | Row Level Security de Postgres en seconde barrière d'isolation des tenants                  | Acceptée           |
 | [0014](0014-feature-flags-par-tenant.md)     | Feature flags par tenant, en base, pilotés par une commande d'exploitation                  | Acceptée           |
 | [0015](0015-journal-d-audit.md)              | Journal d'audit par tenant, écrit par les événements et par les hooks du service d'identité | Acceptée           |
+| [0016](0016-revocation-des-acces.md)         | Révocation des accès en quelques secondes, par une liste en Postgres consultée par l'API    | Acceptée           |
 
 Les ADR 0001 à 0011 ont été écrits après coup, en octobre 2026, à partir du code, des messages de commit et des documents de conception de l'époque. La date de chacun est celle du commit qui a introduit la décision. Quand les alternatives écartées n'étaient écrites nulle part, l'ADR le dit.
 

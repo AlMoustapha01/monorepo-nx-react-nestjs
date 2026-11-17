@@ -21,6 +21,6 @@ Détail : [Authentification](../authentification.md).
 
 - L'API ne dépend d'aucune bibliothèque d'authentification : changer de fournisseur (Keycloak, Auth0, Cognito) ne demande que de la configuration, s'il fournit des UUID.
 - L'API ne contacte pas le fournisseur à chaque requête, et continue de vérifier les tokens si celui-ci tombe (clés en cache).
-- Un token reste valable jusqu'à 15 minutes après le retrait d'un membre : pas de révocation immédiate.
+- Un token reste valable jusqu'à 15 minutes après le retrait d'un membre : pas de révocation immédiate. Levé pour les accès à un tenant par l'[ADR 0016](0016-revocation-des-acces.md).
 - Un service de plus à déployer, à migrer et à surveiller, et un secret (`BETTER_AUTH_SECRET`) qui ne doit jamais changer sans plan.
 - Le front doit être sur le même site que le service d'identité (cookie `SameSite=Lax`).

@@ -44,7 +44,7 @@ Le fichier sert aussi de modèle : variables de chaque service, ordre de démarr
 ## Ordre d'un déploiement
 
 1. **Construire** les deux images, une fois, depuis le commit déployé. La base Node est épinglée par digest dans le `Dockerfile`.
-2. **Migrer** : lancer `node migrate.js` de chaque image (API et identité) comme une tâche qui se termine (Job Kubernetes, tâche ECS, `docker run --rm`). Le déploiement s'arrête si elle sort en erreur.
+2. **Migrer** : lancer `node migrate.js` de chaque image (API et identité) comme une tâche qui se termine (Job Kubernetes, tâche ECS, `docker run --rm`), celui de l'API d'abord : le service d'identité écrit dans ses tables `audit.entries` et `access.revocations` (ADR 0015 et 0016). Le déploiement s'arrête si elle sort en erreur.
 3. **Démarrer** les nouvelles instances (`auth`, `api`, `worker`), en remplacement progressif des anciennes.
 
 Les migrations ne tournent jamais au démarrage de l'API : avec plusieurs instances, elles se feraient concurrence, et un échec ferait boucler les redémarrages. Chaque `migrate.js` prend un verrou consultatif Postgres : deux déploiements simultanés se sérialisent au lieu de s'écraser.
