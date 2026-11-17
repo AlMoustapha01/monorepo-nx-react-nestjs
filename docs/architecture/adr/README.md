@@ -22,6 +22,7 @@ Une décision structurante par fichier : le contexte, ce qui a été décidé, c
 | [0016](0016-revocation-des-acces.md)         | Révocation des accès en quelques secondes, par une liste en Postgres consultée par l'API    | Acceptée           |
 | [0017](0017-verification-en-deux-etapes.md)  | Vérification en deux étapes par application d'authentification, exigible par organisation   | Acceptée           |
 | [0018](0018-passkeys.md)                     | Passkeys : connexion sans mot de passe, valant la 2FA qu'une organisation exige             | Acceptée           |
+| [0019](0019-back-office-et-impersonation.md) | Back-office et impersonation : le support voit ce que voit le client, avec trace            | Acceptée           |
 
 Les ADR 0001 à 0011 ont été écrits après coup, en octobre 2026, à partir du code, des messages de commit et des documents de conception de l'époque. La date de chacun est celle du commit qui a introduit la décision. Quand les alternatives écartées n'étaient écrites nulle part, l'ADR le dit.
 
