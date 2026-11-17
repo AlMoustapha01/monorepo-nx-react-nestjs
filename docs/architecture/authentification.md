@@ -52,13 +52,13 @@ Autres choix :
 
 Construit par `apps/auth/src/claims.ts`, à chaque émission :
 
-| Claim               | Valeur                                                                                                                                                                                                                       |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sub`               | ID de l'utilisateur (UUID)                                                                                                                                                                                                   |
-| `tenant_id`         | organisation active de la session, **seulement si l'utilisateur en est encore membre** (relu en base à chaque émission), et s'il a la 2FA quand l'organisation l'exige ([ADR 0017](adr/0017-verification-en-deux-etapes.md)) |
-| `roles`             | `['staff']` si le membre est `owner` ou `admin`, sinon `[]`                                                                                                                                                                  |
-| `email`             | seulement s'il est vérifié                                                                                                                                                                                                   |
-| `iss`, `aud`, `exp` | `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`, émission + 15 min                                                                                                                                                                    |
+| Claim               | Valeur                                                                                                                                                                                                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sub`               | ID de l'utilisateur (UUID)                                                                                                                                                                                                                                                                      |
+| `tenant_id`         | organisation active de la session, **seulement si l'utilisateur en est encore membre** (relu en base à chaque émission), et s'il a la 2FA, ou une session ouverte par passkey, quand l'organisation l'exige ([ADR 0017](adr/0017-verification-en-deux-etapes.md), [0018](adr/0018-passkeys.md)) |
+| `roles`             | `['staff']` si le membre est `owner` ou `admin`, sinon `[]`                                                                                                                                                                                                                                     |
+| `email`             | seulement s'il est vérifié                                                                                                                                                                                                                                                                      |
+| `iss`, `aud`, `exp` | `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`, émission + 15 min                                                                                                                                                                                                                                       |
 
 Rien d'autre : le token circule et se journalise facilement, il ne porte pas de donnée personnelle inutile.
 
