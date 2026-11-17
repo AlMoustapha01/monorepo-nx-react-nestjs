@@ -12,7 +12,7 @@ const BOB = { id: 'u2', name: 'Bob', email: 'bob@shop.test', emailVerified: true
  * Service d'auth simulé : Ada est opératrice (`role: 'admin'`) ou non ; « Voir comme » ouvre la session de Bob,
  * que l'arrêt referme.
  */
-function serveOperator({ operator = true } = {}) {
+function serveOperator({ operator = true, member = true, requireTwoFactor = false } = {}) {
   const state = { impersonating: false };
   const exp = Math.floor(Date.now() / 1000) + 900;
   server.use(
@@ -22,12 +22,20 @@ function serveOperator({ operator = true } = {}) {
           ? { user: BOB, session: { activeOrganizationId: 'o1', impersonatedBy: user.id } }
           : {
               user: { ...user, role: operator ? 'admin' : 'user', twoFactorEnabled: true },
-              session: { activeOrganizationId: 'o1' },
+              session: { activeOrganizationId: member ? 'o1' : null },
             },
       ),
     ),
+    // Bob est membre d'« Atelier » ; Ada, seulement si `member`.
     http.get(`${AUTH}/organization/list`, () =>
-      HttpResponse.json([{ id: 'o1', name: 'Atelier', slug: 'atelier' }]),
+      HttpResponse.json(
+        state.impersonating || member
+          ? [{ id: 'o1', name: 'Atelier', slug: 'atelier', requireTwoFactor }]
+          : [],
+      ),
+    ),
+    http.get(`${AUTH}/organization/get-active-member-role`, () =>
+      HttpResponse.json({ role: 'member' }),
     ),
     http.get(`${AUTH}/token`, () => HttpResponse.json({ token: fakeToken({ exp, tenant: 'o1' }) })),
     http.get(`${AUTH}/operator/search`, () =>
@@ -54,6 +62,35 @@ describe('back-office', () => {
 
     const link = await screen.findByRole('link', { name: 'Back-office' });
     expect(link.getAttribute('href')).toBe('/support');
+  });
+
+  it('brings an operator who belongs to no organization to the back-office, with its account', async () => {
+    serveOperator({ member: false });
+    const router = renderSignedIn('/');
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Back-office' })).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/support');
+    expect(screen.getByRole('button', { name: 'Se déconnecter' })).toBeTruthy();
+  });
+
+  it('lets an operator who belongs to no organization turn 2FA on, from the back-office', async () => {
+    serveOperator({ member: false });
+    const router = renderSignedIn('/support');
+    const click = userEvent.setup();
+
+    await click.click(await screen.findByRole('link', { name: 'Sécurité' }));
+    expect(await screen.findByRole('heading', { name: 'Sécurité du compte' })).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/securite');
+  });
+
+  it('lets an operator see a customer whose organization requires 2FA it does not have', async () => {
+    const state = serveOperator({ requireTwoFactor: true });
+    state.impersonating = true;
+    const router = renderSignedIn('/');
+
+    expect(await screen.findByRole('region', { name: 'Session du support' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/');
   });
 
   it('is a 404 page, with no link, for anyone else', async () => {

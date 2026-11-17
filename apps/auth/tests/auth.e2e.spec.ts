@@ -649,6 +649,46 @@ describe('Authentication service', () => {
       expect(rows).toHaveLength(1);
     });
 
+    it('keeps an impersonation within one hour, even when the session is refreshed', async () => {
+      const clientCookie = await verifiedSignUp('impersonated-long@shop.test');
+      const tenantId = await organizationOf(clientCookie, 'impersonated-long');
+      const clientId = (await accessToken(clientCookie)).sub ?? '';
+      const ops = await operator('ops-long@shop.test');
+      const started = await call('/api/auth/admin/impersonate-user', {
+        body: { userId: clientId },
+        cookie: ops.cookie,
+      });
+      // Sans le cookie « ne pas se souvenir de moi », Better Auth prolonge la session à chaque lecture.
+      const withoutDontRemember = withCookies(ops.cookie, started.cookie)
+        .split('; ')
+        .filter((cookie) => !cookie.includes('dont_remember'))
+        .join('; ');
+      expect(
+        (await call('/api/auth/get-session', { cookie: withoutDontRemember })).body,
+      ).toMatchObject({ session: { impersonatedBy: ops.id } });
+
+      const { rows } = await pool.query<{ lifetime: number }>(
+        `select extract(epoch from "expiresAt" - "createdAt") as lifetime
+           from session where "impersonatedBy" = $1`,
+        [ops.id],
+      );
+      expect(rows).toHaveLength(1);
+      expect(Number(rows[0]?.lifetime)).toBeLessThanOrEqual(3600);
+
+      // Une action d'identité faite depuis la session impersonée nomme aussi l'opérateur.
+      const invited = await call('/api/auth/organization/invite-member', {
+        body: { email: 'invited-by-support@shop.test', role: 'member', organizationId: tenantId },
+        cookie: withoutDontRemember,
+      });
+      expect(invited.response.status).toBe(200);
+      const audit = await pool.query<{ actor_id: string; impersonator_id: string | null }>(
+        `select actor_id, impersonator_id from audit.entries
+          where tenant_id = $1 and action = 'identity.member-invited'`,
+        [tenantId],
+      );
+      expect(audit.rows).toEqual([{ actor_id: clientId, impersonator_id: ops.id }]);
+    });
+
     it('refuses impersonation to an operator without 2FA, and to anyone else', async () => {
       const clientCookie = await verifiedSignUp('not-impersonated@shop.test');
       const clientId = (await accessToken(clientCookie)).sub ?? '';

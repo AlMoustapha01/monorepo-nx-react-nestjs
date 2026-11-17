@@ -84,6 +84,8 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     );
   };
 
+  /** Durée maximale d'une impersonation (ADR 0019). */
+  const IMPERSONATION_SECONDS = 60 * 60;
   const writeAudit = createAuditWriter(pool, logger);
   const revoker = createAccessRevoker(pool, logger);
 
@@ -396,6 +398,21 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
             };
           },
         },
+        update: {
+          // Une session impersonée ne dure jamais plus d'une heure : sans le cookie « ne pas se souvenir de
+          // moi », `/get-session` la prolongerait de 7 jours à chaque lecture (ADR 0019).
+          before: async (data, context) => {
+            const current = context?.context.session?.session as
+              | { impersonatedBy?: unknown; createdAt?: Date | string }
+              | undefined;
+            if (!(data.expiresAt instanceof Date) || typeof current?.impersonatedBy !== 'string') {
+              return;
+            }
+            const limit = new Date(current.createdAt ?? 0).getTime() + IMPERSONATION_SECONDS * 1000;
+            if (data.expiresAt.getTime() <= limit) return;
+            return { data: { ...data, expiresAt: new Date(limit) } };
+          },
+        },
       },
     },
     // Second facteur : application d'authentification (TOTP) et codes de secours, pas de code par email (ADR 0017).
@@ -500,7 +517,7 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       admin({
         adminRoles: [OPERATOR_ROLE],
         defaultRole: 'user',
-        impersonationSessionDuration: 60 * 60,
+        impersonationSessionDuration: IMPERSONATION_SECONDS,
         allowImpersonatingAdmins: false,
       }),
       {

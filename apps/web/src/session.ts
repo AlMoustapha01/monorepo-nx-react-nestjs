@@ -6,6 +6,7 @@ import { sessionQueryOptions } from '@nx-react-nestjs/web-auth';
 /** Identifiants de routes (TanStack Router), pour `useMatch` et `useRouteContext`. */
 export const ROOT_ROUTE = '__root__';
 export const AUTHENTICATED_ROUTE = '/_authenticated';
+export const BACK_OFFICE_ROUTE = '/support';
 
 export interface SessionContext {
   auth: AuthClient;

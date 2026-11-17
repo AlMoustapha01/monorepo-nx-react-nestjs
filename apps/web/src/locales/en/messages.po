@@ -621,6 +621,7 @@ msgid "Se déconnecter"
 msgstr "Sign out"
 
 #: src/components/app-navigation.tsx
+#: src/components/back-office-navigation.tsx
 msgid "Sécurité"
 msgstr "Security"
 

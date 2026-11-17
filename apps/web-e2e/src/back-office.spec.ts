@@ -14,14 +14,14 @@ test('an operator with 2FA sees the app as a customer, who finds it in the audit
 }) => {
   const customer = await createAccount('bo-customer');
   await createOrganization(customer, 'Atelier du client');
+  // Opérateur membre d'aucune organisation : il arrive sur le back-office, et active sa 2FA d'abord.
   const operator = await createAccount('bo-operator');
-  await createOrganization(operator, 'Plateforme');
   await grantOperator(operator.email);
 
   await page.goto('/connexion');
   await signIn(page, operator.email);
-  await expect(page.getByRole('heading', { name: 'Accueil' })).toBeVisible();
-  await page.goto('/securite');
+  await expect(page.getByRole('heading', { level: 1, name: 'Back-office' })).toBeVisible();
+  await page.getByRole('link', { name: 'Sécurité' }).click();
   await turnOnTwoFactor(page);
 
   await page.getByRole('link', { name: 'Back-office' }).click();
