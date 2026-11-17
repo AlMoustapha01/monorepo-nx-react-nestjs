@@ -20,6 +20,13 @@ import {
   type SignInInput,
   type SignUpInput,
 } from '@nx-react-nestjs/contracts';
+// option:feature-flags:start
+import {
+  type TenantFeatureFlags,
+  tenantFeatureFlagsSchema,
+  type TenantFlagValue,
+} from '@nx-react-nestjs/contracts';
+// option:feature-flags:end
 import { z } from 'zod';
 import { ApiError } from './api-error';
 import { browserWebAuthn, type WebAuthn } from './web-authn';
@@ -90,6 +97,16 @@ export interface AuthClient {
   impersonate(userId: string): Promise<void>;
   /** Revient à la session de l'opérateur. */
   stopImpersonating(): Promise<void>;
+  // option:feature-flags:start
+  /** Back-office : flags du catalogue pour une organisation, avec sa surcharge (ADR 0020). */
+  getTenantFeatureFlags(organizationId: string, signal?: AbortSignal): Promise<TenantFeatureFlags>;
+  /** Back-office : surcharge un flag pour l'organisation, ou la retire (`default`) ; rend l'état à jour. */
+  setTenantFeatureFlag(input: {
+    organizationId: string;
+    flag: string;
+    value: TenantFlagValue;
+  }): Promise<TenantFeatureFlags>;
+  // option:feature-flags:end
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -275,6 +292,16 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
     stopImpersonating: async () => {
       await call('/admin/stop-impersonating', ignored, { body: {} });
     },
+    // option:feature-flags:start
+    getTenantFeatureFlags: (organizationId, signal) =>
+      call(
+        `/operator/feature-flags?organizationId=${encodeURIComponent(organizationId)}`,
+        tenantFeatureFlagsSchema,
+        { signal },
+      ),
+    setTenantFeatureFlag: (input) =>
+      call('/operator/feature-flags', tenantFeatureFlagsSchema, { body: input }),
+    // option:feature-flags:end
     getAccessToken: async () => {
       try {
         return (await call('/token', accessTokenSchema)).token;

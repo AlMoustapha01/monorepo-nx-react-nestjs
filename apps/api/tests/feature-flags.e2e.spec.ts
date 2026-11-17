@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { configureApp, runFeatureFlagsCommand } from '@nx-react-nestjs/api-core';
+import { sql } from 'drizzle-orm';
+import { configureApp } from '@nx-react-nestjs/api-core';
 import {
   signTestToken,
   startTestDatabase,
@@ -61,7 +62,11 @@ describe('API feature flags (e2e)', () => {
     const [flag, definition] = clientFlag;
     const pilot = randomUUID();
     const overridden = !definition.default;
-    await runFeatureFlagsCommand(database.adminDb, ['set', flag, pilot, overridden ? 'on' : 'off']);
+    // Écrite comme le fait le back-office (service d'identité, ADR 0020).
+    await database.adminDb.execute(
+      sql`insert into feature_flags.tenant_overrides (tenant_id, flag, enabled, updated_at)
+          values (${pilot}, ${flag}, ${overridden}, now())`,
+    );
 
     const valueFor = async (tenantId: string) => {
       const token = await signTestToken({ userId: randomUUID(), tenantId });
@@ -74,7 +79,9 @@ describe('API feature flags (e2e)', () => {
     expect(await valueFor(pilot)).toBe(overridden);
     expect(await valueFor(randomUUID())).toBe(definition.default);
 
-    await runFeatureFlagsCommand(database.adminDb, ['clear', flag, pilot]);
+    await database.adminDb.execute(
+      sql`delete from feature_flags.tenant_overrides where tenant_id = ${pilot}`,
+    );
     expect(await valueFor(pilot)).toBe(definition.default);
   });
 

@@ -8,11 +8,6 @@ export { Public } from './lib/auth/public.decorator';
 export { RequireRole, type Role } from './lib/auth/roles';
 // option:feature-flags:start
 export { FeatureFlags, RequireFeature } from './lib/feature-flags/feature-flags';
-export {
-  FEATURE_FLAGS_USAGE,
-  type FeatureFlagsCommandResult,
-  runFeatureFlagsCommand,
-} from './lib/feature-flags/feature-flags-admin';
 // option:feature-flags:end
 export { type Database, InjectDatabase } from './lib/database/database.tokens';
 export { DatabaseSession, TransactionManager } from './lib/database/database-session';

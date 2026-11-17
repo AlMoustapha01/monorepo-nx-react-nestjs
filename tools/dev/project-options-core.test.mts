@@ -264,7 +264,8 @@ describe('feature-flags option', () => {
     assert.deepEqual(flags.requires?.options, ['examples']);
     assert.deepEqual(flags.regenerate, ['errors', 'migrations']);
     assert.deepEqual(flags.dependencies, []);
-    assert.deepEqual(flags.scripts, ['dev:flag']);
+    // Plus de commande : les surcharges par tenant se pilotent au back-office (ADR 0020).
+    assert.deepEqual(flags.scripts, []);
   });
 });
 

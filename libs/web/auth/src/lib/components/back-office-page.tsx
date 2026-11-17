@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -18,48 +18,96 @@ import {
 
 import { authKeys } from '../data/queries';
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
+// option:feature-flags:start
+import { TenantFlagsPanel } from './tenant-flags-panel';
+// option:feature-flags:end
 
 interface BackOfficePageProps {
   auth: AuthClient;
   /** Session impersonée ouverte : l'app doit oublier son token et ses données, puis aller à l'accueil. */
   onImpersonated: () => Promise<void> | void;
+  // option:feature-flags:start
+  /** Flags de chaque organisation trouvée, à surcharger pour elle (ADR 0020). */
+  featureFlags?: boolean;
+  // option:feature-flags:end
 }
+
+// option:feature-flags:start
+function OrganizationFlags({
+  auth,
+  organizations,
+}: {
+  auth: AuthClient;
+  organizations: FoundAccount['organizations'];
+}) {
+  const [open, setOpen] = useState<string>();
+  const shown = organizations.find((organization) => organization.id === open);
+  if (organizations.length === 0) return null;
+  return (
+    <Stack gap={3}>
+      <Stack direction="row" gap={2} wrap>
+        {organizations.map((organization) => {
+          const { name } = organization;
+          return (
+            <Button
+              key={organization.id}
+              variant="ghost"
+              size="sm"
+              aria-expanded={open === organization.id}
+              onClick={() => setOpen(open === organization.id ? undefined : organization.id)}
+            >
+              <Trans>Flags de {name}</Trans>
+            </Button>
+          );
+        })}
+      </Stack>
+      {shown && <TenantFlagsPanel auth={auth} organization={shown} />}
+    </Stack>
+  );
+}
+// option:feature-flags:end
 
 function AccountRow({
   account,
   onSee,
   busy,
+  children,
 }: {
   account: FoundAccount;
   onSee: () => void;
   busy: boolean;
+  /** Sous la ligne : outils propres au compte (flags de ses organisations). */
+  children?: ReactNode;
 }) {
   const { email } = account;
   return (
     <li className="list-none">
       <Card>
         <CardContent>
-          <Stack direction="row" gap={4} align="center" justify="between" wrap>
-            <Stack gap={1}>
-              <Text weight="semibold">{account.email}</Text>
-              <Text as="span" size="sm" tone="muted">
-                {account.name}
-              </Text>
-              <Text as="span" size="sm" tone="muted">
-                {account.organizations.length > 0 ? (
-                  account.organizations
-                    .map((organization) => `${organization.name} (${organization.role})`)
-                    .join(' · ')
-                ) : (
-                  <Trans>Aucune organisation</Trans>
-                )}
-              </Text>
+          <Stack gap={4}>
+            <Stack direction="row" gap={4} align="center" justify="between" wrap>
+              <Stack gap={1}>
+                <Text weight="semibold">{account.email}</Text>
+                <Text as="span" size="sm" tone="muted">
+                  {account.name}
+                </Text>
+                <Text as="span" size="sm" tone="muted">
+                  {account.organizations.length > 0 ? (
+                    account.organizations
+                      .map((organization) => `${organization.name} (${organization.role})`)
+                      .join(' · ')
+                  ) : (
+                    <Trans>Aucune organisation</Trans>
+                  )}
+                </Text>
+              </Stack>
+              <Button variant="outline" disabled={busy} onClick={onSee}>
+                <Trans>
+                  Voir comme <span className="sr-only">{email}</span>
+                </Trans>
+              </Button>
             </Stack>
-            <Button variant="outline" disabled={busy} onClick={onSee}>
-              <Trans>
-                Voir comme <span className="sr-only">{email}</span>
-              </Trans>
-            </Button>
+            {children}
           </Stack>
         </CardContent>
       </Card>
@@ -71,7 +119,13 @@ function AccountRow({
  * Back-office des opérateurs de la plateforme (ADR 0019) : trouver un compte, puis voir l'application comme son
  * utilisateur, une heure au plus. Le client le voit dans son journal d'audit.
  */
-export function BackOfficePage({ auth, onImpersonated }: BackOfficePageProps) {
+export function BackOfficePage({
+  auth,
+  onImpersonated,
+  // option:feature-flags:start
+  featureFlags = false,
+  // option:feature-flags:end
+}: BackOfficePageProps) {
   const { t } = useLingui();
   const errorMessage = useAuthErrorMessage();
   const [query, setQuery] = useState<string>();
@@ -156,7 +210,13 @@ export function BackOfficePage({ auth, onImpersonated }: BackOfficePageProps) {
               account={account}
               busy={busy}
               onSee={() => void see(account.id)}
-            />
+            >
+              {/* option:feature-flags:start */}
+              {featureFlags && (
+                <OrganizationFlags auth={auth} organizations={account.organizations} />
+              )}
+              {/* option:feature-flags:end */}
+            </AccountRow>
           ))}
         </ul>
       )}

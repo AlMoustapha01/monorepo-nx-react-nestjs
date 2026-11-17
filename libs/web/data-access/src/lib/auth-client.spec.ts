@@ -190,6 +190,32 @@ describe('createAuthClient', () => {
     expect(calls).toEqual(['search bob & co', 'impersonate {"userId":"u2"}', 'stop']);
   });
 
+  // option:feature-flags:start
+  it('reads and sets the feature flags of a tenant (back-office, ADR 0020)', async () => {
+    const tenant = {
+      organization: { id: 'o1', name: 'Atelier' },
+      flags: [{ flag: 'x.y', description: 'X', catalogDefault: false, override: null }],
+    };
+    let sent: unknown;
+    server.use(
+      http.get(`${AUTH}/operator/feature-flags`, ({ request }) =>
+        new URL(request.url).searchParams.get('organizationId') === 'o1'
+          ? HttpResponse.json(tenant)
+          : HttpResponse.json({}, { status: 404 }),
+      ),
+      http.post(`${AUTH}/operator/feature-flags`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json({ ...tenant, flags: [{ ...tenant.flags[0], override: true }] });
+      }),
+    );
+    await expect(auth.getTenantFeatureFlags('o1')).resolves.toEqual(tenant);
+    await expect(
+      auth.setTenantFeatureFlag({ organizationId: 'o1', flag: 'x.y', value: 'on' }),
+    ).resolves.toMatchObject({ flags: [{ override: true }] });
+    expect(sent).toEqual({ organizationId: 'o1', flag: 'x.y', value: 'on' });
+  });
+  // option:feature-flags:end
+
   it('reads the role and the impersonation of the session', async () => {
     server.use(
       http.get(`${AUTH}/get-session`, () =>

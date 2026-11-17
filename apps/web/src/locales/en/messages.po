@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "« Comme tous » suit la valeur du catalogue, que la variable FEATURE_FLAGS de l’API peut changer. Un changement s’applique dès la requête suivante."
+msgstr "“Same as everyone” follows the catalog value, which the FEATURE_FLAGS variable of the API can change. A change applies from the next request."
+
 #. placeholder {0}: active.name
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "{0} exige la vérification en deux étapes : sans elle, vous n’y aurez plus accès."
@@ -44,6 +48,10 @@ msgstr "Home"
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Action"
 msgstr "Action"
+
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Activé pour cette organisation"
+msgstr "On for this organization"
 
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "Activée"
@@ -108,6 +116,10 @@ msgstr "Cancel order"
 #: ../../libs/web/auth/src/lib/components/back-office-page.tsx
 msgid "Aucun compte ne correspond."
 msgstr "No account matches."
+
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Aucun flag dans le catalogue."
+msgstr "No flag in the catalog."
 
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Aucun produit pour le moment"
@@ -190,6 +202,7 @@ msgstr "This passkey could not be used. Try again, or sign in with your password
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 #: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
@@ -225,6 +238,14 @@ msgstr "Order cancelled"
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Commande passée"
 msgstr "Order placed"
+
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Comme tous (activé)"
+msgstr "Same as everyone (on)"
+
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Comme tous (désactivé)"
+msgstr "Same as everyone (off)"
 
 #: ../../libs/web/auth/src/lib/components/back-office-page.tsx
 msgid "Comptes trouvés"
@@ -274,6 +295,10 @@ msgstr "Create your organization"
 msgid "Déjà un compte ? <0>Se connecter</0>"
 msgstr "Already have an account? <0>Sign in</0>"
 
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Désactivé pour cette organisation"
+msgstr "Off for this organization"
+
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "Désactivée"
 msgstr "Off"
@@ -318,6 +343,15 @@ msgstr "Require two-step verification for all members"
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Fermer"
 msgstr "Close"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Flag modifié par le support"
+msgstr "Flag changed by support"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Flags de {name}"
+msgstr "Flags of {name}"
 
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Garder"
@@ -714,6 +748,10 @@ msgstr "Use the authenticator app"
 #: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
 msgid "Utiliser un code de secours"
 msgstr "Use a backup code"
+
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Valeur de"
+msgstr "Value of"
 
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx

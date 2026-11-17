@@ -6,7 +6,6 @@ import { startTestDatabase, type TestDatabase } from '../../testing';
 import { AppConfig } from '../config/app-config';
 import { validateEnv } from '../config/env';
 import { RequestContext } from '../context/request-context';
-import { runFeatureFlagsCommand } from './feature-flags-admin';
 import { TenantFeatureFlags } from './tenant-feature-flags';
 import { tenantFeatureFlags } from './tenant-feature-flags.schema';
 
@@ -52,7 +51,15 @@ describe('TenantFeatureFlags (real Postgres)', () => {
       context,
       cls,
     );
-  const command = (...args: string[]) => runFeatureFlagsCommand(database.adminDb, args);
+  /** Surcharge écrite comme le fait le back-office (service d'identité, ADR 0020). */
+  const override = (tenantId: string, flag: string, enabled: boolean) =>
+    database.adminDb
+      .insert(tenantFeatureFlags)
+      .values({ tenantId, flag, enabled, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [tenantFeatureFlags.tenantId, tenantFeatureFlags.flag],
+        set: { enabled, updatedAt: new Date() },
+      });
 
   beforeAll(async () => {
     database = await startTestDatabase();
@@ -63,8 +70,8 @@ describe('TenantFeatureFlags (real Postgres)', () => {
   it("applies a tenant's override over the catalog default and FEATURE_FLAGS", async () => {
     const pilot = newTenant();
     const excluded = newTenant();
-    await command('set', 'test.off', pilot.tenantId, 'on');
-    await command('set', 'test.on', excluded.tenantId, 'off');
+    await override(pilot.tenantId, 'test.off', true);
+    await override(excluded.tenantId, 'test.on', false);
     const flags = flagsWith('test.on=true');
 
     await context.runAs(pilot, async () => {
@@ -78,7 +85,7 @@ describe('TenantFeatureFlags (real Postgres)', () => {
 
   it('keeps FEATURE_FLAGS, then the catalog default, for the other tenants', async () => {
     const pilot = newTenant();
-    await command('set', 'test.off', pilot.tenantId, 'on');
+    await override(pilot.tenantId, 'test.off', true);
 
     await context.runAs(newTenant(), async () => {
       expect(await flagsWith().isEnabled(OFF)).toBe(false);
@@ -97,7 +104,7 @@ describe('TenantFeatureFlags (real Postgres)', () => {
 
     await context.runAs(tenant, async () => {
       expect(await flags.isEnabled(OFF)).toBe(false);
-      await command('set', 'test.off', tenant.tenantId, 'on');
+      await override(tenant.tenantId, 'test.off', true);
       expect(await flags.isEnabled(OFF)).toBe(false);
     });
     await context.runAs(tenant, async () => {
@@ -107,7 +114,7 @@ describe('TenantFeatureFlags (real Postgres)', () => {
 
   it('reads the overrides again after a failed read in the same request', async () => {
     const tenant = newTenant();
-    await command('set', 'test.off', tenant.tenantId, 'on');
+    await override(tenant.tenantId, 'test.off', true);
     let failures = 1;
     const failingOnce = new Proxy(database.session(context), {
       get: (target, key, receiver) => {
@@ -134,64 +141,6 @@ describe('TenantFeatureFlags (real Postgres)', () => {
 
     await context.runAs(tenant, async () => {
       expect(await flagsWith().isEnabled(ON)).toBe(true);
-    });
-    expect((await command('list', tenant.tenantId)).output).toContain('test.removed  on');
-    expect((await command('list', tenant.tenantId)).output).toContain('not in the catalog');
-  });
-
-  describe('feature-flags command', () => {
-    it('sets, lists and clears an override', async () => {
-      const tenant = newTenant();
-
-      expect(await command('set', 'test.off', tenant.tenantId, 'on')).toMatchObject({ ok: true });
-      expect(await command('set', 'test.off', tenant.tenantId, 'off')).toMatchObject({ ok: true });
-      const listed = await command('list', tenant.tenantId);
-      expect(listed.ok).toBe(true);
-      expect(listed.output).toMatch(new RegExp(`^${tenant.tenantId}  test\\.off  off  `));
-
-      expect(await command('clear', 'test.off', tenant.tenantId)).toMatchObject({
-        ok: true,
-        output: expect.stringContaining('no longer has an override'),
-      });
-      expect(await command('list', tenant.tenantId)).toEqual({
-        ok: true,
-        output: 'No tenant override.',
-      });
-    });
-
-    it('refuses an unknown flag, an invalid tenant id, an invalid value or an unknown command', async () => {
-      const tenantId = randomUUID();
-      const refusals = await Promise.all([
-        command('set', 'test.unknown', tenantId, 'on'),
-        command('set', 'test.on', 'not-a-uuid', 'on'),
-        command('set', 'test.on', tenantId, 'yes'),
-        command('enable', 'test.on', tenantId),
-        command(),
-      ]);
-
-      expect(refusals.map((result) => result.ok)).toEqual([false, false, false, false, false]);
-      expect(refusals[0]?.output).toContain(
-        'Unknown flag: test.unknown (catalog: test.on, test.off)',
-      );
-      expect(refusals[1]?.output).toContain('Invalid tenant id');
-      expect(refusals[2]?.output).toContain('Invalid value');
-      expect(refusals.every((result) => result.output.includes('Usage:'))).toBe(true);
-      expect(await command('list', tenantId)).toMatchObject({ output: 'No tenant override.' });
-    });
-
-    it('clears the override of a flag removed from the catalog', async () => {
-      const tenant = newTenant();
-      await database.adminDb.insert(tenantFeatureFlags).values({
-        tenantId: tenant.tenantId,
-        flag: 'test.gone',
-        enabled: true,
-        updatedAt: new Date(),
-      });
-
-      expect(await command('clear', 'test.gone', tenant.tenantId)).toMatchObject({ ok: true });
-      expect(await command('list', tenant.tenantId)).toMatchObject({
-        output: 'No tenant override.',
-      });
     });
   });
 });
