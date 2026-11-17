@@ -23,6 +23,7 @@ export const IDENTITY_AUDIT_ACTIONS = {
   memberJoined: 'identity.member-joined',
   memberRemoved: 'identity.member-removed',
   memberRoleChanged: 'identity.member-role-changed',
+  twoFactorRequirementChanged: 'identity.two-factor-requirement-changed',
 } as const satisfies Record<string, AuditAction>;
 
 /** Ressource visée : un type stable (`order`, `member`) et son ID, quel qu'en soit le format. */
