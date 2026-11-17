@@ -81,25 +81,25 @@ Chaque process valide son environnement au démarrage et refuse de démarrer si 
 
 ### API et worker
 
-| Variable                                   | En production                                                                                                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `NODE_ENV`                                 | `production` (posé par l'image)                                                                                                                  |
-| `DATABASE_URL`, `REDIS_URL`                | obligatoires                                                                                                                                     |
-| `AUTH_JWKS_URL`                            | obligatoire : `http://<service auth>/api/auth/jwks`, par le réseau interne                                                                       |
-| `AUTH_JWT_SECRET`                          | **interdit** : le process refuse de démarrer                                                                                                     |
-| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`     | mêmes valeurs que le service d'identité                                                                                                          |
-| `SMTP_URL`                                 | obligatoire (le worker envoie les emails)                                                                                                        |
-| `MAIL_FROM`                                | l'expéditeur de votre domaine                                                                                                                    |
-| `CORS_ORIGINS`                             | l'URL du front, sans slash final                                                                                                                 |
-| `JOBS_ENABLED`                             | `false` pour `main.js` ; `worker.js` le force à `true`                                                                                           |
-| `SHUTDOWN_DRAIN_MS`, `SHUTDOWN_TIMEOUT_MS` | voir [Arrêt](#arrêt-et-redémarrage)                                                                                                              |
-| `TRUST_PROXY_HOPS`                         | nombre de proxys devant l'API ; voir [Derrière un load balancer](#derrière-un-load-balancer)                                                     |
-| `RATE_LIMIT_MAX`, `RATE_LIMIT_TTL_MS`      | 100 requêtes par minute par défaut                                                                                                               |
-| `DATABASE_POOL_MAX`                        | 10 par process par défaut ; voir [Postgres](#postgres)                                                                                           |
-| `DATABASE_STATEMENT_TIMEOUT_MS`            | 30 s par défaut ; voir [Postgres](#postgres)                                                                                                     |
-| `NODE_OPTIONS`                             | `--enable-source-maps` (posé par l'image) ; voir [Mémoire](#mémoire)                                                                             |
-| `FEATURE_FLAGS`                            | surcharges pour tous, ex. `announcements=true` ; un nom inconnu bloque le démarrage ; voir [Feature flags par tenant](#feature-flags-par-tenant) |
-| `OTEL_*`, `SENTRY_*`                       | optionnelles ; `OTEL_SERVICE_NAME=api` pour l'API, `api-worker` pour le worker                                                                   |
+| Variable                                   | En production                                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                                 | `production` (posé par l'image)                                                              |
+| `DATABASE_URL`, `REDIS_URL`                | obligatoires                                                                                 |
+| `AUTH_JWKS_URL`                            | obligatoire : `http://<service auth>/api/auth/jwks`, par le réseau interne                   |
+| `AUTH_JWT_SECRET`                          | **interdit** : le process refuse de démarrer                                                 |
+| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`     | mêmes valeurs que le service d'identité                                                      |
+| `SMTP_URL`                                 | obligatoire (le worker envoie les emails)                                                    |
+| `MAIL_FROM`                                | l'expéditeur de votre domaine                                                                |
+| `CORS_ORIGINS`                             | l'URL du front, sans slash final                                                             |
+| `JOBS_ENABLED`                             | `false` pour `main.js` ; `worker.js` le force à `true`                                       |
+| `SHUTDOWN_DRAIN_MS`, `SHUTDOWN_TIMEOUT_MS` | voir [Arrêt](#arrêt-et-redémarrage)                                                          |
+| `TRUST_PROXY_HOPS`                         | nombre de proxys devant l'API ; voir [Derrière un load balancer](#derrière-un-load-balancer) |
+| `RATE_LIMIT_MAX`, `RATE_LIMIT_TTL_MS`      | 100 requêtes par minute par défaut                                                           |
+| `DATABASE_POOL_MAX`                        | 10 par process par défaut ; voir [Postgres](#postgres)                                       |
+| `DATABASE_STATEMENT_TIMEOUT_MS`            | 30 s par défaut ; voir [Postgres](#postgres)                                                 |
+| `NODE_OPTIONS`                             | `--enable-source-maps` (posé par l'image) ; voir [Mémoire](#mémoire)                         |
+| `FEATURE_FLAGS`                            | surcharges pour tous, ex. `announcements=true` ; un nom inconnu bloque le démarrage          |
+| `OTEL_*`, `SENTRY_*`                       | optionnelles ; `OTEL_SERVICE_NAME=api` pour l'API, `api-worker` pour le worker               |
 
 ### Service d'identité
 
