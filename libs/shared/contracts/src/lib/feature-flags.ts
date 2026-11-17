@@ -13,6 +13,12 @@ export interface FeatureFlagDefinition {
  * fonctionnalité déployée partout, on supprime le flag et les branches mortes.
  */
 export const FEATURE_FLAGS = {
+  'audit.log': {
+    description:
+      'Le staff consulte le journal d’audit du tenant (route et page). L’écriture ne dépend pas du flag.',
+    default: false,
+    client: true,
+  },
   // example:start
   'orders.cancellation': {
     description: 'Un client peut annuler sa commande.',
