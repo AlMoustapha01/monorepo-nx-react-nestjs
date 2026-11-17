@@ -19,4 +19,6 @@ if (initial.length === 0) throw new Error(`No initial JS found in ${dist}/index.
 // des routes), présente sur chaque page. Charger le menu à la demande coûtait plus qu'il ne gagnait.
 // 185 kB : +5 kB pour la 2FA et les passkeys (méthodes et schémas du client d'auth, garde de
 // l'exigence de l'organisation). La bibliothèque WebAuthn, elle, se charge à la première cérémonie.
-export default [{ name: 'initial JS (gzip)', path: initial, gzip: true, limit: '185 kB' }];
+// 186 kB : +1 kB pour le back-office (bandeau d'impersonation, présent sur chaque page) et ses textes :
+// le catalogue source (fr) est importé au démarrage, ceux des routes chargées à la demande compris.
+export default [{ name: 'initial JS (gzip)', path: initial, gzip: true, limit: '186 kB' }];
