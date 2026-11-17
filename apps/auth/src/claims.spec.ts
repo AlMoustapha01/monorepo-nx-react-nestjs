@@ -24,6 +24,16 @@ describe('apiClaims', () => {
     });
   });
 
+  it('gives no tenant, nor role, to a member without 2FA in an organization that requires it', () => {
+    const membership = { organizationId, role: 'owner', requireTwoFactor: true };
+    expect(apiClaims({ user, membership })).toEqual({ roles: [], email: user.email });
+    expect(apiClaims({ user: { ...user, twoFactorEnabled: true }, membership })).toEqual({
+      tenant_id: organizationId,
+      roles: ['staff'],
+      email: user.email,
+    });
+  });
+
   it('omits the tenant without an active organization', () => {
     expect(apiClaims({ user })).not.toHaveProperty('tenant_id');
   });

@@ -24,6 +24,19 @@ export function useAuthErrorMessage(): (error: unknown) => string {
         return t`Cette invitation n'existe pas ou a expiré.`;
       case 'YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION':
         return t`Cette invitation est destinée à une autre adresse email.`;
+      case 'INVALID_CODE':
+      case 'INVALID_BACKUP_CODE':
+        return t`Code incorrect. Réessayez.`;
+      case 'INVALID_TWO_FACTOR_COOKIE':
+        return t`La vérification a expiré. Saisissez à nouveau votre mot de passe.`;
+      case 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE':
+        return t`Trop de codes incorrects. Saisissez à nouveau votre mot de passe.`;
+      case 'ACCOUNT_TEMPORARILY_LOCKED':
+        return t`Trop de codes incorrects : le compte est bloqué quelques minutes.`;
+      case 'INVALID_PASSWORD':
+        return t`Mot de passe incorrect.`;
+      case 'TWO_FACTOR_REQUIRED_FIRST':
+        return t`Activez d’abord la vérification en deux étapes sur votre propre compte.`;
       case 'NETWORK_ERROR':
       case 'TIMEOUT':
         return t`Le service est injoignable. Vérifiez votre connexion et réessayez.`;

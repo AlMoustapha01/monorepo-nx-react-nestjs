@@ -1,6 +1,6 @@
-import { betterAuth } from 'better-auth';
+import { type BetterAuthPlugin, betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
-import { jwt, organization } from 'better-auth/plugins';
+import { jwt, organization, twoFactor } from 'better-auth/plugins';
 import { Pool } from 'pg';
 import type { Logger } from 'pino';
 import { createAccessRevoker } from './access-revocation';
@@ -61,11 +61,18 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     if (!organizationId) {
       return undefined;
     }
-    const { rows } = await pool.query<{ role: string }>(
-      'select role from member where "userId" = $1 and "organizationId" = $2',
+    const { rows } = await pool.query<{ role: string; requireTwoFactor: boolean | null }>(
+      `select m.role, o."requireTwoFactor" from member m join organization o on o.id = m."organizationId"
+       where m."userId" = $1 and m."organizationId" = $2`,
       [userId, organizationId],
     );
-    return rows[0] && { organizationId, role: rows[0].role };
+    return (
+      rows[0] && {
+        organizationId,
+        role: rows[0].role,
+        requireTwoFactor: rows[0].requireTwoFactor,
+      }
+    );
   };
 
   const writeAudit = createAuditWriter(pool, logger);
@@ -79,6 +86,98 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
         [organizationId],
       )
     ).rows.map((row) => row.userId);
+
+  /**
+   * Accès que la 2FA conditionne (ADR 0017) : en exiger, c'est retirer l'accès aux membres sans 2FA ; désactiver la
+   * sienne, c'est perdre l'accès aux organisations qui l'exigent. `undefined` : la requête n'en retire aucun.
+   */
+  const twoFactorRevocations = async (
+    ctx: { path: string; body?: unknown },
+    caller: { userId: string; activeOrganizationId: string | null | undefined },
+  ): Promise<{ tenantId: string; userIds: string[] }[] | undefined> => {
+    if (ctx.path === '/organization/update') {
+      const body = ctx.body as { organizationId?: unknown; data?: { requireTwoFactor?: unknown } };
+      const organizationId =
+        typeof body?.organizationId === 'string'
+          ? body.organizationId
+          : caller.activeOrganizationId;
+      if (body?.data?.requireTwoFactor !== true || !organizationId) return undefined;
+      // Before passe avant le contrôle de droit de Better Auth : seul qui gère l'organisation révoque ses membres,
+      // sinon n'importe quel compte couperait l'accès d'un tenant qu'il désigne.
+      const callerRole = await pool.query<{ role: string }>(
+        'select role from member where "userId" = $1 and "organizationId" = $2',
+        [caller.userId, organizationId],
+      );
+      const manager = callerRole.rows[0]?.role
+        .split(',')
+        .some((role) => ['owner', 'admin'].includes(role.trim()));
+      if (!manager) return undefined;
+      const { rows } = await pool.query<{ userId: string }>(
+        `select m."userId" from member m join "user" u on u.id = m."userId"
+         where m."organizationId" = $1 and not coalesce(u."twoFactorEnabled", false)`,
+        [organizationId],
+      );
+      return [{ tenantId: organizationId, userIds: rows.map((row) => row.userId) }];
+    }
+    if (ctx.path === '/two-factor/disable') {
+      const { rows } = await pool.query<{ organizationId: string }>(
+        `select m."organizationId" from member m join organization o on o.id = m."organizationId"
+         where m."userId" = $1 and o."requireTwoFactor"`,
+        [caller.userId],
+      );
+      return rows.map((row) => ({ tenantId: row.organizationId, userIds: [caller.userId] }));
+    }
+    return undefined;
+  };
+
+  /**
+   * Journal d'audit (ADR 0015) et révocations à la fin de l'action : après l'action, jamais à sa place ; une erreur
+   * n'est pas auditée. Dans un plugin placé après celui de la 2FA : un hook `after` global passe avant les plugins,
+   * et verrait la session qu'ouvre le mot de passe, que la 2FA annule ensuite (ADR 0017).
+   */
+  const afterAction = createAuthMiddleware(async (ctx) => {
+    const { returned, newSession } = ctx.context;
+    if (returned instanceof Error) {
+      return;
+    }
+    if (ctx.path === '/organization/leave') {
+      const left = returned as { userId?: unknown; organizationId?: unknown } | undefined;
+      if (typeof left?.userId === 'string' && typeof left.organizationId === 'string') {
+        await revoker.after(left.organizationId, [left.userId]);
+      }
+    }
+    // Le contexte d'un hook `after` ne porte pas la session de l'appelant : relue depuis ses cookies.
+    // Pour le second facteur, son absence distingue la connexion de la confirmation d'une 2FA neuve.
+    const session =
+      ctx.path.startsWith('/two-factor/') || (!newSession && ctx.path.startsWith('/organization/'))
+        ? await getSessionFromCtx(ctx).catch(() => null)
+        : null;
+    if (session) {
+      const revocations = await twoFactorRevocations(ctx, {
+        userId: session.user.id,
+        activeOrganizationId: session.session.activeOrganizationId,
+      });
+      for (const { tenantId, userIds } of revocations ?? []) {
+        await revoker.after(tenantId, userIds);
+      }
+    }
+    await writeAudit(
+      identityAuditEntries({
+        path: ctx.path,
+        sessionUserId: session?.user.id,
+        newSession: newSession
+          ? {
+              userId: newSession.user.id,
+              activeOrganizationId:
+                (newSession.session as { activeOrganizationId?: string | null })
+                  .activeOrganizationId ?? null,
+            }
+          : undefined,
+        returned,
+        body: ctx.body,
+      }),
+    );
+  });
 
   return betterAuth({
     appName: 'Shop',
@@ -135,66 +234,91 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     },
     hooks: {
       // Départ d'un membre : le plugin d'organisation n'a pas de hook pour lui (ADR 0016).
+      // Exigence de 2FA et 2FA désactivée : révocations avant l'action (ADR 0017).
       before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path !== '/organization/leave') return;
-        const organizationId = (ctx.body as { organizationId?: unknown } | undefined)
-          ?.organizationId;
-        const session = await getSessionFromCtx(ctx).catch(() => null);
-        if (session && typeof organizationId === 'string') {
-          await revoker.before(organizationId, [session.user.id]);
-        }
-      }),
-      // Journal d'audit (ADR 0015) : après l'action, jamais à sa place ; une erreur n'est pas auditée.
-      after: createAuthMiddleware(async (ctx) => {
-        const { returned, newSession } = ctx.context;
-        if (returned instanceof Error) {
+        if (
+          ctx.path !== '/organization/leave' &&
+          ctx.path !== '/organization/create' &&
+          ctx.path !== '/organization/update' &&
+          ctx.path !== '/two-factor/disable'
+        ) {
           return;
         }
+        const session = await getSessionFromCtx(ctx).catch(() => null);
+        if (!session) return;
         if (ctx.path === '/organization/leave') {
-          const left = returned as { userId?: unknown; organizationId?: unknown } | undefined;
-          if (typeof left?.userId === 'string' && typeof left.organizationId === 'string') {
-            await revoker.after(left.organizationId, [left.userId]);
+          const organizationId = (ctx.body as { organizationId?: unknown } | undefined)
+            ?.organizationId;
+          if (typeof organizationId === 'string') {
+            await revoker.before(organizationId, [session.user.id]);
           }
+          return;
         }
-        // Le contexte d'un hook `after` ne porte pas la session de l'appelant : relue depuis ses cookies.
-        const session =
-          !newSession && ctx.path.startsWith('/organization/')
-            ? await getSessionFromCtx(ctx).catch(() => null)
-            : null;
-        await writeAudit(
-          identityAuditEntries({
-            path: ctx.path,
-            sessionUserId: session?.user.id,
-            newSession: newSession
-              ? {
-                  userId: newSession.user.id,
-                  activeOrganizationId:
-                    (newSession.session as { activeOrganizationId?: string | null })
-                      .activeOrganizationId ?? null,
-                }
-              : undefined,
-            returned,
-          }),
-        );
+        const body = ctx.body as
+          | { requireTwoFactor?: unknown; data?: { requireTwoFactor?: unknown } }
+          | undefined;
+        const requiring =
+          ctx.path === '/organization/create'
+            ? body?.requireTwoFactor === true
+            : ctx.path === '/organization/update' && body?.data?.requireTwoFactor === true;
+        // Sans 2FA lui-même, celui qui l'exige perdrait aussitôt l'accès à son organisation.
+        if (
+          requiring &&
+          !(session.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled
+        ) {
+          throw new APIError('FORBIDDEN', {
+            code: 'TWO_FACTOR_REQUIRED_FIRST',
+            message: 'Enable two-factor authentication before requiring it',
+          });
+        }
+        const revocations = await twoFactorRevocations(ctx, {
+          userId: session.user.id,
+          activeOrganizationId: session.session.activeOrganizationId,
+        });
+        for (const { tenantId, userIds } of revocations ?? []) {
+          await revoker.before(tenantId, userIds);
+        }
       }),
     },
     databaseHooks: {
       session: {
         create: {
           // Une nouvelle session ouvre la première organisation de l'utilisateur : le token porte
-          // un tenant dès la connexion.
+          // un tenant dès la connexion. Une session qui en remplace une autre (2FA confirmée) garde
+          // son organisation active, si l'utilisateur en est encore membre.
           before: async (session) => {
+            const current = (session as { activeOrganizationId?: unknown }).activeOrganizationId;
             const { rows } = await pool.query<{ organizationId: string }>(
-              'select "organizationId" from member where "userId" = $1 order by "createdAt" limit 1',
-              [session.userId],
+              `select "organizationId" from member where "userId" = $1
+               order by ("organizationId" = $2) desc, "createdAt" limit 1`,
+              [session.userId, typeof current === 'string' ? current : null],
             );
             return { data: { ...session, activeOrganizationId: rows[0]?.organizationId ?? null } };
           },
         },
       },
     },
+    // Second facteur : application d'authentification (TOTP) et codes de secours, pas de code par email (ADR 0017).
+    disabledPaths: ['/two-factor/send-otp', '/two-factor/verify-otp'],
     plugins: [
+      twoFactor({
+        issuer: 'Shop',
+        backupCodeOptions: { storeBackupCodes: 'encrypted' },
+      }),
       organization({
+        schema: {
+          organization: {
+            additionalFields: {
+              // Réglage de l'organisation : sans 2FA, un membre n'a pas accès à ce tenant (ADR 0017).
+              requireTwoFactor: {
+                type: 'boolean',
+                required: false,
+                defaultValue: false,
+                input: true,
+              },
+            },
+          },
+        },
         // Révocation des accès (ADR 0016) : avant l'action, qui est refusée si elle ne s'écrit pas, puis à sa fin.
         organizationHooks: {
           beforeRemoveMember: ({ member }) =>
@@ -237,6 +361,11 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
             }),
         },
       }),
+      // En dernier : ses hooks voient le résultat de ceux des autres plugins.
+      {
+        id: 'audit-and-revocation',
+        hooks: { after: [{ matcher: () => true, handler: afterAction }] },
+      } satisfies BetterAuthPlugin,
     ],
   });
 }

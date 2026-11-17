@@ -3,6 +3,7 @@ export { AccountMenu } from './lib/components/account-menu';
 export { CreateOrganizationPage } from './lib/components/create-organization-page';
 export { ForgotPasswordPage } from './lib/components/forgot-password-page';
 export { ResetPasswordPage } from './lib/components/reset-password-page';
+export { SecurityPage } from './lib/components/security-page';
 export { SignInPage } from './lib/components/sign-in-page';
 export { SignUpPage } from './lib/components/sign-up-page';
 export {

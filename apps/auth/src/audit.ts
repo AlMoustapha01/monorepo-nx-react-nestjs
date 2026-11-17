@@ -32,6 +32,8 @@ export interface AuditedRequest {
   newSession: { userId: string; activeOrganizationId: string | null } | undefined;
   /** Valeur rendue par l'endpoint ; une erreur (APIError) n'est jamais auditée. */
   returned: unknown;
+  /** Corps de la requête, pour distinguer un changement de réglage d'une autre mise à jour. */
+  body?: unknown;
 }
 
 interface Member {
@@ -58,10 +60,13 @@ const SIGN_IN_PATHS = [
   '/callback/',
   '/oauth2/callback/',
 ];
-const isSignIn = (path: string) =>
+/** Second facteur : une connexion seulement sans session ouverte ; avec, l'utilisateur confirme sa 2FA. */
+const SECOND_FACTOR_PATHS = ['/two-factor/verify-totp', '/two-factor/verify-backup-code'];
+const isSignIn = (path: string, sessionUserId: string | undefined) =>
   SIGN_IN_PATHS.some((prefix) =>
     prefix.endsWith('/') ? path.startsWith(prefix) : path === prefix,
-  );
+  ) ||
+  (SECOND_FACTOR_PATHS.includes(path) && !sessionUserId);
 
 const field = (value: unknown, key: string): unknown =>
   typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
@@ -71,10 +76,10 @@ const field = (value: unknown, key: string): unknown =>
  * survivent pas en donnée personnelle à l'effacement d'une personne.
  */
 export function identityAuditEntries(request: AuditedRequest): IdentityAuditEntry[] {
-  const { path, sessionUserId: actorId, newSession, returned } = request;
+  const { path, sessionUserId: actorId, newSession, returned, body } = request;
   const entries: IdentityAuditEntry[] = [];
 
-  if (newSession?.activeOrganizationId && isSignIn(path)) {
+  if (newSession?.activeOrganizationId && isSignIn(path, actorId)) {
     entries.push({
       tenantId: newSession.activeOrganizationId,
       actorId: newSession.userId,
@@ -119,6 +124,25 @@ export function identityAuditEntries(request: AuditedRequest): IdentityAuditEntr
     case '/organization/remove-member':
       member(field(returned, 'member'), IDENTITY_AUDIT_ACTIONS.memberRemoved);
       break;
+    case '/organization/create':
+    case '/organization/update': {
+      // Création : seule une exigence posée d'emblée est un réglage à tracer.
+      const requireTwoFactor =
+        path === '/organization/create'
+          ? field(returned, 'requireTwoFactor') === true || undefined
+          : field(field(body, 'data'), 'requireTwoFactor');
+      const id = field(returned, 'id');
+      if (typeof requireTwoFactor === 'boolean' && typeof id === 'string') {
+        entries.push({
+          tenantId: id,
+          actorId,
+          action: IDENTITY_AUDIT_ACTIONS.twoFactorRequirementChanged,
+          resource: { type: 'organization', id },
+          details: { required: field(returned, 'requireTwoFactor') === true },
+        });
+      }
+      break;
+    }
     case '/organization/update-member-role':
       member(returned, IDENTITY_AUDIT_ACTIONS.memberRoleChanged);
       break;

@@ -13,6 +13,12 @@ export interface FeatureFlagDefinition {
  * fonctionnalité déployée partout, on supprime le flag et les branches mortes.
  */
 export const FEATURE_FLAGS = {
+  'account.two-factor': {
+    description:
+      'Page Sécurité du compte : vérification en deux étapes et son exigence par l’organisation. La connexion en deux étapes d’un compte qui l’a activée ne dépend pas du flag.',
+    default: false,
+    client: true,
+  },
   'audit.log': {
     description:
       'Le staff consulte le journal d’audit du tenant (route et page). L’écriture ne dépend pas du flag.',

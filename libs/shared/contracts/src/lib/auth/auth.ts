@@ -23,6 +23,28 @@ export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchem
 export const resetPasswordSchema = z.object({ password });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
+/** Réponse de la connexion : `twoFactorRedirect` quand le mot de passe ne suffit pas. */
+export const signInResultSchema = z.object({ twoFactorRedirect: z.boolean().optional() });
+
+/** Code de l'application d'authentification (TOTP, 6 chiffres) ou code de secours. */
+export const totpCodeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/),
+});
+export const backupCodeSchema = z.object({ code: z.string().trim().min(1).max(64) });
+
+/** Activation de la 2FA : secret à scanner (URI `otpauth://`) et codes de secours, montrés une fois. */
+export const twoFactorSetupSchema = z.object({
+  totpURI: z.string(),
+  backupCodes: z.array(z.string()),
+});
+export type TwoFactorSetup = z.infer<typeof twoFactorSetupSchema>;
+
+/** Mot de passe redemandé avant une action sensible (activer, désactiver la 2FA, nouveaux codes). */
+export const confirmPasswordSchema = z.object({ password: z.string().min(1) });
+
 export const createOrganizationSchema = z.object({ name: z.string().trim().min(1).max(100) });
 export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>;
 
@@ -31,6 +53,7 @@ export const authUserSchema = z.object({
   name: z.string(),
   email: z.string(),
   emailVerified: z.boolean(),
+  twoFactorEnabled: z.boolean().nullish(),
 });
 export type AuthUser = z.infer<typeof authUserSchema>;
 
@@ -43,7 +66,13 @@ export const authSessionSchema = z
   .nullable();
 export type AuthSession = z.infer<typeof authSessionSchema>;
 
-export const organizationSchema = z.object({ id: z.string(), name: z.string(), slug: z.string() });
+export const organizationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  /** Sans 2FA, un membre n'a pas accès à ce tenant (ADR 0017). */
+  requireTwoFactor: z.boolean().nullish(),
+});
 export type Organization = z.infer<typeof organizationSchema>;
 
 export const invitationSchema = z.object({

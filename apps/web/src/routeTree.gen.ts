@@ -16,6 +16,7 @@ import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oubl
 import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
+import { Route as AuthenticatedSecuriteRouteImport } from './routes/_authenticated/securite'
 import { Route as InvitationsInvitationIdRouteImport } from './routes/invitations.$invitationId'
 import { Route as OrganisationsNouvelleRouteImport } from './routes/organisations.nouvelle'
 import { Route as AuthenticatedboutiqueBoutiqueRouteImport } from './routes/_authenticated/(boutique)/boutique'
@@ -55,6 +56,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedJournalRoute = AuthenticatedJournalRouteImport.update({
   id: '/journal',
   path: '/journal',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSecuriteRoute = AuthenticatedSecuriteRouteImport.update({
+  id: '/securite',
+  path: '/securite',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const InvitationsInvitationIdRoute = InvitationsInvitationIdRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/journal': typeof AuthenticatedJournalRoute
+  '/securite': typeof AuthenticatedSecuriteRoute
   '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
   '/organisations/nouvelle': typeof OrganisationsNouvelleRoute
   '/boutique': typeof AuthenticatedboutiqueBoutiqueRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/journal': typeof AuthenticatedJournalRoute
+  '/securite': typeof AuthenticatedSecuriteRoute
   '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
   '/organisations/nouvelle': typeof OrganisationsNouvelleRoute
   '/': typeof AuthenticatedIndexRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
+  '/_authenticated/securite': typeof AuthenticatedSecuriteRoute
   '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
   '/organisations/nouvelle': typeof OrganisationsNouvelleRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
     | '/journal'
+    | '/securite'
     | '/invitations/$invitationId'
     | '/organisations/nouvelle'
     | '/boutique'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
     | '/journal'
+    | '/securite'
     | '/invitations/$invitationId'
     | '/organisations/nouvelle'
     | '/'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
     | '/_authenticated/journal'
+    | '/_authenticated/securite'
     | '/invitations/$invitationId'
     | '/organisations/nouvelle'
     | '/_authenticated/'
@@ -243,6 +255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJournalRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/securite': {
+      id: '/_authenticated/securite'
+      path: '/securite'
+      fullPath: '/securite'
+      preLoaderRoute: typeof AuthenticatedSecuriteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/invitations/$invitationId': {
       id: '/invitations/$invitationId'
       path: '/invitations/$invitationId'
@@ -290,6 +309,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
+  AuthenticatedSecuriteRoute: typeof AuthenticatedSecuriteRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedboutiqueBoutiqueRoute: typeof AuthenticatedboutiqueBoutiqueRoute
   AuthenticatedboutiquePanierRoute: typeof AuthenticatedboutiquePanierRoute
@@ -299,6 +319,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
+  AuthenticatedSecuriteRoute: AuthenticatedSecuriteRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedboutiqueBoutiqueRoute: AuthenticatedboutiqueBoutiqueRoute,
   AuthenticatedboutiquePanierRoute: AuthenticatedboutiquePanierRoute,
