@@ -98,6 +98,6 @@ Côté front, `VITE_DEV_TOKEN` fait de même : l'app appelle l'API avec ce token
 
 ## Limites connues
 
-- **Révocation** : un token reste valable jusqu'à 15 minutes après le retrait d'un membre ou la fin de sa session. Pour une coupure immédiate, il faudrait une liste de révocation consultée par l'API, que le boilerplate n'a pas.
+- **Révocation** : le retrait d'un membre, son départ, un changement de rôle ou la suppression de l'organisation sont inscrits dans une liste de révocation que l'API consulte à chaque requête : le token émis avant est refusé aussitôt ([ADR 0016](adr/0016-revocation-des-acces.md)). La fin d'une session (déconnexion, mot de passe changé) n'y est pas : son token reste valable jusqu'à 15 minutes.
 - **Un tenant par token** : un utilisateur membre de plusieurs organisations agit dans une seule à la fois, celle de la session.
 - **Rate limiting de Better Auth inactif hors production** : en dev, rien ne limite les tentatives de connexion.

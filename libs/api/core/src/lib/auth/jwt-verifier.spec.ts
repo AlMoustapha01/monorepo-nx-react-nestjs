@@ -26,6 +26,13 @@ describe('JwtVerifier with a secret (dev, tests)', () => {
     });
   });
 
+  it('gives the issue date of the token, to check it against the revocations', async () => {
+    const before = Math.floor(Date.now() / 1000) * 1000;
+    const { issuedAt } = await verifier.authenticate(await signTestToken(principal));
+    expect(issuedAt?.getTime()).toBeGreaterThanOrEqual(before);
+    expect(issuedAt?.getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
   it('keeps known roles and ignores the others', async () => {
     const token = await signTestToken({
       ...principal,

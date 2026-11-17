@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 import { RequestContext } from '../context/request-context';
 import { CoreError } from '../errors/app-error';
+import { AccessRevocations } from './access-revocations';
 import { JwtVerifier } from './jwt-verifier';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
@@ -13,6 +14,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly verifier: JwtVerifier,
+    private readonly revocations: AccessRevocations,
     private readonly context: RequestContext,
     private readonly logger: PinoLogger,
   ) {}
@@ -32,8 +34,16 @@ export class AuthGuard implements CanActivate {
       throw new CoreError('UNAUTHENTICATED', 'Missing bearer token');
     }
 
-    const principal = await this.verifier.verify(token);
+    const { principal, issuedAt } = await this.verifier.authenticate(token);
     this.context.setPrincipal(principal);
+    // Après le principal : la liste se lit au nom de son tenant (RLS).
+    if (await this.revocations.isRevoked(principal, issuedAt)) {
+      this.logger.info(
+        { tenantId: principal.tenantId, userId: principal.userId },
+        'Revoked access token refused',
+      );
+      throw new CoreError('UNAUTHENTICATED', 'Invalid or expired access token');
+    }
     this.logger.assign({ tenantId: principal.tenantId, userId: principal.userId });
     return true;
   }

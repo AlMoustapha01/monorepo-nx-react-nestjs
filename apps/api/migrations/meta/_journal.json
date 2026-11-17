@@ -71,6 +71,13 @@
       "when": 1794906009260,
       "tag": "0009_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794907615586,
+      "tag": "0010_access_revocations",
+      "breakpoints": true
     }
   ]
 }
