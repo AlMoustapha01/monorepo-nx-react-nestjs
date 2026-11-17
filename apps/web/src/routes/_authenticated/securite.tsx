@@ -3,16 +3,21 @@ import { SecurityPage } from '@nx-react-nestjs/web-auth';
 
 import { ErrorZone } from '../../components/error-zone';
 // option:feature-flags:start
-import { requireFeature } from '../../feature-flags';
+import { requireFeature, useFeatureFlag } from '../../feature-flags';
 // option:feature-flags:end
 import { reloadForNewTenant } from '../../session';
 
 function Security() {
   const context = Route.useRouteContext();
+  let passkeys = true;
+  // option:feature-flags:start
+  passkeys = useFeatureFlag('account.passkeys');
+  // option:feature-flags:end
   return (
     <ErrorZone>
       <SecurityPage
         auth={context.session.auth}
+        passkeys={passkeys}
         // Accès du token changés (2FA, exigence de l'organisation) : nouveau token, données rechargées.
         onAccessChanged={() => reloadForNewTenant(context)}
       />

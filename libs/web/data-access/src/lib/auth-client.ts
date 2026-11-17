@@ -5,6 +5,8 @@ import {
   invitationSchema,
   organizationSchema,
   type AuthSession,
+  type Passkey,
+  passkeySchema,
   type CreateOrganizationInput,
   type Invitation,
   type Organization,
@@ -18,12 +20,15 @@ import {
 } from '@nx-react-nestjs/contracts';
 import { z } from 'zod';
 import { ApiError } from './api-error';
+import { browserWebAuthn, type WebAuthn } from './web-authn';
 
 export interface AuthClientOptions {
   /** URL du service d'identité, sans `/api/auth` (ex. `http://localhost:3100`). */
   baseUrl: string;
   /** Délai maximal d'une requête, 10 000 ms par défaut. */
   timeoutMs?: number;
+  /** Cérémonies des passkeys ; celles du navigateur par défaut. */
+  webAuthn?: WebAuthn;
 }
 
 /**
@@ -40,6 +45,19 @@ export interface AuthClient {
   verifySecondFactor(code: string, options?: { backupCode?: boolean }): Promise<void>;
   /** Commence l'activation : la 2FA n'est active qu'après un premier code (`confirmTwoFactor`). */
   enableTwoFactor(password: string): Promise<TwoFactorSetup>;
+  /** Le navigateur sait utiliser une passkey. */
+  passkeysSupported(): boolean;
+  passkeyAutofillSupported(): Promise<boolean>;
+  /**
+   * Connexion par passkey. `autofill` : la passkey se choisit dans les suggestions du champ email ; la promesse
+   * attend ce choix. Annulée ou abandonnée : `ApiError` de code `PASSKEY_CANCELLED`.
+   */
+  signInWithPasskey(options?: { autofill?: boolean }): Promise<void>;
+  /** Abandonne une connexion par passkey en attente (autofill), quand la page la quitte. */
+  cancelPasskey(): void;
+  registerPasskey(name?: string): Promise<void>;
+  listPasskeys(signal?: AbortSignal): Promise<Passkey[]>;
+  deletePasskey(id: string): Promise<void>;
   confirmTwoFactor(code: string): Promise<void>;
   disableTwoFactor(password: string): Promise<void>;
   /** Nouveaux codes de secours ; les anciens ne valent plus. */
@@ -74,6 +92,29 @@ const memberRoleSchema = z.object({ role: z.string() });
 export function createAuthClient(options: AuthClientOptions): AuthClient {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const base = `${options.baseUrl.replace(/\/+$/, '')}/api/auth`;
+  const webAuthn = options.webAuthn ?? browserWebAuthn;
+
+  /** Cérémonie du navigateur ; un refus de l'utilisateur ou une cérémonie remplacée n'est pas une panne. */
+  async function ceremony(run: () => Promise<unknown>): Promise<unknown> {
+    try {
+      return await run();
+    } catch (error) {
+      // DOMException n'hérite pas d'Error partout : on lit son nom.
+      const name =
+        typeof error === 'object' && error !== null && 'name' in error ? String(error.name) : '';
+      const cancelled = name === 'NotAllowedError' || name === 'AbortError';
+      throw new ApiError({
+        status: 0,
+        code: cancelled ? 'PASSKEY_CANCELLED' : 'PASSKEY_FAILED',
+        title: cancelled ? 'Passkey cancelled' : 'Passkey failed',
+        detail:
+          typeof error === 'object' && error !== null && 'message' in error
+            ? String(error.message)
+            : 'The browser refused the passkey.',
+        cause: error,
+      });
+    }
+  }
 
   async function call<T>(
     path: string,
@@ -138,6 +179,26 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
     verifySecondFactor: async (code, { backupCode = false } = {}) => {
       const path = backupCode ? '/two-factor/verify-backup-code' : '/two-factor/verify-totp';
       await call(path, ignored, { body: { code } });
+    },
+    passkeysSupported: () => webAuthn.supported(),
+    passkeyAutofillSupported: () => webAuthn.autofillSupported(),
+    signInWithPasskey: async ({ autofill } = {}) => {
+      const challenge = await call('/passkey/generate-authenticate-options', z.unknown());
+      const response = await ceremony(() => webAuthn.authenticate(challenge, autofill));
+      await call('/passkey/verify-authentication', ignored, { body: { response } });
+    },
+    cancelPasskey: () => webAuthn.cancel(),
+    registerPasskey: async (name) => {
+      const challenge = await call('/passkey/generate-register-options', z.unknown());
+      const response = await ceremony(() => webAuthn.register(challenge));
+      await call('/passkey/verify-registration', ignored, {
+        body: { response, ...(name && { name }) },
+      });
+    },
+    listPasskeys: (signal) =>
+      call('/passkey/list-user-passkeys', z.array(passkeySchema), { signal }),
+    deletePasskey: async (id) => {
+      await call('/passkey/delete-passkey', ignored, { body: { id } });
     },
     enableTwoFactor: (password) =>
       call('/two-factor/enable', twoFactorSetupSchema, { body: { password } }),

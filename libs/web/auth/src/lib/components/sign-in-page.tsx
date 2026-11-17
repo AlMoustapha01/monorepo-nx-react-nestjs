@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -36,6 +36,48 @@ export function SignInPage({
     defaultValues: { email: '', password: '' },
   });
   const { errors, isSubmitting } = form.formState;
+  const [passkeyPending, setPasskeyPending] = useState(false);
+  // Fenêtre fermée par l'utilisateur, ou cérémonie remplacée : rien à signaler.
+  const passkeyFailed = (error: unknown) => {
+    if (error instanceof ApiError && error.code === 'PASSKEY_CANCELLED') return;
+    form.setError('root', { message: errorMessage(error) });
+  };
+  const autofillSettled = useEffectEvent(async (error?: unknown) => {
+    if (error === undefined) await onSignedIn();
+    else passkeyFailed(error);
+  });
+
+  // Passkeys proposées dans les suggestions du champ email, si le navigateur sait le faire. La
+  // cérémonie attend le choix de l'utilisateur : elle est abandonnée quand le formulaire disparaît.
+  useEffect(() => {
+    if (secondFactor) return;
+    let active = true;
+    void (async () => {
+      if (!(await auth.passkeyAutofillSupported()) || !active) return;
+      try {
+        await auth.signInWithPasskey({ autofill: true });
+        if (active) await autofillSettled();
+      } catch (error) {
+        if (active) await autofillSettled(error);
+      }
+    })();
+    return () => {
+      active = false;
+      auth.cancelPasskey();
+    };
+  }, [auth, secondFactor]);
+
+  const signInWithPasskey = async () => {
+    setPasskeyPending(true);
+    try {
+      await auth.signInWithPasskey();
+      await onSignedIn();
+    } catch (error) {
+      passkeyFailed(error);
+    } finally {
+      setPasskeyPending(false);
+    }
+  };
 
   const submit = form.handleSubmit(async (input) => {
     setVerificationSent(false);
@@ -99,7 +141,8 @@ export function SignInPage({
           <FormField
             label={t`Adresse email`}
             type="email"
-            autoComplete="email"
+            // `webauthn` : le navigateur y propose aussi les passkeys du compte.
+            autoComplete="username webauthn"
             error={errors.email && t`Saisissez une adresse email valide.`}
             {...form.register('email')}
           />
@@ -124,6 +167,16 @@ export function SignInPage({
           <Button type="submit" disabled={isSubmitting}>
             <Trans>Se connecter</Trans>
           </Button>
+          {auth.passkeysSupported() && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={passkeyPending}
+              onClick={() => void signInWithPasskey()}
+            >
+              <Trans>Se connecter avec une passkey</Trans>
+            </Button>
+          )}
           <Link to="/mot-de-passe-oublie" className={buttonVariants({ variant: 'link' })}>
             <Trans>Mot de passe oublié ?</Trans>
           </Link>

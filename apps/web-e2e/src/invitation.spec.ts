@@ -46,7 +46,7 @@ test('an invitation addressed to someone else is refused', async ({ page }) => {
   await page.goto(invitation);
   await page.getByLabel('Adresse email').fill(stranger.email);
   await page.getByLabel('Mot de passe').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByRole('button', { name: 'Se connecter', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText(
     'Cette invitation est destinée à une autre adresse email.',
   );

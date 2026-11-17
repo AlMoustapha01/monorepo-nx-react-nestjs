@@ -6,15 +6,19 @@ import { API, AUTH, fakeToken, renderSignedIn, setupAppTest, user } from './test
 const server = setupAppTest();
 
 /** Service d'auth simulé : organisation active « Atelier », qui exige ou non la 2FA. */
-function serveAccount({ requireTwoFactor = false, twoFactorEnabled = false } = {}) {
+function serveAccount({
+  requireTwoFactor = false,
+  twoFactorEnabled = false,
+  passkeySignIn = false,
+} = {}) {
   const exp = Math.floor(Date.now() / 1000) + 900;
   // Comme le vrai service : sans la 2FA exigée, le token n'a pas de tenant.
-  const tenant = requireTwoFactor && !twoFactorEnabled ? undefined : 'o1';
+  const tenant = requireTwoFactor && !twoFactorEnabled && !passkeySignIn ? undefined : 'o1';
   server.use(
     http.get(`${AUTH}/get-session`, () =>
       HttpResponse.json({
         user: { ...user, twoFactorEnabled },
-        session: { activeOrganizationId: 'o1' },
+        session: { activeOrganizationId: 'o1', passkeySignIn },
       }),
     ),
     http.get(`${AUTH}/organization/list`, () =>
@@ -77,4 +81,27 @@ describe('two-factor authentication', () => {
     // Sans tenant dans son token, l'API refuserait tout : elle n'est pas appelée.
     expect(apiCalls).toBe(0);
   });
+
+  it('lets a member signed in with a passkey into an organization that requires 2FA', async () => {
+    serveAccount({ requireTwoFactor: true, passkeySignIn: true });
+    const router = renderSignedIn('/');
+
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  // option:feature-flags:start
+  it('adds the passkeys to the security page with account.passkeys', async () => {
+    serveAccount();
+    server.use(
+      http.get(`${API}/feature-flags`, () =>
+        HttpResponse.json({ flags: { 'account.two-factor': true, 'account.passkeys': true } }),
+      ),
+      http.get(`${AUTH}/passkey/list-user-passkeys`, () => HttpResponse.json([])),
+    );
+    renderSignedIn('/securite');
+
+    expect(await screen.findByRole('heading', { name: 'Passkeys' })).toBeTruthy();
+  });
+  // option:feature-flags:end
 });
