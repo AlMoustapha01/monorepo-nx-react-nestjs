@@ -10,14 +10,13 @@ import {
 import { admin, jwt, organization, twoFactor } from 'better-auth/plugins';
 import { Pool } from 'pg';
 import type { Logger } from 'pino';
-import { z } from 'zod';
+import { accountSearchSchema, OPERATOR_ROLE } from '@nx-react-nestjs/contracts';
 import { createAccessRevoker } from './access-revocation';
 import { createAuditWriter, identityAuditEntries, impersonationAuditEntries } from './audit';
 import { apiClaims, PASSKEY_SIGN_IN_PATH } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
 import { searchAccounts } from './operator-search';
-import { OPERATOR_ROLE } from './operators-command';
 // option:sentry:start
 import { reportError } from './report-error';
 // option:sentry:end
@@ -511,7 +510,7 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
             '/operator/search',
             {
               method: 'GET',
-              query: z.object({ query: z.string().trim().min(2).max(100) }),
+              query: accountSearchSchema,
               use: [sessionMiddleware],
             },
             async (ctx) => {

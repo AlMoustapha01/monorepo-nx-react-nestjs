@@ -6,6 +6,7 @@ export const authKeys = {
   session: () => [...authKeys.all, 'session'] as const,
   organizations: () => [...authKeys.all, 'organizations'] as const,
   invitation: (id: string) => [...authKeys.all, 'invitation', id] as const,
+  accountSearch: (query: string) => [...authKeys.all, 'account-search', query] as const,
 };
 
 /** Session du service d'identité ; relue à chaque navigation au-delà d'une minute. */

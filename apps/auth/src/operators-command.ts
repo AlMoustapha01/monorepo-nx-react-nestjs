@@ -1,7 +1,5 @@
+import { OPERATOR_ROLE } from '@nx-react-nestjs/contracts';
 import type { Pool } from 'pg';
-
-/** Rôle Better Auth (plugin admin) des opérateurs de la plateforme : back-office et impersonation (ADR 0019). */
-export const OPERATOR_ROLE = 'admin';
 
 const USAGE = 'Usage: operators list | grant <email> | revoke <email>';
 

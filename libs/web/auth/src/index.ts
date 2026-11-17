@@ -1,7 +1,9 @@
 export { AcceptInvitationPage } from './lib/components/accept-invitation-page';
 export { AccountMenu } from './lib/components/account-menu';
+export { BackOfficePage } from './lib/components/back-office-page';
 export { CreateOrganizationPage } from './lib/components/create-organization-page';
 export { ForgotPasswordPage } from './lib/components/forgot-password-page';
+export { ImpersonationBanner } from './lib/components/impersonation-banner';
 export { ResetPasswordPage } from './lib/components/reset-password-page';
 export { SecurityPage } from './lib/components/security-page';
 export { SignInPage } from './lib/components/sign-in-page';

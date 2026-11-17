@@ -14,6 +14,7 @@ import { Button, Heading, Stack, Text, buttonVariants } from '@nx-react-nestjs/w
 
 import { AppNavigation } from '../components/app-navigation';
 import { LocaleSwitcher } from '../components/locale-switcher';
+import { SupportBanner } from '../components/support-banner';
 import { reportError } from '../report-error';
 import { AUTHENTICATED_ROUTE, type SessionContext } from '../session';
 
@@ -28,6 +29,7 @@ function RootLayout() {
   const authenticated = useMatch({ from: AUTHENTICATED_ROUTE, shouldThrow: false });
   return (
     <>
+      <SupportBanner />
       <header className="flex items-center justify-between gap-4 p-4">
         {authenticated ? <AppNavigation /> : <span />}
         <LocaleSwitcher />

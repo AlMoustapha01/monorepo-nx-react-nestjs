@@ -14,6 +14,7 @@ import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedSecuriteRouteImport } from './routes/_authenticated/securite'
@@ -46,6 +47,11 @@ const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
 const ReinitialiserMotDePasseRoute = ReinitialiserMotDePasseRouteImport.update({
   id: '/reinitialiser-mot-de-passe',
   path: '/reinitialiser-mot-de-passe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
+  '/support': typeof SupportRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/securite': typeof AuthenticatedSecuriteRoute
   '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
+  '/support': typeof SupportRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/securite': typeof AuthenticatedSecuriteRoute
   '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
+  '/support': typeof SupportRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
   '/_authenticated/securite': typeof AuthenticatedSecuriteRoute
   '/invitations/$invitationId': typeof InvitationsInvitationIdRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
+    | '/support'
     | '/journal'
     | '/securite'
     | '/invitations/$invitationId'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
+    | '/support'
     | '/journal'
     | '/securite'
     | '/invitations/$invitationId'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/reinitialiser-mot-de-passe'
+    | '/support'
     | '/_authenticated/journal'
     | '/_authenticated/securite'
     | '/invitations/$invitationId'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
+  SupportRoute: typeof SupportRoute
   InvitationsInvitationIdRoute: typeof InvitationsInvitationIdRoute
   OrganisationsNouvelleRoute: typeof OrganisationsNouvelleRoute
 }
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/reinitialiser-mot-de-passe'
       fullPath: '/reinitialiser-mot-de-passe'
       preLoaderRoute: typeof ReinitialiserMotDePasseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
+  SupportRoute: SupportRoute,
   InvitationsInvitationIdRoute: InvitationsInvitationIdRoute,
   OrganisationsNouvelleRoute: OrganisationsNouvelleRoute,
 }

@@ -157,6 +157,60 @@ describe('createAuthClient', () => {
     expect(update).toEqual({ organizationId: 'o1', data: { requireTwoFactor: true } });
   });
 
+  it('searches accounts, impersonates one, then stops (back-office, ADR 0019)', async () => {
+    const calls: string[] = [];
+    server.use(
+      http.get(`${AUTH}/operator/search`, ({ request }) => {
+        calls.push(`search ${new URL(request.url).searchParams.get('query')}`);
+        return HttpResponse.json({
+          users: [
+            {
+              id: 'u2',
+              email: 'bob@shop.test',
+              name: 'Bob',
+              organizations: [{ id: 'o1', name: 'Atelier', role: 'owner' }],
+            },
+          ],
+        });
+      }),
+      http.post(`${AUTH}/admin/impersonate-user`, async ({ request }) => {
+        calls.push(`impersonate ${JSON.stringify(await request.json())}`);
+        return HttpResponse.json({ session: {}, user: {} });
+      }),
+      http.post(`${AUTH}/admin/stop-impersonating`, () => {
+        calls.push('stop');
+        return HttpResponse.json({ session: {}, user: {} });
+      }),
+    );
+    await expect(auth.searchAccounts('bob & co')).resolves.toEqual([
+      expect.objectContaining({ email: 'bob@shop.test', organizations: [expect.anything()] }),
+    ]);
+    await auth.impersonate('u2');
+    await auth.stopImpersonating();
+    expect(calls).toEqual(['search bob & co', 'impersonate {"userId":"u2"}', 'stop']);
+  });
+
+  it('reads the role and the impersonation of the session', async () => {
+    server.use(
+      http.get(`${AUTH}/get-session`, () =>
+        HttpResponse.json({
+          user: {
+            id: 'u2',
+            name: 'Bob',
+            email: 'bob@shop.test',
+            emailVerified: true,
+            role: 'user',
+          },
+          session: { activeOrganizationId: 'o1', impersonatedBy: 'u1' },
+        }),
+      ),
+    );
+    await expect(auth.getSession()).resolves.toMatchObject({
+      user: { role: 'user' },
+      session: { impersonatedBy: 'u1' },
+    });
+  });
+
   it('returns undefined as the access token without a session', async () => {
     server.use(http.get(`${AUTH}/token`, () => new HttpResponse(null, { status: 401 })));
     await expect(auth.getAccessToken()).resolves.toBeUndefined();

@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import type { AuditEntryResponse } from '@nx-react-nestjs/contracts';
+import { type AuditEntryResponse, IDENTITY_AUDIT_ACTIONS } from '@nx-react-nestjs/contracts';
 import { ApiError, type ApiClient, type AuthClient } from '@nx-react-nestjs/web-data-access';
 import { Button, Card, CardContent, Heading, Label, Stack, Text } from '@nx-react-nestjs/web-ui';
 
@@ -14,6 +14,12 @@ import { formatDateTime } from '../data/format-date';
 
 export type { AuditFilters };
 
+/** Actions d'un opérateur de la plateforme, qui n'est membre d'aucun tenant (ADR 0019). */
+const SUPPORT_ACTIONS: readonly string[] = [
+  IDENTITY_AUDIT_ACTIONS.impersonationStarted,
+  IDENTITY_AUDIT_ACTIONS.impersonationStopped,
+];
+
 /** Libellés des actions connues ; une autre s'affiche telle qu'enregistrée. */
 function useActionLabels(): Record<string, string> {
   const { t } = useLingui();
@@ -24,6 +30,8 @@ function useActionLabels(): Record<string, string> {
     'identity.member-removed': t`Membre retiré`,
     'identity.member-role-changed': t`Rôle modifié`,
     'identity.two-factor-requirement-changed': t`Exigence de la 2FA modifiée`,
+    'identity.impersonation-started': t`Le support est entré dans le compte`,
+    'identity.impersonation-stopped': t`Le support a quitté le compte`,
     // example:start
     'orders.order-placed': t`Commande passée`,
     'orders.order-cancelled': t`Commande annulée`,
@@ -59,13 +67,22 @@ function EntryRow({ entry, label, actorName, onActor }: EntryRowProps) {
             )}
           </Stack>
           <Stack gap={1} align="end">
-            {entry.actorId ? (
+            {entry.actorId && !actorName && SUPPORT_ACTIONS.includes(entry.action) ? (
+              <Text size="sm">
+                <Trans>Support de la plateforme</Trans>
+              </Text>
+            ) : entry.actorId ? (
               <Button variant="link" size="sm" onClick={() => onActor(entry.actorId ?? '')}>
                 {actorName ?? <Trans>Ancien membre ({entry.actorId.slice(0, 8)})</Trans>}
               </Button>
             ) : (
               <Text size="sm">
                 <Trans>Système</Trans>
+              </Text>
+            )}
+            {entry.impersonatorId && (
+              <Text as="span" size="sm" tone="muted">
+                <Trans>via le support de la plateforme</Trans>
               </Text>
             )}
             <Text as="span" size="sm" tone="muted">
