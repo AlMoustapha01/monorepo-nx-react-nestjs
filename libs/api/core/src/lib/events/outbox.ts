@@ -52,6 +52,7 @@ export class DrizzleOutbox extends Outbox {
       type: definition.type,
       tenantId: this.context.tenantId,
       actorId: this.context.userId,
+      ...(this.context.impersonatorId && { impersonatorId: this.context.impersonatorId }),
       occurredAt: occurredAt.toISOString(),
       payload: definition.schema.parse(payload),
     };

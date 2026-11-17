@@ -44,6 +44,17 @@ describe('apiClaims', () => {
     );
   });
 
+  it('names the operator behind an impersonated session, which counts as 2FA', () => {
+    const operatorId = '0e8f2d5e-1c1e-4a54-b1d4-8c2f9a7b6d01';
+    const membership = { organizationId, role: 'member', requireTwoFactor: true };
+    expect(apiClaims({ user, membership, session: { impersonatedBy: operatorId } })).toEqual({
+      tenant_id: organizationId,
+      roles: [],
+      email: user.email,
+      act: { sub: operatorId },
+    });
+  });
+
   it('omits the tenant without an active organization', () => {
     expect(apiClaims({ user })).not.toHaveProperty('tenant_id');
   });

@@ -60,6 +60,7 @@ export function signTestToken(principal: Principal, expiresIn = '5m'): Promise<s
     tenant_id: principal.tenantId,
     email: principal.email,
     roles: principal.roles,
+    ...(principal.impersonatorId && { act: { sub: principal.impersonatorId } }),
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(principal.userId)

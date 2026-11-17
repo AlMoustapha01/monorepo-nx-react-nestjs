@@ -43,6 +43,7 @@ function toResponse(entry: AuditEntry): AuditEntryResponse {
   return {
     id: entry.id,
     actorId: entry.actorId,
+    impersonatorId: entry.impersonatorId,
     action: entry.action,
     resource: entry.resource,
     details: entry.details,

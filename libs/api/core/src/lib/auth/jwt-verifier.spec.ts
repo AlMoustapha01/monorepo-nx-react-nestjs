@@ -26,6 +26,24 @@ describe('JwtVerifier with a secret (dev, tests)', () => {
     });
   });
 
+  it('names the operator behind an impersonated token (act claim, RFC 8693)', async () => {
+    const impersonatorId = randomUUID();
+    await expect(
+      verifier.verify(await signTestToken({ ...principal, impersonatorId })),
+    ).resolves.toEqual({ ...principal, roles: [], impersonatorId });
+  });
+
+  it('rejects an act claim that does not name a user', async () => {
+    const token = await new SignJWT({ tenant_id: principal.tenantId, act: { sub: 'support' } })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject(principal.userId)
+      .setIssuer(TEST_AUTH.issuer)
+      .setAudience(TEST_AUTH.audience)
+      .setExpirationTime('5m')
+      .sign(new TextEncoder().encode(TEST_AUTH.secret));
+    await expect(verifier.verify(token)).rejects.toBeInstanceOf(CoreError);
+  });
+
   it('gives the issue date of the token, to check it against the revocations', async () => {
     const before = Math.floor(Date.now() / 1000) * 1000;
     const { issuedAt } = await verifier.authenticate(await signTestToken(principal));

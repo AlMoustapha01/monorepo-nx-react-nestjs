@@ -238,7 +238,12 @@ export class IntegrationEventWorker implements OnApplicationBootstrap, BeforeApp
     }
 
     const run = () => handler.instance.handle({ ...event, payload: parsed.data });
-    await this.context.runAs({ tenantId: event.tenantId, userId: event.actorId }, () =>
+    const principal = {
+      tenantId: event.tenantId,
+      userId: event.actorId,
+      ...(event.impersonatorId && { impersonatorId: event.impersonatorId }),
+    };
+    await this.context.runAs(principal, () =>
       handler.transactional === false
         ? this.runOutsideTransaction(name, event, run)
         : this.runInTransaction(name, event, run),

@@ -15,6 +15,8 @@ const claimsSchema = z.object({
   tenantId: z.uuid(),
   email: z.email().optional(),
   roles: z.array(z.string()).default([]),
+  /** Acteur réel d'un token impersoné (RFC 8693) : un opérateur de la plateforme (ADR 0019). */
+  act: z.object({ sub: z.uuid() }).optional(),
 });
 
 /** Les rôles inconnus de l'application sont ignorés, jamais interprétés. */
@@ -100,17 +102,19 @@ export class JwtVerifier {
       tenantId: claimAt(payload, this.tenantClaim),
       email: payload['email'],
       roles: claimAt(payload, this.rolesClaim),
+      act: payload['act'],
     });
     if (!claims.success) {
       throw unauthenticated();
     }
-    const { sub, tenantId, email, roles } = claims.data;
+    const { sub, tenantId, email, roles, act } = claims.data;
     return {
       principal: {
         userId: sub,
         tenantId,
         ...(email && { email }),
         roles: roles.filter(isKnownRole),
+        ...(act && { impersonatorId: act.sub }),
       },
       issuedAt: typeof payload.iat === 'number' ? new Date(payload.iat * 1000) : undefined,
     };

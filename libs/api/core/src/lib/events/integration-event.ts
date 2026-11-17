@@ -12,6 +12,8 @@ export interface IntegrationEvent<
   readonly type: TDefinition['type'];
   readonly tenantId: string;
   readonly actorId: string;
+  /** Opérateur qui agissait pour l'auteur, s'il était impersoné (ADR 0019). */
+  readonly impersonatorId?: string;
   /** ISO 8601. */
   readonly occurredAt: string;
   readonly payload: IntegrationEventPayload<TDefinition>;

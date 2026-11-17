@@ -18,6 +18,7 @@ import { type Auth, createAuth, createPool } from '../src/auth';
 import { validateEnv } from '../src/env';
 import type { AuthEmail } from '../src/mailer';
 import { migrateAuthDatabase } from '../src/migrations';
+import { runOperatorsCommand } from '../src/operators-command';
 import { createRequestListener } from '../src/server';
 
 const APP_URL = 'http://localhost:4200';
@@ -179,6 +180,33 @@ describe('Authentication service', () => {
       { issuer: ISSUER, audience: AUDIENCE, algorithms: ['EdDSA'] },
     );
     return payload;
+  }
+
+  const PASSWORD = 'correct-horse-battery';
+
+  /** Active la 2FA d'un compte connecté : URI du TOTP, codes de secours et cookie à jour. */
+  async function enableTwoFactor(cookie: string) {
+    const enabled = await call('/api/auth/two-factor/enable', {
+      body: { password: PASSWORD },
+      cookie,
+    });
+    expect(enabled.response.status).toBe(200);
+    const { totpURI, backupCodes } = enabled.body as { totpURI: string; backupCodes: string[] };
+    const session = withCookies(cookie, enabled.cookie);
+    const confirmed = await call('/api/auth/two-factor/verify-totp', {
+      body: { code: totp(totpURI) },
+      cookie: session,
+    });
+    expect(confirmed.response.status).toBe(200);
+    return { totpURI, backupCodes, cookie: withCookies(session, confirmed.cookie) };
+  }
+
+  async function organizationOf(cookie: string, name: string): Promise<string> {
+    const organization = await call('/api/auth/organization/create', {
+      body: { name, slug: name },
+      cookie,
+    });
+    return (organization.body as { id: string }).id;
   }
 
   it('issues the creator of an organization a staff token verifiable with the JWKS', async () => {
@@ -353,25 +381,6 @@ describe('Authentication service', () => {
   });
 
   describe('two-factor authentication', () => {
-    const PASSWORD = 'correct-horse-battery';
-
-    /** Active la 2FA d'un compte connecté : URI du TOTP, codes de secours et cookie à jour. */
-    async function enableTwoFactor(cookie: string) {
-      const enabled = await call('/api/auth/two-factor/enable', {
-        body: { password: PASSWORD },
-        cookie,
-      });
-      expect(enabled.response.status).toBe(200);
-      const { totpURI, backupCodes } = enabled.body as { totpURI: string; backupCodes: string[] };
-      const session = withCookies(cookie, enabled.cookie);
-      const confirmed = await call('/api/auth/two-factor/verify-totp', {
-        body: { code: totp(totpURI) },
-        cookie: session,
-      });
-      expect(confirmed.response.status).toBe(200);
-      return { totpURI, backupCodes, cookie: withCookies(session, confirmed.cookie) };
-    }
-
     const signIns = async (tenantId: string) =>
       (
         await pool.query<{ details: { method: string } }>(
@@ -379,14 +388,6 @@ describe('Authentication service', () => {
           [tenantId],
         )
       ).rows.map((row) => row.details.method);
-
-    async function organizationOf(cookie: string, name: string): Promise<string> {
-      const organization = await call('/api/auth/organization/create', {
-        body: { name, slug: name },
-        cookie,
-      });
-      return (organization.body as { id: string }).id;
-    }
 
     it('asks for the code of the authenticator app after the password, then opens the session', async () => {
       const email = '2fa-totp@shop.test';
@@ -569,6 +570,157 @@ describe('Authentication service', () => {
           [tenantId, userId],
         )
       ).rows[0]?.revoked_at;
+  });
+
+  describe('back-office: operators and impersonation', () => {
+    const operatorsCommand = (...args: string[]) => runOperatorsCommand(pool, args);
+
+    /** Opérateur de la plateforme : compte vérifié, rôle accordé par la commande d'exploitation. */
+    async function operator(email: string, { twoFactor = true } = {}) {
+      let cookie = await verifiedSignUp(email);
+      expect(await operatorsCommand('grant', email)).toMatchObject({ ok: true });
+      if (twoFactor) cookie = (await enableTwoFactor(cookie)).cookie;
+      return { cookie, id: (await accessToken(cookie)).sub ?? '' };
+    }
+
+    const impersonations = async (tenantId: string) =>
+      (
+        await pool.query<{ actor_id: string; action: string; resource_id: string }>(
+          `select actor_id, action, resource_id from audit.entries
+           where tenant_id = $1 and action like 'identity.impersonation-%' order by occurred_at, id`,
+          [tenantId],
+        )
+      ).rows;
+
+    it('grants, lists and revokes the operator role from the command line', async () => {
+      await verifiedSignUp('ops-cli@shop.test');
+      expect(await operatorsCommand('grant', 'ops-cli@shop.test')).toEqual({
+        ok: true,
+        output: 'ops-cli@shop.test is now an operator',
+      });
+      expect((await operatorsCommand('list')).output).toContain('ops-cli@shop.test');
+      expect(await operatorsCommand('revoke', 'ops-cli@shop.test')).toMatchObject({ ok: true });
+      expect((await operatorsCommand('list')).output).not.toContain('ops-cli@shop.test');
+      expect(await operatorsCommand('grant', 'nobody@shop.test')).toEqual({
+        ok: false,
+        output: 'No account for nobody@shop.test',
+      });
+      expect(await operatorsCommand('promote')).toMatchObject({ ok: false });
+    });
+
+    it('lets an operator with 2FA see what a client sees, traced in the client organizations', async () => {
+      const clientCookie = await verifiedSignUp('impersonated@shop.test');
+      const tenantId = await organizationOf(clientCookie, 'impersonated');
+      const clientId = (await accessToken(clientCookie)).sub ?? '';
+      const ops = await operator('ops-impersonates@shop.test');
+
+      const started = await call('/api/auth/admin/impersonate-user', {
+        body: { userId: clientId },
+        cookie: ops.cookie,
+      });
+      expect(started.response.status).toBe(200);
+      const impersonating = withCookies(ops.cookie, started.cookie);
+      // Le token est celui du client, avec l'opérateur réel (RFC 8693) : l'API l'inscrit au journal.
+      expect(await accessToken(impersonating)).toMatchObject({
+        sub: clientId,
+        tenant_id: tenantId,
+        act: { sub: ops.id },
+      });
+
+      const stopped = await call('/api/auth/admin/stop-impersonating', {
+        body: {},
+        cookie: impersonating,
+      });
+      expect(stopped.response.status).toBe(200);
+      const back = withCookies(impersonating, stopped.cookie);
+      const token = await accessToken(back);
+      expect(token.sub).toBe(ops.id);
+      expect(token).not.toHaveProperty('act');
+
+      expect(await impersonations(tenantId)).toEqual([
+        { actor_id: ops.id, action: 'identity.impersonation-started', resource_id: clientId },
+        { actor_id: ops.id, action: 'identity.impersonation-stopped', resource_id: clientId },
+      ]);
+      // Les tokens émis pendant l'impersonation ne valent plus.
+      const { rows } = await pool.query(
+        'select 1 from access.revocations where tenant_id = $1 and user_id = $2',
+        [tenantId, clientId],
+      );
+      expect(rows).toHaveLength(1);
+    });
+
+    it('refuses impersonation to an operator without 2FA, and to anyone else', async () => {
+      const clientCookie = await verifiedSignUp('not-impersonated@shop.test');
+      const clientId = (await accessToken(clientCookie)).sub ?? '';
+      const ops = await operator('ops-without-2fa@shop.test', { twoFactor: false });
+
+      const refused = await call('/api/auth/admin/impersonate-user', {
+        body: { userId: clientId },
+        cookie: ops.cookie,
+      });
+      expect(refused.response.status).toBe(403);
+      expect(refused.body).toMatchObject({ code: 'OPERATOR_TWO_FACTOR_REQUIRED' });
+
+      const client = await enableTwoFactor(await verifiedSignUp('plain-client@shop.test'));
+      const notOperator = await call('/api/auth/admin/impersonate-user', {
+        body: { userId: clientId },
+        cookie: client.cookie,
+      });
+      expect(notOperator.response.status).toBe(403);
+    });
+
+    it('lets an operator impersonate a member of an organization that requires 2FA', async () => {
+      const ownerCookie = (await enableTwoFactor(await verifiedSignUp('ops-2fa-owner@shop.test')))
+        .cookie;
+      const tenantId = await organizationOf(ownerCookie, 'ops-2fa');
+      await call('/api/auth/organization/update', {
+        body: { organizationId: tenantId, data: { requireTwoFactor: true } },
+        cookie: ownerCookie,
+      });
+      const memberCookie = await verifiedSignUp('ops-2fa-member@shop.test');
+      const memberId = (await accessToken(memberCookie)).sub ?? '';
+      await auth.api.addMember({
+        body: { userId: memberId, role: 'member', organizationId: tenantId },
+      });
+      const ops = await operator('ops-2fa-required@shop.test');
+
+      const started = await call('/api/auth/admin/impersonate-user', {
+        body: { userId: memberId },
+        cookie: ops.cookie,
+      });
+      expect((await accessToken(withCookies(ops.cookie, started.cookie)))['tenant_id']).toBe(
+        tenantId,
+      );
+    });
+
+    it('finds accounts by email, name or organization, for operators only', async () => {
+      const clientCookie = await verifiedSignUp('searched@shop.test');
+      await organizationOf(clientCookie, 'searchable-shop');
+      const ops = await operator('ops-search@shop.test', { twoFactor: false });
+
+      for (const query of ['searched@', 'searchable']) {
+        const found = await call(`/api/auth/operator/search?query=${query}`, {
+          cookie: ops.cookie,
+        });
+        expect(found.response.status).toBe(200);
+        expect(found.body).toEqual({
+          users: [
+            {
+              id: expect.stringMatching(UUID),
+              email: 'searched@shop.test',
+              name: 'Ada',
+              organizations: [
+                { id: expect.stringMatching(UUID), name: 'searchable-shop', role: 'owner' },
+              ],
+            },
+          ],
+        });
+      }
+      const refused = await call('/api/auth/operator/search?query=searched', {
+        cookie: clientCookie,
+      });
+      expect(refused.response.status).toBe(403);
+    });
   });
 
   describe('passkeys', () => {

@@ -9,7 +9,7 @@ export interface ClaimsInput {
   /** Organisation active de la session, si l'utilisateur en est toujours membre. */
   membership?: { organizationId: string; role: string; requireTwoFactor?: boolean | null };
   /** Session pour laquelle le token est émis. */
-  session?: { passkeySignIn?: boolean | null };
+  session?: { passkeySignIn?: boolean | null; impersonatedBy?: string | null };
 }
 
 /**
@@ -24,7 +24,12 @@ export function apiClaims({
 }: ClaimsInput): Record<string, unknown> {
   // Organisation qui exige la 2FA, membre sans 2FA ni session ouverte par passkey : aucun accès à ce
   // tenant tant qu'il ne l'a pas activée.
-  const secondFactor = user.twoFactorEnabled === true || session?.passkeySignIn === true;
+  // Session impersonée : l'opérateur, qui a lui-même la 2FA, voit ce que voit le client (ADR 0019).
+  const impersonatedBy = session?.impersonatedBy ?? undefined;
+  const secondFactor =
+    user.twoFactorEnabled === true ||
+    session?.passkeySignIn === true ||
+    impersonatedBy !== undefined;
   const membership = active?.requireTwoFactor && !secondFactor ? undefined : active;
   // Better Auth stocke plusieurs rôles séparés par des virgules.
   const memberRoles = membership?.role.split(',').map((role) => role.trim()) ?? [];
@@ -33,5 +38,7 @@ export function apiClaims({
     roles: memberRoles.some((role) => STAFF_MEMBER_ROLES.has(role)) ? ['staff'] : [],
     // Un email non vérifié n'est pas une identité : l'API ne s'en sert pas.
     ...(user.emailVerified && { email: user.email }),
+    // Acteur réel (RFC 8693) : l'API inscrit ses actions au journal au nom de l'opérateur.
+    ...(impersonatedBy && { act: { sub: impersonatedBy } }),
   };
 }

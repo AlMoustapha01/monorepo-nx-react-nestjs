@@ -35,6 +35,7 @@ class RecordPing implements IntegrationEventHandler<typeof Pinged> {
   readonly received: {
     event: IntegrationEvent<typeof Pinged>;
     tenantInContext: string;
+    impersonatorInContext?: string | undefined;
     traceId?: string;
   }[] = [];
   failuresBeforeSuccess = 0;
@@ -49,6 +50,7 @@ class RecordPing implements IntegrationEventHandler<typeof Pinged> {
     this.received.push({
       event,
       tenantInContext: this.context.tenantId,
+      impersonatorInContext: this.context.impersonatorId,
       traceId: trace.getActiveSpan()?.spanContext().traceId,
     });
   }
@@ -152,6 +154,24 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
       id: expect.stringMatching(/^EVT-/),
     });
     expect(tenantInContext).toBe(principal.tenantId);
+  });
+
+  it('runs the handler on behalf of the operator who impersonated the author (ADR 0019)', async () => {
+    const impersonatorId = randomUUID();
+    await context.runAs({ ...principal, impersonatorId }, () =>
+      transactions.transaction(() => outbox.publish(Pinged, { n: 30 })),
+    );
+
+    await eventually(() => expect(recorder.numbers()).toContain(30));
+    const received = recorder.received.find((r) => r.event.payload.n === 30)!;
+    expect(received.event).toMatchObject({ actorId: principal.userId, impersonatorId });
+    expect(received.impersonatorInContext).toBe(impersonatorId);
+    // Sans impersonation, rien.
+    await publish(31);
+    await eventually(() => expect(recorder.numbers()).toContain(31));
+    expect(
+      recorder.received.find((r) => r.event.payload.n === 31)?.impersonatorInContext,
+    ).toBeUndefined();
   });
 
   it('runs the handler in the trace of the request that published the event', async () => {

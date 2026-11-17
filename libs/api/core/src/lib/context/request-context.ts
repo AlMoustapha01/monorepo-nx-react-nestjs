@@ -10,6 +10,11 @@ export interface Principal {
   email?: string;
   /** Absent ou vide : simple client. */
   roles?: readonly Role[];
+  /**
+   * Opérateur de la plateforme qui agit pour l'utilisateur (claim `act`, RFC 8693) : le journal d'audit l'inscrit
+   * à côté de l'utilisateur (ADR 0019).
+   */
+  impersonatorId?: string;
 }
 
 interface RequestContextStore extends ClsStore {
@@ -38,6 +43,11 @@ export class RequestContext {
 
   get userId(): string {
     return this.requirePrincipal().userId;
+  }
+
+  /** Opérateur qui agit pour l'utilisateur, s'il est impersoné. */
+  get impersonatorId(): string | undefined {
+    return this.principal?.impersonatorId;
   }
 
   hasRole(role: Role): boolean {

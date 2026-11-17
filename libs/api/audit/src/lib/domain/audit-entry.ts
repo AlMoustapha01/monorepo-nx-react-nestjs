@@ -12,6 +12,8 @@ export interface AuditEntryProps {
   tenantId: string;
   /** Null pour une action du système. */
   actorId: string | null;
+  /** Opérateur de la plateforme qui agissait pour l'acteur (impersonation, ADR 0019). */
+  impersonatorId?: string | null;
   action: string;
   resource: AuditResource | null;
   details: AuditDetails;
@@ -40,6 +42,7 @@ export class AuditEntry {
   static restore(props: AuditEntryProps): AuditEntry {
     return new AuditEntry({
       ...props,
+      impersonatorId: props.impersonatorId ?? null,
       resource: props.resource && { ...props.resource },
       details: { ...props.details },
     });
@@ -55,6 +58,10 @@ export class AuditEntry {
 
   get actorId(): string | null {
     return this.props.actorId;
+  }
+
+  get impersonatorId(): string | null {
+    return this.props.impersonatorId ?? null;
   }
 
   get action(): string {

@@ -32,6 +32,8 @@ export const auditEntries = audit.table(
     tenantId: uuid('tenant_id').notNull(),
     /** Null pour une action du système. Un UUID d'utilisateur, jamais un email. */
     actorId: uuid('actor_id'),
+    /** Opérateur qui agissait pour l'acteur (impersonation, ADR 0019). */
+    impersonatorId: uuid('impersonator_id'),
     action: varchar('action', { length: 100 }).notNull(),
     resourceType: varchar('resource_type', { length: 50 }),
     resourceId: varchar('resource_id', { length: 100 }),
