@@ -8,6 +8,8 @@ import {
   type CreateOrganizationInput,
   type Invitation,
   type Organization,
+  type OrganizationMember,
+  organizationMembersSchema,
   type SignInInput,
   type SignUpInput,
 } from '@nx-react-nestjs/contracts';
@@ -40,6 +42,8 @@ export interface AuthClient {
   listOrganizations(signal?: AbortSignal): Promise<Organization[]>;
   createOrganization(input: CreateOrganizationInput): Promise<Organization>;
   setActiveOrganization(organizationId: string): Promise<void>;
+  /** Membres de l'organisation active (500 au plus), pour afficher un nom à la place d'un ID. */
+  listMembers(signal?: AbortSignal): Promise<OrganizationMember[]>;
   getInvitation(invitationId: string, signal?: AbortSignal): Promise<Invitation>;
   acceptInvitation(invitationId: string): Promise<void>;
   /** Access token de 15 min pour l'API ; `undefined` sans session. */
@@ -134,6 +138,8 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
     setActiveOrganization: async (organizationId) => {
       await call('/organization/set-active', ignored, { body: { organizationId } });
     },
+    listMembers: (signal) =>
+      call('/organization/list-members?limit=500', organizationMembersSchema, { signal }),
     getInvitation: (invitationId, signal) =>
       call(
         `/organization/get-invitation?id=${encodeURIComponent(invitationId)}`,

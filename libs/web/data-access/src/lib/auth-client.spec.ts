@@ -68,6 +68,30 @@ describe('createAuthClient', () => {
     expect(slug).toMatch(/^cafe-ete-[0-9a-f]{6}$/);
   });
 
+  it('lists the members of the active organization, with their name', async () => {
+    server.use(
+      http.get(`${AUTH}/organization/list-members`, ({ request }) =>
+        new URL(request.url).searchParams.get('limit') === '500'
+          ? HttpResponse.json({
+              members: [
+                {
+                  id: 'm1',
+                  userId: 'u1',
+                  role: 'owner',
+                  organizationId: 'o1',
+                  user: { id: 'u1', name: 'Ada', email: 'ada@shop.test', image: null },
+                },
+              ],
+              total: 1,
+            })
+          : HttpResponse.json({ members: [], total: 0 }),
+      ),
+    );
+    await expect(auth.listMembers()).resolves.toEqual([
+      { userId: 'u1', role: 'owner', name: 'Ada', email: 'ada@shop.test' },
+    ]);
+  });
+
   it('returns undefined as the access token without a session', async () => {
     server.use(http.get(`${AUTH}/token`, () => new HttpResponse(null, { status: 401 })));
     await expect(auth.getAccessToken()).resolves.toBeUndefined();

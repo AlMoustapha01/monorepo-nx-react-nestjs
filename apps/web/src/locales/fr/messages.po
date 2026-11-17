@@ -23,6 +23,10 @@ msgstr "Accepter l'invitation"
 msgid "Accueil"
 msgstr "Accueil"
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Action"
+msgstr "Action"
+
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
@@ -32,6 +36,11 @@ msgstr "Adresse email"
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Ajouter au panier"
 msgstr "Ajouter au panier"
+
+#. placeholder {0}: entry.actorId.slice(0, 8)
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Ancien membre ({0})"
+msgstr "Ancien membre ({0})"
 
 #: ../../libs/web/storefront/src/lib/components/order-status-badge.tsx
 msgid "Annulée"
@@ -48,6 +57,10 @@ msgstr "Annuler la commande"
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Aucun produit pour le moment"
 msgstr "Aucun produit pour le moment"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Aucune action enregistrée."
+msgstr "Aucune action enregistrée."
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Augmenter la quantité"
@@ -94,6 +107,7 @@ msgstr "Cette invitation n'existe pas ou a expiré."
 msgid "Cette page n'existe pas."
 msgstr "Cette page n'existe pas."
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 #: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
@@ -106,6 +120,14 @@ msgstr "Chargement…"
 msgid "Commande {0}"
 msgstr "Commande {0}"
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Commande annulée"
+msgstr "Commande annulée"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Commande passée"
+msgstr "Commande passée"
+
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien."
 msgstr "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien."
@@ -113,6 +135,10 @@ msgstr "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien.
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 msgid "Connexion"
 msgstr "Connexion"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Connexion au compte"
+msgstr "Connexion au compte"
 
 #: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
 msgid "Créer"
@@ -137,6 +163,10 @@ msgstr "Déjà un compte ? <0>Se connecter</0>"
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Diminuer la quantité"
 msgstr "Diminuer la quantité"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Effacer les filtres"
+msgstr "Effacer les filtres"
 
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Email ou mot de passe incorrect."
@@ -171,6 +201,10 @@ msgstr "Impossible de charger ce produit"
 msgid "Impossible de charger le catalogue."
 msgstr "Impossible de charger le catalogue."
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Impossible de charger le journal d’audit."
+msgstr "Impossible de charger le journal d’audit."
+
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Impossible de charger vos commandes."
 msgstr "Impossible de charger vos commandes."
@@ -178,6 +212,11 @@ msgstr "Impossible de charger vos commandes."
 #: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
 msgid "Invitation"
 msgstr "Invitation"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+#: src/components/app-navigation.tsx
+msgid "Journal d’audit"
+msgstr "Journal d’audit"
 
 #: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
 msgid "La commande a changé entre-temps, elle a été rechargée."
@@ -187,9 +226,25 @@ msgstr "La commande a changé entre-temps, elle a été rechargée."
 msgid "Langue"
 msgstr "Langue"
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Le journal d’audit est réservé aux administrateurs de l’organisation."
+msgstr "Le journal d’audit est réservé aux administrateurs de l’organisation."
+
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Le service est injoignable. Vérifiez votre connexion et réessayez."
 msgstr "Le service est injoignable. Vérifiez votre connexion et réessayez."
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Membre arrivé"
+msgstr "Membre arrivé"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Membre invité"
+msgstr "Membre invité"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Membre retiré"
+msgstr "Membre retiré"
 
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
@@ -293,6 +348,10 @@ msgstr "Retour à l'accueil"
 msgid "Retour à la connexion"
 msgstr "Retour à la connexion"
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Rôle modifié"
+msgstr "Rôle modifié"
+
 #: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
 msgid "Saisissez un nom."
 msgstr "Saisissez un nom."
@@ -323,6 +382,10 @@ msgstr "Se déconnecter"
 msgid "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
 msgstr "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Système"
+msgstr "Système"
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Total"
 msgstr "Total"
@@ -333,6 +396,10 @@ msgstr "Total"
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Total : {0}"
 msgstr "Total : {0}"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Toutes les actions"
+msgstr "Toutes les actions"
 
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Trop de tentatives. Réessayez dans quelques instants."
@@ -369,6 +436,7 @@ msgstr "Vérifiez votre boîte mail"
 msgid "Voir le catalogue"
 msgstr "Voir le catalogue"
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Voir plus"
