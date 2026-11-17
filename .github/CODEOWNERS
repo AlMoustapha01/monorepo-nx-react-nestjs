@@ -7,6 +7,7 @@
 # Identité et autorisations : tokens, rôles, routes publiques
 /apps/auth/                                   @AlMoustapha01
 /libs/api/core/src/lib/auth/                  @AlMoustapha01
+/libs/api/audit/                              @AlMoustapha01
 /libs/shared/contracts/src/lib/auth/          @AlMoustapha01
 
 # Isolation des tenants : contexte de requête, sessions et accès à la base
