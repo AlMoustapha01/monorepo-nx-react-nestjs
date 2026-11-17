@@ -69,6 +69,10 @@ msgstr "Activez d’abord la vérification en deux étapes sur votre compte."
 msgid "Activez d’abord la vérification en deux étapes sur votre propre compte."
 msgstr "Activez d’abord la vérification en deux étapes sur votre propre compte."
 
+#: ../../libs/web/auth/src/lib/components/tenant-flags-panel.tsx
+msgid "Activez la vérification en deux étapes sur votre compte avant de changer un flag."
+msgstr "Activez la vérification en deux étapes sur votre compte avant de changer un flag."
+
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Activez la vérification en deux étapes sur votre compte avant de voir celui d’un client."
 msgstr "Activez la vérification en deux étapes sur votre compte avant de voir celui d’un client."

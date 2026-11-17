@@ -6,7 +6,7 @@ import {
   type TenantFlagValue,
   tenantFlagValueSchema,
 } from '@nx-react-nestjs/contracts';
-import type { AuthClient } from '@nx-react-nestjs/web-data-access';
+import { ApiError, type AuthClient } from '@nx-react-nestjs/web-data-access';
 import { FormError, Label, Stack, Text } from '@nx-react-nestjs/web-ui';
 
 import { authKeys } from '../data/queries';
@@ -19,7 +19,15 @@ const { on: ON, off: OFF, default: DEFAULT } = tenantFlagValueSchema.enum;
 const valueOf = (flag: Flag): TenantFlagValue =>
   flag.override === null ? DEFAULT : flag.override ? ON : OFF;
 
-function FlagRow({ flag, onChange }: { flag: Flag; onChange: (value: TenantFlagValue) => void }) {
+function FlagRow({
+  flag,
+  disabled,
+  onChange,
+}: {
+  flag: Flag;
+  disabled: boolean;
+  onChange: (value: TenantFlagValue) => void;
+}) {
   const { t } = useLingui();
   const id = useId();
   const name = flag.flag;
@@ -40,6 +48,7 @@ function FlagRow({ flag, onChange }: { flag: Flag; onChange: (value: TenantFlagV
         <select
           id={id}
           value={valueOf(flag)}
+          disabled={disabled}
           className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
           onChange={(event) => onChange(event.target.value as TenantFlagValue)}
         >
@@ -69,6 +78,8 @@ export function TenantFlagsPanel({
   const errorMessage = useAuthErrorMessage();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string>();
+  // Un changement à la fois : la réponse d'un ancien ne remplace pas l'état d'un plus récent.
+  const [saving, setSaving] = useState(false);
   const key = authKeys.tenantFlags(organization.id);
   const flags = useQuery({
     queryKey: key,
@@ -80,13 +91,20 @@ export function TenantFlagsPanel({
 
   const change = async (flag: string, value: TenantFlagValue) => {
     setError(undefined);
+    setSaving(true);
     try {
       queryClient.setQueryData(
         key,
         await auth.setTenantFeatureFlag({ organizationId: organization.id, flag, value }),
       );
     } catch (cause) {
-      setError(errorMessage(cause));
+      setError(
+        cause instanceof ApiError && cause.code === 'OPERATOR_TWO_FACTOR_REQUIRED'
+          ? t`Activez la vérification en deux étapes sur votre compte avant de changer un flag.`
+          : errorMessage(cause),
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -116,6 +134,7 @@ export function TenantFlagsPanel({
               <FlagRow
                 key={flag.flag}
                 flag={flag}
+                disabled={saving}
                 onChange={(value) => void change(flag.flag, value)}
               />
             ))}

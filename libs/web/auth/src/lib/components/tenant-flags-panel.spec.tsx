@@ -88,7 +88,7 @@ describe('BackOfficePage, feature flags of a tenant', () => {
     await user.selectOptions(value, 'on');
     expect(
       await within(panel).findByText(
-        'Activez la vérification en deux étapes sur votre compte avant de voir celui d’un client.',
+        'Activez la vérification en deux étapes sur votre compte avant de changer un flag.',
       ),
     ).toBeTruthy();
     expect(value.value).toBe('default');

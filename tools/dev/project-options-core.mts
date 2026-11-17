@@ -91,8 +91,9 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
     ],
     dependencies: [],
     scripts: [],
-    // La table des surcharges par tenant disparaît avec son schéma.
-    regenerate: ['errors', 'migrations'],
+    // La table des surcharges par tenant disparaît avec son schéma, les textes du back-office des flags avec leurs
+    // composants.
+    regenerate: ['errors', 'migrations', 'i18n'],
     requires: { options: ['examples'], reason: "le code d'exemple utilise les feature flags" },
     leftovers: 'feature.?flag|requireFeature|FEATURE_DISABLED',
     afterRemoval:

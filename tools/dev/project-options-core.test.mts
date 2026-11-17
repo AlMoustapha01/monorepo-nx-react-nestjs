@@ -262,7 +262,8 @@ describe('feature-flags option', () => {
     const flags = optionById('feature-flags');
     assert.equal(flags.marker, 'option:feature-flags');
     assert.deepEqual(flags.requires?.options, ['examples']);
-    assert.deepEqual(flags.regenerate, ['errors', 'migrations']);
+    // Les textes du back-office des flags partent avec l'option : catalogues à réextraire.
+    assert.deepEqual(flags.regenerate, ['errors', 'migrations', 'i18n']);
     assert.deepEqual(flags.dependencies, []);
     // Plus de commande : les surcharges par tenant se pilotent au back-office (ADR 0020).
     assert.deepEqual(flags.scripts, []);
