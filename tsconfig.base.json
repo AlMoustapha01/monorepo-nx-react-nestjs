@@ -17,6 +17,7 @@
     "paths": {
       "@nx-react-nestjs/contracts": ["./libs/shared/contracts/src/index.ts"],
       "@nx-react-nestjs/api-core": ["./libs/api/core/src/index.ts"],
+      "@nx-react-nestjs/api-core/migrations": ["./libs/api/core/src/migrations.ts"],
       "@nx-react-nestjs/api-core/testing": ["./libs/api/core/src/testing.ts"],
       "@nx-react-nestjs/api-catalog": ["./libs/api/catalog/src/index.ts"],
       "@nx-react-nestjs/api-orders": ["./libs/api/orders/src/index.ts"],

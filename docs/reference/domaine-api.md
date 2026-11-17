@@ -234,6 +234,12 @@ Le fichier n'importe que `drizzle-orm` : drizzle-kit le lit pour générer les m
 ```ts
 const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C"' });
 
+/** Seconde barrière d'isolation (ADR 0013) : recopiée telle quelle, un test d'api-core compare l'expression. */
+const tenantRows = () =>
+  sql`coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
+const tenantIsolation = () =>
+  pgPolicy('tenant_isolation', { using: tenantRows(), withCheck: tenantRows() });
+
 export const ticketsSchema = pgSchema('tickets');
 export const ticketStatus = ticketsSchema.enum('ticket_status', ['open', 'closed']);
 
@@ -251,12 +257,13 @@ export const tickets = ticketsSchema.table(
   },
   (table) => [
     index('tickets_tenant_keyset_idx').on(table.tenantId, table.createdAt.desc(), table.id.desc()),
+    tenantIsolation(),
   ],
 );
 export type TicketRow = typeof tickets.$inferSelect;
 ```
 
-Un index keyset par liste filtrée (par auteur, par statut…), qui commence par `tenant_id`. Puis `pnpm nx run api:db-generate --name=tickets`, et relire la migration générée.
+Chaque table qui a un `tenant_id` porte la politique `tenant_isolation` (Row Level Security) : sans elle, le test `row-level-security.int.spec.ts` d'api-core échoue. Un index keyset par liste filtrée (par auteur, par statut…), qui commence par `tenant_id`. Puis `pnpm nx run api:db-generate --name=tickets`, et relire la migration générée.
 
 ## Mapper et repository Drizzle (`infra/`)
 
@@ -328,7 +335,29 @@ export class DrizzleTicketRepository extends TicketRepository {
 
 `this.session.db` rejoint la transaction ouverte par le cas d'usage, s'il y en a une. Un agrégat sur plusieurs tables écrit dans `this.session.transaction(…)` et charge ses lignes filles en une requête (`inArray`), pas une par parent.
 
-Test d'intégration (`*.int.spec.ts`) : `startTestDatabase()` (Postgres jetable, migrations du repo appliquées), `new DrizzleTicketRepository(new DatabaseSession(database.db), context)`, et un cas par règle du port : relecture, pagination, chaque filtre, isolation entre tenants, version périmée refusée.
+Test d'intégration (`*.int.spec.ts`) : `startTestDatabase()` (Postgres jetable, rôle de l'API et migrations du repo appliquées), `new DrizzleTicketRepository(database.session(context), context)`, et un cas par règle du port : relecture, pagination, chaque filtre, version périmée refusée. L'isolation entre tenants se déclare avec `describeTenantIsolation`, dans le `describe` du fichier, qui génère un test par méthode avec chacune des deux barrières :
+
+```ts
+describeTenantIsolation('DrizzleTicketRepository', {
+  database: () => database,
+  repository: (session, context) => new DrizzleTicketRepository(session, context),
+  entity: (tenantId) => newTicket(tenantId),
+  insert: (repository, ticket) => repository.insert(ticket),
+  find: (repository, ticket) => repository.findById(ticket.id),
+  reads: {
+    findById: (repository, ticket) => repository.findById(ticket.id),
+    list: (repository) => repository.list({ limit: 10 }),
+  },
+  writes: {
+    update: (repository, ticket) => {
+      ticket.close(new Date());
+      return repository.update(ticket);
+    },
+  },
+});
+```
+
+Chaque nouvelle méthode du port s'ajoute à `reads` ou à `writes`. Dans un test, une requête Drizzle passée à `context.runAs` doit y être attendue (`async () => { await … }`) : renvoyée sans `await`, elle s'exécuterait hors du contexte, donc sans tenant.
 
 ## Controller (`http/tickets.controller.ts`)
 

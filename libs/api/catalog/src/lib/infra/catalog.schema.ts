@@ -1,10 +1,12 @@
 // Lu par drizzle-kit pour générer les migrations : ce fichier n'importe que drizzle-orm.
+import { sql } from 'drizzle-orm';
 import {
   bigint,
   char,
   customType,
   index,
   integer,
+  pgPolicy,
   pgSchema,
   text,
   timestamp,
@@ -18,6 +20,17 @@ const domainId = customType<{ data: string }>({ dataType: () => 'text COLLATE "C
 
 /** Le domaine catalogue possède son schéma Postgres ; aucun autre domaine n'y fait de jointure. */
 export const catalog = pgSchema('catalog');
+
+/**
+ * Seconde barrière d'isolation (ADR 0013) : sur une connexion de l'API, Postgres ne montre et n'accepte que les
+ * lignes du tenant qu'elle porte, même si une requête oublie son filtre ; aucune sans tenant (UUID nul). Une
+ * connexion où `app.tenant_id` n'est pas posé, NULL ou `''` (migrations, Drizzle Studio, instance d'avant la RLS),
+ * n'est pas filtrée.
+ */
+const tenantRows = () =>
+  sql`coalesce(current_setting('app.tenant_id', true), '') = '' or tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`;
+const tenantIsolation = () =>
+  pgPolicy('tenant_isolation', { using: tenantRows(), withCheck: tenantRows() });
 
 export const productStatus = catalog.enum('product_status', ['draft', 'active', 'archived']);
 
@@ -43,6 +56,7 @@ export const products = catalog.table(
   (table) => [
     uniqueIndex(PRODUCTS_TENANT_SKU_KEY).on(table.tenantId, table.sku),
     index('products_tenant_keyset_idx').on(table.tenantId, table.createdAt.desc(), table.id.desc()),
+    tenantIsolation(),
   ],
 );
 

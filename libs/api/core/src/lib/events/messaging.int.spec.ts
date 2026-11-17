@@ -121,9 +121,10 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
   });
 
   const jobsWithKey = async (key: string) => {
-    const { rows } = await database.db.execute<{ attempts: number; last_error: string | null }>(
-      sql`select attempts, last_error from graphile_worker.jobs where key = ${key}`,
-    );
+    const { rows } = await database.adminDb.execute<{
+      attempts: number;
+      last_error: string | null;
+    }>(sql`select attempts, last_error from graphile_worker.jobs where key = ${key}`);
     return rows;
   };
 
@@ -209,7 +210,7 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
 
   it('relays the events left unpublished by a previous version', async () => {
     // Écrit comme le faisait l'ancienne version, avant son relais.
-    await database.db.insert(outboxTable).values({
+    await database.adminDb.insert(outboxTable).values({
       id: 'EVT-01jb4x7k2m9qwfzp3hdc',
       tenantId: principal.tenantId,
       actorId: principal.userId,
@@ -221,7 +222,7 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
     await app.get(IntegrationEventWorker).relayPending();
 
     await eventually(() => expect(recorder.numbers()).toContain(41));
-    const [row] = await database.db
+    const [row] = await database.adminDb
       .select({ publishedAt: outboxTable.publishedAt })
       .from(outboxTable)
       .where(sql`${outboxTable.id} = 'EVT-01jb4x7k2m9qwfzp3hdc'`);
@@ -251,7 +252,7 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
 
   it('retries a job whose handler is not deployed yet on this worker', async () => {
     // Pendant un déploiement, une API à jour met en file un job qu'un ancien worker ne connaît pas.
-    await enqueueIntegrationEvent(database.db, {
+    await enqueueIntegrationEvent(database.adminDb, {
       handler: 'test.not-deployed-yet',
       event: event('EVT-01jb4x7k2m9qwfzp3hdd', { n: 42 }),
     });
@@ -282,10 +283,10 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
   it('purges the jobs abandoned for more than 7 days, and keeps the recent ones', async () => {
     // Une tâche qu'aucun worker n'exécute : le job reste en file tel qu'on le prépare.
     const park = async (key: string, failedDaysAgo: number) => {
-      await database.db.execute(
+      await database.adminDb.execute(
         sql`select graphile_worker.add_job('test:parked', job_key => ${key})`,
       );
-      await database.db.execute(sql`
+      await database.adminDb.execute(sql`
         update graphile_worker._private_jobs set attempts = max_attempts,
           updated_at = now() - make_interval(days => ${failedDaysAgo}::int)
         where key = ${key}
@@ -328,7 +329,7 @@ describe('messaging: outbox → Graphile Worker → handlers (real Postgres)', (
     });
 
     it('counts an exhausted job, with no retry for an invalid payload', async () => {
-      await enqueueIntegrationEvent(database.db, {
+      await enqueueIntegrationEvent(database.adminDb, {
         handler: 'test.count-ping',
         event: event('EVT-01jb4x7k2m9qwfzp3hdb', { n: 'not a number' }),
       });

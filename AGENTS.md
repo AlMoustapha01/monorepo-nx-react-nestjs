@@ -68,6 +68,7 @@ specs/NNN-<nom>/            une fonctionnalité Spec Kit : spec.md, plan.md, tas
 .specify/                   Spec Kit : constitution (memory/), stack.yml, scripts, templates ; installé par @artefact-ci/sdd, sauf la constitution et stack.yml
 tools/spec-kit/preset/      preset local de Spec Kit : templates de plan et de tâches de la stack, au-dessus de la méthode artefact-sdd
 tools/dev/spec-trace.mts    matrice scénario → tests (`pnpm -s spec:trace`)
+tools/docker/               init de Postgres en local et en test : rôle `app` sans privilège (RLS)
 .specify/extensions/artefact-product/agents/  consignes portables des agents (installées) : relecteur indépendant, PO, relecteur produit, designer, relecteur design
 .claude/                    adaptateur Claude Code : sous-agents `relecteur`, `relecteur-produit`, `designer` et `relecteur-design`, hook de fin de tour, skills Spec Kit
 ```
@@ -132,7 +133,7 @@ Procédure complète (ordre, configuration, expand/contract, liste avant la prem
 
 - **Une image** (`Dockerfile`), trois commandes : `node main.js` (HTTP), `node worker.js` (worker de la file de jobs, tâches planifiées : purge quotidienne, rattrapage des événements non publiés), `node migrate.js`. `docker-compose.prod.yml` montre l'enchaînement.
 - **Service d'identité** : même Dockerfile avec `--build-arg APP=auth`, deux commandes : `node main.js` et `node migrate.js` (tables de Better Auth : ajouts seulement, rétrocompatibles). `BETTER_AUTH_SECRET` chiffre les clés privées du JWKS en base : le changer rend ces clés illisibles.
-- **Migrations** : celles de Drizzle puis celles de Graphile Worker (schéma `graphile_worker`), étape de déploiement à part, avant le démarrage des nouvelles instances, jamais au boot de l'API. `migrate.js` prend un verrou Postgres : deux déploiements simultanés se sérialisent. Comme les anciennes instances tournent encore pendant la migration, elle doit rester rétrocompatible (principe 5).
+- **Migrations** : celles de Drizzle, puis celles de Graphile Worker (schéma `graphile_worker`), puis la RLS forcée sur les tables qui ont la politique `tenant_isolation` (`applyMigrations`, `api-core/migrations`), étape de déploiement à part, avant le démarrage des nouvelles instances, jamais au boot de l'API. `migrate.js` prend un verrou Postgres : deux déploiements simultanés se sérialisent. Comme les anciennes instances tournent encore pendant la migration, elle doit rester rétrocompatible (principe 5).
 - **Rôles** : l'API tourne avec `JOBS_ENABLED=false` ; le worker force les jobs. Chacun se met à l'échelle séparément. En dev, `nx serve api` fait tout dans un seul process.
 - **Sondes** : `/health` (liveness : le process répond) et `/ready` (readiness : Postgres joignable et pas d'arrêt en cours ; Redis n'y figure pas, le rate limiting laissant passer sans lui). Le worker n'a pas de port HTTP : un crash fait sortir le process et l'orchestrateur le relance.
 - **Arrêt** : sur SIGTERM, `/ready` passe en 503, le process attend `SHUTDOWN_DRAIN_MS` (le temps que le load balancer retire l'instance ; 5 s derrière Kubernetes), puis termine les requêtes et les jobs en cours et ferme Redis et Postgres. Au-delà de `SHUTDOWN_TIMEOUT_MS` (25 s), il sort en erreur : rester sous le délai avant SIGKILL de l'orchestrateur (30 s par défaut).
@@ -199,7 +200,7 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 
 ## Principes non négociables
 
-1. Toute table métier a une colonne `tenant_id`, et aucun repository ne lit ni n'écrit sans ce filtre. Le tenant vient de `RequestContext`, jamais d'un paramètre de requête.
+1. Toute table métier a une colonne `tenant_id`, et aucun repository ne lit ni n'écrit sans ce filtre. Le tenant vient de `RequestContext`, jamais d'un paramètre de requête. Seconde barrière : la table porte la politique RLS `tenant_isolation` dans son `*.schema.ts`, et l'API se connecte avec un rôle ni superutilisateur ni `BYPASSRLS` ([ADR 0013](docs/architecture/adr/0013-row-level-security.md)).
 2. Toute erreur métier est une sous-classe d'`AppError` avec un code stable en union littérale. `throw new Error()` est interdit hors `infra/` et du démarrage. La conversion en HTTP (RFC 9457) se fait uniquement dans `ProblemDetailsFilter`.
 3. Toute route est authentifiée par défaut ; `@Public()` est l'unique exception explicite. Toute route qui modifie des données partagées du tenant déclare son rôle (`@RequireRole`).
 4. Toute clé Redis a un TTL ; tout appel externe a un timeout, et passe par une queue s'il est lent.
@@ -244,6 +245,8 @@ Le code d'exemple (`catalog`, `orders`, `notifications`, boutique du front) n'a 
 
 <!-- option:sentry:end -->
 
+- Requêtes Drizzle paresseuses : une requête ne s'exécute qu'à son `await`. `context.runAs(principal, () => db.select()…)` qui la renvoie sans l'attendre l'exécute hors du contexte, donc sans tenant pour la RLS : l'attendre dans la fonction (`async () => { await … }`).
+- Base locale créée avant la RLS : `app` y est superutilisateur, la RLS n'y filtre rien et l'API l'écrit au démarrage. La recréer : `pnpm dev:down -v && pnpm dev:setup`.
 - `pg` : un `Pool` sans écouteur `error` fait planter le process quand Postgres coupe une connexion inactive (redémarrage, bascule). Tout nouveau pool en déclare un.
 - Graphile Worker : ESM uniquement, chargé par `require` comme `jose`. Un nom de tâche de sa crontab n'accepte pas de point (`messaging:cleanup`). La vue `graphile_worker.jobs` n'expose pas le payload. Ses migrations ne s'éditent pas : `migrate.js` et `api:db-migrate` les appliquent. Une version dont une migration est « breaking » (changelog) casse les anciens workers : arrêter les workers avant de migrer. Son logger joint le job entier, payload compris : passer par `graphileLogger` (api-core), qui n'en garde que l'ID.
 - nodemailer : le second argument de `createTransport` contient les valeurs par défaut des messages, pas les options de transport (timeouts, URL).

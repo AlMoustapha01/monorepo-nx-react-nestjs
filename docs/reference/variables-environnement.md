@@ -26,12 +26,12 @@ Les deux process (`main.js` et `worker.js`) lisent les mêmes variables.
 
 ### Postgres et Redis
 
-| Variable                        | Défaut      | Rôle                                                                                                  |
-| ------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                  | obligatoire | URL Postgres, partagée avec le service d'identité ; aussi lue par `migrate.js`                        |
-| `DATABASE_POOL_MAX`             | `10`        | connexions maximum par process ; le total des instances reste sous `max_connections`                  |
-| `DATABASE_STATEMENT_TIMEOUT_MS` | `30000`     | durée maximum d'une requête SQL (`statement_timeout`) ; `0` la désactive. Sans effet sur `migrate.js` |
-| `REDIS_URL`                     | obligatoire | compteurs du rate limiting                                                                            |
+| Variable                        | Défaut      | Rôle                                                                                                                          |
+| ------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                  | obligatoire | URL Postgres, partagée avec le service d'identité ; aussi lue par `migrate.js`. Rôle ni superutilisateur ni `BYPASSRLS` (RLS) |
+| `DATABASE_POOL_MAX`             | `10`        | connexions maximum par process ; le total des instances reste sous `max_connections`                                          |
+| `DATABASE_STATEMENT_TIMEOUT_MS` | `30000`     | durée maximum d'une requête SQL (`statement_timeout`) ; `0` la désactive. Sans effet sur `migrate.js`                         |
+| `REDIS_URL`                     | obligatoire | compteurs du rate limiting                                                                                                    |
 
 ### Événements et jobs
 

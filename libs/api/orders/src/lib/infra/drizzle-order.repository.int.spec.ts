@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { DatabaseSession, domainIdGenerator } from '@nx-react-nestjs/api-core';
+import { domainIdGenerator } from '@nx-react-nestjs/api-core';
 import {
   createTestRequestContext,
+  describeTenantIsolation,
   startTestDatabase,
   type TestDatabase,
 } from '@nx-react-nestjs/api-core/testing';
@@ -20,7 +21,7 @@ describe('DrizzleOrderRepository (real Postgres)', () => {
 
   beforeAll(async () => {
     database = await startTestDatabase();
-    repository = new DrizzleOrderRepository(new DatabaseSession(database.db), context);
+    repository = new DrizzleOrderRepository(database.session(context), context);
   });
 
   afterAll(() => database?.stop());
@@ -67,21 +68,24 @@ describe('DrizzleOrderRepository (real Postgres)', () => {
       });
     }));
 
-  it('never reads or modifies the orders of another tenant', async () => {
-    const foreign = newOrder(tenantB.tenantId);
-    await context.runAs(tenantB, () => repository.insert(foreign));
-
-    await context.runAs(tenantA, async () => {
-      expect(await repository.findById(foreign.id)).toBeNull();
-      foreign.cancel(new Date());
-      // L'écriture conditionnelle ne trouve aucune ligne de ce tenant : rien n'est écrit.
-      await expect(repository.update(foreign)).rejects.toMatchObject({
-        code: 'ORDER_VERSION_CONFLICT',
-      });
-    });
-
-    const untouched = await context.runAs(tenantB, () => repository.findById(foreign.id));
-    expect(untouched?.status).toBe('placed');
+  describeTenantIsolation('DrizzleOrderRepository', {
+    database: () => database,
+    repository: (session, context) => new DrizzleOrderRepository(session, context),
+    entity: (tenantId) => newOrder(tenantId),
+    insert: (repository, order) => repository.insert(order),
+    find: (repository, order) => repository.findById(order.id),
+    reads: {
+      findById: (repository, order) => repository.findById(order.id),
+      list: (repository) => repository.list({ limit: 10 }),
+      'list by customer': (repository, order) =>
+        repository.list({ limit: 10, customerId: order.customerId }),
+    },
+    writes: {
+      update: (repository, order) => {
+        order.cancel(new Date());
+        return repository.update(order);
+      },
+    },
   });
 
   it('writes the order and its lines to the context tenant, not the entity tenant', async () => {

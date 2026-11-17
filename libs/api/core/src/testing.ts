@@ -3,6 +3,7 @@
  * Jamais importé par du code de production.
  */
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
@@ -17,19 +18,21 @@ import { metrics, NodeSDK, tracing } from '@opentelemetry/sdk-node';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { Logger as GraphileLogger, runMigrations } from 'graphile-worker';
+import { Logger as GraphileLogger } from 'graphile-worker';
 import { SignJWT } from 'jose';
 import { ClsService } from 'nestjs-cls';
 import { Pool } from 'pg';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { type Principal, RequestContext } from './lib/context/request-context';
-import { TransactionManager } from './lib/database/database-session';
+import { DatabaseSession, TransactionManager } from './lib/database/database-session';
 import type { Database } from './lib/database/database.tokens';
+import { TenantScopedPool } from './lib/database/tenant-scoped-pool';
 import { Outbox } from './lib/events/outbox';
 // option:feature-flags:start
 import { FeatureFlags } from './lib/feature-flags/feature-flags';
 // option:feature-flags:end
 import { type EmailMessage, Mailer } from './lib/mail/mailer';
+import { applyMigrations } from './migrations';
 
 export const TEST_AUTH = {
   secret: 'test-secret-that-is-at-least-32-characters',
@@ -73,30 +76,166 @@ export function createTestRequestContext(): RequestContext {
 }
 
 export interface TestDatabase {
+  /** Connexion de l'API : rôle `app`, soumis à la Row Level Security comme en production. */
   url: string;
-  db: Database;
+  /** Superutilisateur, qui ignore la RLS : préparer ou inspecter des lignes de tous les tenants. */
+  adminUrl: string;
+  adminDb: Database;
+  /** Session comme celle de l'API : rôle `app`, tenant du contexte posé dans chaque transaction. */
+  session(context: RequestContext): DatabaseSession;
+  /** Session superutilisateur : seul le filtre du code isole les tenants (la RLS ne s'applique pas). */
+  adminSession(): DatabaseSession;
   stop(): Promise<void>;
 }
 
-/** Démarre un Postgres jetable et y applique les migrations du repo et de la file de jobs. */
+/**
+ * Démarre un Postgres jetable, configuré comme en dev (tools/docker/postgres-init.sql : rôle `app` sans privilège,
+ * propriétaire de la base), et y applique les migrations comme `migrate.js`.
+ */
 export async function startTestDatabase(): Promise<TestDatabase> {
-  const container: StartedPostgreSqlContainer = await new PostgreSqlContainer(
-    'postgres:17-alpine',
-  ).start();
-  const url = container.getConnectionUri();
-  const pool = new Pool({ connectionString: url });
-  const db = drizzle({ client: pool });
-  await migrate(db, { migrationsFolder: join(findWorkspaceRoot(), 'apps/api/migrations') });
-  await runMigrations({ pgPool: pool, logger: new GraphileLogger(() => () => undefined) });
+  const root = findWorkspaceRoot();
+  const container: StartedPostgreSqlContainer = await new PostgreSqlContainer('postgres:17-alpine')
+    .withUsername('postgres')
+    .withPassword('postgres')
+    .withDatabase('app')
+    .withCopyFilesToContainer([
+      {
+        source: join(root, 'tools/docker/postgres-init.sql'),
+        target: '/docker-entrypoint-initdb.d/01-app-role.sql',
+      },
+    ])
+    .start();
+  const url = `postgres://app:app@${container.getHost()}:${container.getPort()}/app`;
+  await applyMigrations({
+    connectionString: url,
+    migrationsFolder: join(root, 'apps/api/migrations'),
+    logger: new GraphileLogger(() => () => undefined),
+  });
+
+  const pools: Pool[] = [];
+  const track = <T extends Pool>(pool: T): T => {
+    // Une connexion coupée à l'arrêt du conteneur ne doit pas faire planter le process de test.
+    pool.on('error', () => undefined);
+    pools.push(pool);
+    return pool;
+  };
+  const adminUrl = container.getConnectionUri();
+  const adminPool = track(new Pool({ connectionString: adminUrl }));
 
   return {
     url,
-    db,
+    adminUrl,
+    adminDb: drizzle({ client: adminPool }),
+    session: (context) =>
+      new DatabaseSession(
+        drizzle({
+          client: track(
+            new TenantScopedPool({ connectionString: url }, () => context.principal?.tenantId),
+          ),
+        }),
+      ),
+    adminSession: () => new DatabaseSession(drizzle({ client: adminPool })),
     async stop() {
-      await pool.end();
+      await Promise.all(pools.map((pool) => pool.end()));
       await container.stop();
     },
   };
+}
+
+/** Ce que `describeTenantIsolation` doit savoir d'un repository Drizzle et de son agrégat. */
+export interface TenantIsolationSpec<TRepository, TEntity> {
+  /** La base du fichier de test, démarrée dans son `beforeAll`. */
+  database: () => TestDatabase;
+  repository: (session: DatabaseSession, context: RequestContext) => TRepository;
+  /** Une entité neuve, pas encore écrite, du tenant donné. */
+  entity: (tenantId: string) => TEntity;
+  insert: (repository: TRepository, entity: TEntity) => Promise<unknown>;
+  /** Relit l'entité ; `null` si le tenant courant ne la voit pas. */
+  find: (repository: TRepository, entity: TEntity) => Promise<unknown>;
+  /** Chaque lecture du port : rien d'un autre tenant (`null`, liste ou page vide). */
+  reads: Record<string, (repository: TRepository, entity: TEntity) => Promise<unknown>>;
+  /** Chaque écriture du port : la ligne d'un autre tenant reste intacte (l'écriture peut échouer). */
+  writes: Record<string, (repository: TRepository, entity: TEntity) => Promise<unknown>>;
+}
+
+/**
+ * Vérifie l'isolation des tenants pour chaque lecture et chaque écriture d'un repository, avec chacune des deux
+ * barrières (ADR 0013) : son filtre `tenant_id` seul (session superutilisateur, sans RLS), puis la session de
+ * l'API, RLS comprise. Que la RLS couvre chaque table d'un tenant, c'est le test de api-core qui le vérifie.
+ */
+export function describeTenantIsolation<TRepository, TEntity>(
+  name: string,
+  spec: TenantIsolationSpec<TRepository, TEntity>,
+): void {
+  const context = createTestRequestContext();
+  const barriers: [string, () => DatabaseSession][] = [
+    ['with its tenant filter alone', () => spec.database().adminSession()],
+    ['with Row Level Security', () => spec.database().session(context)],
+  ];
+  const newTenant = () => ({ userId: randomUUID(), tenantId: randomUUID() });
+
+  describe(`${name}: tenant isolation`, () => {
+    for (const [barrier, session] of barriers) {
+      describe(`${barrier}`, () => {
+        let repository: TRepository;
+        beforeAll(() => {
+          repository = spec.repository(session(), context);
+        });
+
+        /** Une entité du tenant `owner`, écrite en son nom. */
+        const foreignEntity = async (owner: Principal) => {
+          const entity = spec.entity(owner.tenantId);
+          await context.runAs(owner, () => spec.insert(repository, entity));
+          return entity;
+        };
+
+        for (const [method, read] of Object.entries(spec.reads)) {
+          it(`${method} does not see a row of another tenant`, async () => {
+            const foreign = await foreignEntity(newTenant());
+            const result = await context.runAs(newTenant(), () => read(repository, foreign));
+            expect(isEmptyResult(result), `${method} returned ${JSON.stringify(result)}`).toBe(
+              true,
+            );
+          });
+        }
+
+        for (const [method, write] of Object.entries(spec.writes)) {
+          it(`${method} leaves a row of another tenant untouched`, async () => {
+            const owner = newTenant();
+            const foreign = await foreignEntity(owner);
+            const before = await context.runAs(owner, () => spec.find(repository, foreign));
+
+            // Refusée ou sans effet : les deux sont acceptables, seule la ligne compte.
+            await context
+              .runAs(newTenant(), () => write(repository, foreign))
+              .catch(() => undefined);
+
+            expect(await context.runAs(owner, () => spec.find(repository, foreign))).toEqual(
+              before,
+            );
+          });
+        }
+
+        it('insert writes to the context tenant, not the entity tenant', async () => {
+          const [writer, other] = [newTenant(), newTenant()];
+          const forged = spec.entity(other.tenantId);
+          await context.runAs(writer, () => spec.insert(repository, forged));
+
+          expect(await context.runAs(other, () => spec.find(repository, forged))).toBeNull();
+          expect(await context.runAs(writer, () => spec.find(repository, forged))).not.toBeNull();
+        });
+      });
+    }
+  });
+}
+
+function isEmptyResult(result: unknown): boolean {
+  if (result === null || result === undefined) return true;
+  if (Array.isArray(result)) return result.length === 0;
+  if (typeof result === 'object' && 'items' in result && Array.isArray(result.items)) {
+    return result.items.length === 0;
+  }
+  return false;
 }
 
 export interface TestRedis {
