@@ -7,6 +7,16 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#. placeholder {0}: active.name
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "{0} exige la vérification en deux étapes : sans elle, vous n’y aurez plus accès."
+msgstr "{0} requires two-step verification: without it, you will lose access."
+
+#. placeholder {0}: active.name
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "{0} exige la vérification en deux étapes. Activez-la pour retrouver l’accès."
+msgstr "{0} requires two-step verification. Turn it on to regain access."
+
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "✓ {inCart} dans le panier"
 msgstr "✓ {inCart} in cart"
@@ -14,6 +24,10 @@ msgstr "✓ {inCart} in cart"
 #: src/routes/__root.tsx
 msgid "404 : page introuvable"
 msgstr "404: page not found"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "À la connexion, un code de votre application d’authentification est demandé après le mot de passe."
+msgstr "When you sign in, a code from your authenticator app is asked after the password."
 
 #: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
 msgid "Accepter l'invitation"
@@ -26,6 +40,22 @@ msgstr "Home"
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Action"
 msgstr "Action"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Activée"
+msgstr "On"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Activer"
+msgstr "Turn on"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Activez d’abord la vérification en deux étapes sur votre compte."
+msgstr "Turn on two-step verification on your account first."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Activez d’abord la vérification en deux étapes sur votre propre compte."
+msgstr "Turn on two-step verification on your own account first."
 
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
@@ -45,6 +75,10 @@ msgstr "Former member ({0})"
 #: ../../libs/web/storefront/src/lib/components/order-status-badge.tsx
 msgid "Annulée"
 msgstr "Cancelled"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Annuler"
+msgstr "Cancel"
 
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Annuler cette commande ?"
@@ -109,11 +143,29 @@ msgstr "This page does not exist."
 
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 #: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Chargement…"
 msgstr "Loading…"
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Code de l’application d’authentification"
+msgstr "Authenticator app code"
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Code de secours"
+msgstr "Backup code"
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Code incorrect. Réessayez."
+msgstr "Wrong code. Try again."
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Codes de secours"
+msgstr "Backup codes"
 
 #. placeholder {0}: order.id
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
@@ -128,6 +180,10 @@ msgstr "Order cancelled"
 msgid "Commande passée"
 msgstr "Order placed"
 
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Confirmer"
+msgstr "Confirm"
+
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien."
 msgstr "Confirm your email address first: we sent you a link."
@@ -139,6 +195,10 @@ msgstr "Sign in"
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Connexion au compte"
 msgstr "Account sign-in"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Continuer"
+msgstr "Continue"
 
 #: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
 msgid "Créer"
@@ -159,6 +219,14 @@ msgstr "Create your organization"
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
 msgid "Déjà un compte ? <0>Se connecter</0>"
 msgstr "Already have an account? <0>Sign in</0>"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Désactivée"
+msgstr "Off"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Désactiver"
+msgstr "Turn off"
 
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Diminuer la quantité"
@@ -181,6 +249,14 @@ msgstr "Save"
 msgid "Entre {PASSWORD_MIN_LENGTH} et {PASSWORD_MAX_LENGTH} caractères."
 msgstr "Between {PASSWORD_MIN_LENGTH} and {PASSWORD_MAX_LENGTH} characters."
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Exigence de la 2FA modifiée"
+msgstr "2FA requirement changed"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Exiger la vérification en deux étapes de tous les membres"
+msgstr "Require two-step verification for all members"
+
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Fermer"
 msgstr "Close"
@@ -188,6 +264,10 @@ msgstr "Close"
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Garder"
 msgstr "Keep"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Gardez ces codes en lieu sûr : chacun permet une connexion si vous perdez l’accès à votre application. Ils ne seront plus affichés."
+msgstr "Keep these codes somewhere safe: each one signs you in once if you lose access to your app. They will not be shown again."
 
 #: src/components/locale-switcher.tsx
 msgid "Impossible de changer de langue."
@@ -213,6 +293,10 @@ msgstr "Unable to load your orders."
 msgid "Invitation"
 msgstr "Invitation"
 
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "J’ai noté mes codes"
+msgstr "I saved my codes"
+
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 #: src/components/app-navigation.tsx
 msgid "Journal d’audit"
@@ -221,6 +305,10 @@ msgstr "Audit log"
 #: ../../libs/web/storefront/src/lib/hooks/use-cancel-order.ts
 msgid "La commande a changé entre-temps, elle a été rechargée."
 msgstr "The order changed in the meantime and has been reloaded."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "La vérification a expiré. Saisissez à nouveau votre mot de passe."
+msgstr "The verification expired. Enter your password again."
 
 #: src/components/locale-switcher.tsx
 msgid "Langue"
@@ -233,6 +321,10 @@ msgstr "The audit log is reserved to the administrators of the organization."
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Le service est injoignable. Vérifiez votre connexion et réessayez."
 msgstr "The service is unreachable. Check your connection and try again."
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Les membres sans vérification en deux étapes perdent aussitôt l’accès, jusqu’à ce qu’ils l’activent."
+msgstr "Members without two-step verification lose access at once, until they turn it on."
 
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Membre arrivé"
@@ -251,10 +343,15 @@ msgstr "Member removed"
 msgid "Mes commandes"
 msgstr "My orders"
 
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
 msgid "Mot de passe"
 msgstr "Password"
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Mot de passe incorrect."
+msgstr "Wrong password."
 
 #: src/routes/reinitialiser-mot-de-passe.tsx
 msgid "Mot de passe modifié. Connectez-vous avec le nouveau."
@@ -284,9 +381,22 @@ msgstr "We sent a confirmation link to {sentTo}. Open it to activate your accoun
 msgid "Nouveau mot de passe"
 msgstr "New password"
 
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Nouveaux codes de secours"
+msgstr "New backup codes"
+
 #: ../../libs/web/auth/src/lib/components/account-menu.tsx
 msgid "Organisation"
 msgstr "Organization"
+
+#. placeholder {0}: active.name
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Organisation : {0}"
+msgstr "Organization: {0}"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Ou saisissez cette clé dans l’application :"
+msgstr "Or enter this key in the app:"
 
 #: ../../libs/web/storefront/src/lib/components/order-page.tsx
 msgid "Oui, annuler"
@@ -311,6 +421,10 @@ msgstr "Placed"
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Passer la commande"
 msgstr "Place order"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "QR code à scanner"
+msgstr "QR code to scan"
 
 #: src/routes/__root.tsx
 msgid "Quelque chose s'est mal passé. Vous pouvez réessayer."
@@ -352,6 +466,23 @@ msgstr "Back to sign in"
 msgid "Rôle modifié"
 msgstr "Role changed"
 
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Saisissez l’un des codes de secours obtenus à l’activation de la 2FA."
+msgstr "Enter one of the backup codes you got when turning on 2FA."
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Saisissez le code à 6 chiffres affiché par votre application d’authentification."
+msgstr "Enter the 6-digit code shown by your authenticator app."
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Saisissez les 6 chiffres du code."
+msgstr "Enter the 6 digits of the code."
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Saisissez un code de secours."
+msgstr "Enter a backup code."
+
 #: ../../libs/web/auth/src/lib/components/create-organization-page.tsx
 msgid "Saisissez un nom."
 msgstr "Enter a name."
@@ -362,6 +493,7 @@ msgstr "Enter a name."
 msgid "Saisissez une adresse email valide."
 msgstr "Enter a valid email address."
 
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 msgid "Saisissez votre mot de passe."
 msgstr "Enter your password."
@@ -370,6 +502,10 @@ msgstr "Enter your password."
 msgid "Saisissez votre nom."
 msgstr "Enter your name."
 
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Scannez ce QR code avec votre application d’authentification, puis saisissez le code qu’elle affiche."
+msgstr "Scan this QR code with your authenticator app, then enter the code it shows."
+
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 msgid "Se connecter"
 msgstr "Sign in"
@@ -377,6 +513,14 @@ msgstr "Sign in"
 #: ../../libs/web/auth/src/lib/components/account-menu.tsx
 msgid "Se déconnecter"
 msgstr "Sign out"
+
+#: src/components/app-navigation.tsx
+msgid "Sécurité"
+msgstr "Security"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+msgid "Sécurité du compte"
+msgstr "Account security"
 
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 msgid "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
@@ -400,6 +544,10 @@ msgstr "Total: {0}"
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Toutes les actions"
 msgstr "All actions"
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Trop de codes incorrects : le compte est bloqué quelques minutes."
+msgstr "Too many wrong codes: the account is locked for a few minutes."
 
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Trop de tentatives. Réessayez dans quelques instants."
@@ -427,6 +575,23 @@ msgstr "An error occurred."
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Une erreur est survenue. Réessayez."
 msgstr "Something went wrong. Try again."
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Utiliser l’application d’authentification"
+msgstr "Use the authenticator app"
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Utiliser un code de secours"
+msgstr "Use a backup code"
+
+#: ../../libs/web/auth/src/lib/components/security-page.tsx
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Vérification en deux étapes"
+msgstr "Two-step verification"
+
+#: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
+msgid "Vérifier"
+msgstr "Verify"
 
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
 msgid "Vérifiez votre boîte mail"

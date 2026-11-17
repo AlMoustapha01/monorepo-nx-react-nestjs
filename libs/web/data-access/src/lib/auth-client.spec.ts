@@ -92,6 +92,71 @@ describe('createAuthClient', () => {
     ]);
   });
 
+  it('tells when the password is not enough and a second factor is due', async () => {
+    server.use(
+      http.post(`${AUTH}/sign-in/email`, () => HttpResponse.json({ twoFactorRedirect: true })),
+    );
+    await expect(auth.signIn({ email: 'ada@shop.test', password: 'secret' })).resolves.toEqual({
+      twoFactorRequired: true,
+    });
+    server.use(
+      http.post(`${AUTH}/sign-in/email`, () =>
+        HttpResponse.json({ redirect: false, token: 'session', user: {} }),
+      ),
+    );
+    await expect(auth.signIn({ email: 'ada@shop.test', password: 'secret' })).resolves.toEqual({
+      twoFactorRequired: false,
+    });
+  });
+
+  it('completes the sign-in with a code of the authenticator app or a backup code', async () => {
+    const received: { path: string; body: unknown }[] = [];
+    server.use(
+      http.post(`${AUTH}/two-factor/:method`, async ({ request, params }) => {
+        received.push({ path: String(params['method']), body: await request.json() });
+        return HttpResponse.json({ token: 'session', user: {} });
+      }),
+    );
+    await auth.verifySecondFactor('123456');
+    await auth.verifySecondFactor('abcde-12345', { backupCode: true });
+    expect(received).toEqual([
+      { path: 'verify-totp', body: { code: '123456' } },
+      { path: 'verify-backup-code', body: { code: 'abcde-12345' } },
+    ]);
+  });
+
+  it('sets up 2FA: secret to scan, backup codes, then confirmation by a first code', async () => {
+    server.use(
+      http.post(`${AUTH}/two-factor/enable`, () =>
+        HttpResponse.json({ totpURI: 'otpauth://totp/Shop:ada', backupCodes: ['a', 'b'] }),
+      ),
+      http.post(`${AUTH}/two-factor/generate-backup-codes`, () =>
+        HttpResponse.json({ status: true, backupCodes: ['c', 'd'] }),
+      ),
+    );
+    await expect(auth.enableTwoFactor('secret')).resolves.toEqual({
+      totpURI: 'otpauth://totp/Shop:ada',
+      backupCodes: ['a', 'b'],
+    });
+    await expect(auth.regenerateBackupCodes('secret')).resolves.toEqual(['c', 'd']);
+  });
+
+  it('reads the role of the user in the active organization and sets its 2FA requirement', async () => {
+    let update: unknown;
+    server.use(
+      http.get(`${AUTH}/organization/get-active-member-role`, () =>
+        HttpResponse.json({ role: 'owner' }),
+      ),
+      http.post(`${AUTH}/organization/update`, async ({ request }) => {
+        update = await request.json();
+        return HttpResponse.json({ id: 'o1', name: 'Atelier', slug: 'atelier' });
+      }),
+    );
+    await expect(auth.getActiveMemberRole()).resolves.toBe('owner');
+    await auth.setTwoFactorRequirement('o1', true);
+    expect(update).toEqual({ organizationId: 'o1', data: { requireTwoFactor: true } });
+  });
+
   it('returns undefined as the access token without a session', async () => {
     server.use(http.get(`${AUTH}/token`, () => new HttpResponse(null, { status: 401 })));
     await expect(auth.getAccessToken()).resolves.toBeUndefined();

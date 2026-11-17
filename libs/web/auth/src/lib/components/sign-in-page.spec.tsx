@@ -99,3 +99,84 @@ describe('SignInPage', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Trop de tentatives');
   });
 });
+
+describe('SignInPage with two-factor authentication', () => {
+  const secondFactorDue = () =>
+    http.post(`${AUTH}/sign-in/email`, () => HttpResponse.json({ twoFactorRedirect: true }));
+
+  async function render() {
+    const onSignedIn = vi.fn<() => void>();
+    await renderWithProviders(
+      <SignInPage auth={auth} verificationCallbackUrl={callback} onSignedIn={onSignedIn} />,
+    );
+    return onSignedIn;
+  }
+
+  it('asks for the code of the authenticator app after the password', async () => {
+    let code: unknown;
+    server.use(
+      secondFactorDue(),
+      http.post(`${AUTH}/two-factor/verify-totp`, async ({ request }) => {
+        code = await request.json();
+        return HttpResponse.json({ token: 's', user: {} });
+      }),
+    );
+    const onSignedIn = await render();
+    const user = await fill('ada@shop.test', 'secret-password');
+
+    const field = await screen.findByLabelText('Code de l’application d’authentification');
+    expect(onSignedIn).not.toHaveBeenCalled();
+    await user.type(field, ' 123456 ');
+    await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+    await vi.waitFor(() => expect(onSignedIn).toHaveBeenCalledOnce());
+    expect(code).toEqual({ code: '123456' });
+  });
+
+  it('accepts a backup code instead, and says when a code is wrong', async () => {
+    let backup: unknown;
+    server.use(
+      secondFactorDue(),
+      http.post(`${AUTH}/two-factor/verify-totp`, () => betterAuthError(401, 'INVALID_CODE')),
+      http.post(`${AUTH}/two-factor/verify-backup-code`, async ({ request }) => {
+        backup = await request.json();
+        return HttpResponse.json({ token: 's', user: {} });
+      }),
+    );
+    const onSignedIn = await render();
+    const user = await fill('ada@shop.test', 'secret-password');
+
+    await user.type(
+      await screen.findByLabelText('Code de l’application d’authentification'),
+      '000000',
+    );
+    await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+    expect(await screen.findByText('Code incorrect. Réessayez.')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Utiliser un code de secours' }));
+    await user.type(screen.getByLabelText('Code de secours'), 'abcde-12345');
+    await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+    await vi.waitFor(() => expect(onSignedIn).toHaveBeenCalledOnce());
+    expect(backup).toEqual({ code: 'abcde-12345' });
+  });
+
+  it('starts over when the second step has expired', async () => {
+    server.use(
+      secondFactorDue(),
+      http.post(`${AUTH}/two-factor/verify-totp`, () =>
+        betterAuthError(401, 'INVALID_TWO_FACTOR_COOKIE'),
+      ),
+    );
+    await render();
+    const user = await fill('ada@shop.test', 'secret-password');
+
+    await user.type(
+      await screen.findByLabelText('Code de l’application d’authentification'),
+      '123456',
+    );
+    await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+    expect(
+      await screen.findByText('La vérification a expiré. Saisissez à nouveau votre mot de passe.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Mot de passe')).toBeTruthy();
+  });
+});

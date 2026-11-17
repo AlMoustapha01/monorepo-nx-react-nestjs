@@ -10,6 +10,9 @@ import {
   type Organization,
   type OrganizationMember,
   organizationMembersSchema,
+  signInResultSchema,
+  type TwoFactorSetup,
+  twoFactorSetupSchema,
   type SignInInput,
   type SignUpInput,
 } from '@nx-react-nestjs/contracts';
@@ -31,7 +34,16 @@ export interface AuthClientOptions {
  */
 export interface AuthClient {
   getSession(signal?: AbortSignal): Promise<AuthSession>;
-  signIn(input: SignInInput): Promise<void>;
+  /** `twoFactorRequired` : le mot de passe est bon, il faut encore le second facteur (`verifySecondFactor`). */
+  signIn(input: SignInInput): Promise<{ twoFactorRequired: boolean }>;
+  /** Code de l'application d'authentification, ou un code de secours (`backupCode`). */
+  verifySecondFactor(code: string, options?: { backupCode?: boolean }): Promise<void>;
+  /** Commence l'activation : la 2FA n'est active qu'après un premier code (`confirmTwoFactor`). */
+  enableTwoFactor(password: string): Promise<TwoFactorSetup>;
+  confirmTwoFactor(code: string): Promise<void>;
+  disableTwoFactor(password: string): Promise<void>;
+  /** Nouveaux codes de secours ; les anciens ne valent plus. */
+  regenerateBackupCodes(password: string): Promise<string[]>;
   /** `callbackURL` : page du front ouverte après le clic sur le lien de vérification. */
   signUp(input: SignUpInput, callbackURL: string): Promise<void>;
   signOut(): Promise<void>;
@@ -46,12 +58,18 @@ export interface AuthClient {
   listMembers(signal?: AbortSignal): Promise<OrganizationMember[]>;
   getInvitation(invitationId: string, signal?: AbortSignal): Promise<Invitation>;
   acceptInvitation(invitationId: string): Promise<void>;
+  /** Rôle Better Auth (`owner`, `admin`, `member`) dans l'organisation active. */
+  getActiveMemberRole(signal?: AbortSignal): Promise<string>;
+  /** L'organisation exige la 2FA de ses membres, ou plus. Réservé à un `owner` ou un `admin` qui a la 2FA. */
+  setTwoFactorRequirement(organizationId: string, required: boolean): Promise<void>;
   /** Access token de 15 min pour l'API ; `undefined` sans session. */
   getAccessToken(): Promise<string | undefined>;
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const ignored = z.unknown();
+const backupCodesSchema = z.object({ backupCodes: z.array(z.string()) });
+const memberRoleSchema = z.object({ role: z.string() });
 
 export function createAuthClient(options: AuthClientOptions): AuthClient {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -114,8 +132,24 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
   return {
     getSession: (signal) => call('/get-session', authSessionSchema, { signal }),
     signIn: async (input) => {
-      await call('/sign-in/email', ignored, { body: input });
+      const result = await call('/sign-in/email', signInResultSchema, { body: input });
+      return { twoFactorRequired: result.twoFactorRedirect === true };
     },
+    verifySecondFactor: async (code, { backupCode = false } = {}) => {
+      const path = backupCode ? '/two-factor/verify-backup-code' : '/two-factor/verify-totp';
+      await call(path, ignored, { body: { code } });
+    },
+    enableTwoFactor: (password) =>
+      call('/two-factor/enable', twoFactorSetupSchema, { body: { password } }),
+    confirmTwoFactor: async (code) => {
+      await call('/two-factor/verify-totp', ignored, { body: { code } });
+    },
+    disableTwoFactor: async (password) => {
+      await call('/two-factor/disable', ignored, { body: { password } });
+    },
+    regenerateBackupCodes: async (password) =>
+      (await call('/two-factor/generate-backup-codes', backupCodesSchema, { body: { password } }))
+        .backupCodes,
     signUp: async (input, callbackURL) => {
       await call('/sign-up/email', ignored, { body: { ...input, callbackURL } });
     },
@@ -150,6 +184,13 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
       ),
     acceptInvitation: async (invitationId) => {
       await call('/organization/accept-invitation', ignored, { body: { invitationId } });
+    },
+    getActiveMemberRole: async (signal) =>
+      (await call('/organization/get-active-member-role', memberRoleSchema, { signal })).role,
+    setTwoFactorRequirement: async (organizationId, required) => {
+      await call('/organization/update', ignored, {
+        body: { organizationId, data: { requireTwoFactor: required } },
+      });
     },
     getAccessToken: async () => {
       try {

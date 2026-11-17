@@ -30,6 +30,7 @@ const E2E_FEATURE_FLAGS: string[] = [
   // example:end
   // option:feature-flags:start
   'audit.log=true',
+  'account.two-factor=true',
 ];
 // option:feature-flags:end
 

@@ -23,6 +23,7 @@ function useActionLabels(): Record<string, string> {
     'identity.member-joined': t`Membre arrivé`,
     'identity.member-removed': t`Membre retiré`,
     'identity.member-role-changed': t`Rôle modifié`,
+    'identity.two-factor-requirement-changed': t`Exigence de la 2FA modifiée`,
     // example:start
     'orders.order-placed': t`Commande passée`,
     'orders.order-cancelled': t`Commande annulée`,

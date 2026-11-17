@@ -57,6 +57,9 @@ export function appUrl(path: string): string {
 
 export const RESET_PASSWORD_PATH = '/reinitialiser-mot-de-passe';
 
+/** Page où un membre active la 2FA que son organisation exige : la seule qui lui reste ouverte. */
+export const SECURITY_PATH = '/securite';
+
 /**
  * Destination après connexion : un chemin de l'app seulement. Une URL absolue ou `//hôte`
  * ferait de la page de connexion un redirecteur ouvert vers un site tiers.

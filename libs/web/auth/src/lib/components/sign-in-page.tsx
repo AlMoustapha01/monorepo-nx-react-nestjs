@@ -9,6 +9,7 @@ import { Button, FormError, FormField, Stack, Text, buttonVariants } from '@nx-r
 
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
 import { AuthCard } from './auth-card';
+import { SecondFactorForm } from './second-factor-form';
 
 interface SignInPageProps {
   auth: AuthClient;
@@ -29,6 +30,7 @@ export function SignInPage({
   const errorMessage = useAuthErrorMessage();
   const [unverifiedEmail, setUnverifiedEmail] = useState<string>();
   const [verificationSent, setVerificationSent] = useState(false);
+  const [secondFactor, setSecondFactor] = useState(false);
   const form = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: '', password: '' },
@@ -38,7 +40,11 @@ export function SignInPage({
   const submit = form.handleSubmit(async (input) => {
     setVerificationSent(false);
     try {
-      await auth.signIn(input);
+      const { twoFactorRequired } = await auth.signIn(input);
+      if (twoFactorRequired) {
+        setSecondFactor(true);
+        return;
+      }
       await onSignedIn();
     } catch (error) {
       setUnverifiedEmail(
@@ -57,6 +63,22 @@ export function SignInPage({
       form.setError('root', { message: errorMessage(error) });
     }
   };
+
+  if (secondFactor) {
+    return (
+      <AuthCard title={<Trans>Vérification en deux étapes</Trans>}>
+        <SecondFactorForm
+          auth={auth}
+          onVerified={onSignedIn}
+          onExpired={(message) => {
+            setSecondFactor(false);
+            form.reset({ ...form.getValues(), password: '' });
+            form.setError('root', { message });
+          }}
+        />
+      </AuthCard>
+    );
+  }
 
   return (
     <AuthCard

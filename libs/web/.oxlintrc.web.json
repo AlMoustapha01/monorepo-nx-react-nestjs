@@ -33,6 +33,7 @@
           "error",
           {
             "ignoreNames": [
+              "inputMode",
               "as",
               "className",
               "key",

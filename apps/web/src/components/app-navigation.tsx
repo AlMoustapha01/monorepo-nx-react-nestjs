@@ -21,9 +21,10 @@ export function AppNavigation() {
   const storefront = useFeatureFlag('storefront');
   // example:end
   // Sans feature flags (create:project), le lien est toujours là.
-  const visible = { auditLog: true };
+  const visible = { auditLog: true, security: true };
   // option:feature-flags:start
   visible.auditLog = useFeatureFlag('audit.log');
+  visible.security = useFeatureFlag('account.two-factor');
   // option:feature-flags:end
   const { data: current } = useQuery({
     ...sessionQueryOptions(context.session.auth),
@@ -38,6 +39,11 @@ export function AppNavigation() {
       {visible.auditLog && (
         <Link to="/journal" className="text-sm underline-offset-4 hover:underline">
           <Trans>Journal d’audit</Trans>
+        </Link>
+      )}
+      {visible.security && (
+        <Link to="/securite" className="text-sm underline-offset-4 hover:underline">
+          <Trans>Sécurité</Trans>
         </Link>
       )}
       {current && (
