@@ -29,6 +29,8 @@ export function useAuthErrorMessage(): (error: unknown) => string {
         return t`Code incorrect. Réessayez.`;
       case 'INVALID_TWO_FACTOR_COOKIE':
         return t`La vérification a expiré. Saisissez à nouveau votre mot de passe.`;
+      case 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE':
+        return t`Trop de codes incorrects. Saisissez à nouveau votre mot de passe.`;
       case 'ACCOUNT_TEMPORARILY_LOCKED':
         return t`Trop de codes incorrects : le compte est bloqué quelques minutes.`;
       case 'INVALID_PASSWORD':

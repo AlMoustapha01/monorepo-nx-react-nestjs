@@ -550,6 +550,10 @@ msgid "Trop de codes incorrects : le compte est bloqué quelques minutes."
 msgstr "Trop de codes incorrects : le compte est bloqué quelques minutes."
 
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Trop de codes incorrects. Saisissez à nouveau votre mot de passe."
+msgstr "Trop de codes incorrects. Saisissez à nouveau votre mot de passe."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Trop de tentatives. Réessayez dans quelques instants."
 msgstr "Trop de tentatives. Réessayez dans quelques instants."
 

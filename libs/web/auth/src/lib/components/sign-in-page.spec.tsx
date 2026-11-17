@@ -179,4 +179,25 @@ describe('SignInPage with two-factor authentication', () => {
     ).toBeTruthy();
     expect(screen.getByLabelText('Mot de passe')).toBeTruthy();
   });
+
+  it('goes back to the password after too many wrong codes', async () => {
+    server.use(
+      secondFactorDue(),
+      http.post(`${AUTH}/two-factor/verify-totp`, () =>
+        betterAuthError(400, 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE'),
+      ),
+    );
+    await render();
+    const user = await fill('ada@shop.test', 'secret-password');
+
+    await user.type(
+      await screen.findByLabelText('Code de l’application d’authentification'),
+      '123456',
+    );
+    await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+    expect(
+      await screen.findByText('Trop de codes incorrects. Saisissez à nouveau votre mot de passe.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Mot de passe')).toBeTruthy();
+  });
 });

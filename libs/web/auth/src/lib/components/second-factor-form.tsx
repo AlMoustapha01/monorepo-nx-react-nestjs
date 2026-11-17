@@ -32,7 +32,12 @@ export function SecondFactorForm({ auth, onVerified, onExpired }: SecondFactorFo
       await auth.verifySecondFactor(code, { backupCode: backup });
       await onVerified();
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'INVALID_TWO_FACTOR_COOKIE') {
+      // Étape expirée, ou trop de codes faux : Better Auth invalide l'étape, retour au mot de passe.
+      if (
+        error instanceof ApiError &&
+        (error.code === 'INVALID_TWO_FACTOR_COOKIE' ||
+          error.code === 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE')
+      ) {
         onExpired(errorMessage(error));
         return;
       }
