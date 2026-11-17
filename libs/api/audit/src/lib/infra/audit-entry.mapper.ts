@@ -8,6 +8,7 @@ export class AuditEntryMapper extends PersistenceMapper<AuditEntry, AuditEntryRo
       id: row.id,
       tenantId: row.tenantId,
       actorId: row.actorId,
+      impersonatorId: row.impersonatorId,
       action: row.action,
       resource:
         row.resourceType && row.resourceId ? { type: row.resourceType, id: row.resourceId } : null,
@@ -22,6 +23,7 @@ export class AuditEntryMapper extends PersistenceMapper<AuditEntry, AuditEntryRo
       id: entry.id,
       tenantId: entry.tenantId,
       actorId: entry.actorId,
+      impersonatorId: entry.impersonatorId,
       action: entry.action,
       resourceType: entry.resource?.type ?? null,
       resourceId: entry.resource?.id ?? null,

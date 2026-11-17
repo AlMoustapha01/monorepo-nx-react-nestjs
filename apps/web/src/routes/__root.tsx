@@ -13,9 +13,11 @@ import type { ApiClient } from '@nx-react-nestjs/web-data-access';
 import { Button, Heading, Stack, Text, buttonVariants } from '@nx-react-nestjs/web-ui';
 
 import { AppNavigation } from '../components/app-navigation';
+import { BackOfficeNavigation } from '../components/back-office-navigation';
 import { LocaleSwitcher } from '../components/locale-switcher';
+import { SupportBanner } from '../components/support-banner';
 import { reportError } from '../report-error';
-import { AUTHENTICATED_ROUTE, type SessionContext } from '../session';
+import { AUTHENTICATED_ROUTE, BACK_OFFICE_ROUTE, type SessionContext } from '../session';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -26,10 +28,12 @@ export interface RouterContext {
 function RootLayout() {
   // Navigation et compte n'existent qu'une fois connecté (les flags exigent un token).
   const authenticated = useMatch({ from: AUTHENTICATED_ROUTE, shouldThrow: false });
+  const backOffice = useMatch({ from: BACK_OFFICE_ROUTE, shouldThrow: false });
   return (
     <>
+      <SupportBanner />
       <header className="flex items-center justify-between gap-4 p-4">
-        {authenticated ? <AppNavigation /> : <span />}
+        {authenticated ? <AppNavigation /> : backOffice ? <BackOfficeNavigation /> : <span />}
         <LocaleSwitcher />
       </header>
       <Stack as="main">

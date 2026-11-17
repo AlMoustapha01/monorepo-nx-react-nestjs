@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "apps/api/src/{main,worker,migrate,feature-flags}.ts",
-    "apps/auth/src/{main,migrate}.ts",
+    "apps/auth/src/{main,migrate,operators}.ts",
     "apps/web-e2e/playwright.config.ts",
     "apps/web-e2e/src/global-setup.ts",
     "apps/web-e2e/src/**/*.spec.ts",

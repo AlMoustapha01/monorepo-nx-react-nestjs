@@ -1,14 +1,22 @@
 import { passkey } from '@better-auth/passkey';
 import { type BetterAuthPlugin, betterAuth } from 'better-auth';
-import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
-import { jwt, organization, twoFactor } from 'better-auth/plugins';
+import {
+  APIError,
+  createAuthEndpoint,
+  createAuthMiddleware,
+  getSessionFromCtx,
+  sessionMiddleware,
+} from 'better-auth/api';
+import { admin, jwt, organization, twoFactor } from 'better-auth/plugins';
 import { Pool } from 'pg';
 import type { Logger } from 'pino';
+import { accountSearchSchema, OPERATOR_ROLE } from '@nx-react-nestjs/contracts';
 import { createAccessRevoker } from './access-revocation';
-import { createAuditWriter, identityAuditEntries } from './audit';
+import { createAuditWriter, identityAuditEntries, impersonationAuditEntries } from './audit';
 import { apiClaims, PASSKEY_SIGN_IN_PATH } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
+import { searchAccounts } from './operator-search';
 // option:sentry:start
 import { reportError } from './report-error';
 // option:sentry:end
@@ -76,8 +84,57 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     );
   };
 
+  /** Durée maximale d'une impersonation (ADR 0019). */
+  const IMPERSONATION_SECONDS = 60 * 60;
   const writeAudit = createAuditWriter(pool, logger);
   const revoker = createAccessRevoker(pool, logger);
+
+  /** Organisations d'un utilisateur : celles où une impersonation est inscrite au journal et révoquée. */
+  const organizationsOf = async (userId: string) =>
+    (
+      await pool.query<{ organizationId: string }>(
+        'select "organizationId" from member where "userId" = $1',
+        [userId],
+      )
+    ).rows.map((row) => row.organizationId);
+
+  /**
+   * Impersonation en cours de début ou de fin, notée par le hook `before` pour le hook `after` : à la fin, la session
+   * impersonée est déjà supprimée quand ce dernier passe (ADR 0019).
+   */
+  const impersonations = new WeakMap<
+    Request,
+    { phase: 'started' | 'stopped'; operatorId: string; userId: string }
+  >();
+
+  /**
+   * Début : l'opérateur doit avoir la 2FA (ou une session ouverte par passkey), car la session impersonée la vaut.
+   * Fin : les tokens émis pendant l'impersonation sont révoqués avant de quitter la session (ADR 0016).
+   */
+  const beforeImpersonation = async (ctx: Parameters<typeof getSessionFromCtx>[0]) => {
+    const session = await getSessionFromCtx(ctx).catch(() => null);
+    if (!session || !ctx.request) return;
+    if (ctx.path === '/admin/impersonate-user') {
+      const userId = (ctx.body as { userId?: unknown } | undefined)?.userId;
+      const operator = session.user as { role?: unknown; twoFactorEnabled?: boolean | null };
+      if (operator.role !== OPERATOR_ROLE || typeof userId !== 'string') return;
+      const passkey = (session.session as { passkeySignIn?: boolean | null }).passkeySignIn;
+      if (!operator.twoFactorEnabled && passkey !== true) {
+        throw new APIError('FORBIDDEN', {
+          code: 'OPERATOR_TWO_FACTOR_REQUIRED',
+          message: 'Enable two-factor authentication before impersonating a user',
+        });
+      }
+      impersonations.set(ctx.request, { phase: 'started', operatorId: session.user.id, userId });
+      return;
+    }
+    const operatorId = (session.session as { impersonatedBy?: unknown }).impersonatedBy;
+    if (typeof operatorId !== 'string') return;
+    for (const tenantId of await organizationsOf(session.user.id)) {
+      await revoker.before(tenantId, [session.user.id]);
+    }
+    impersonations.set(ctx.request, { phase: 'stopped', operatorId, userId: session.user.id });
+  };
   /** Membres d'une organisation en cours de suppression, lus avant : sa fin les révoque à nouveau. */
   const membersOfDeleted = new Map<string, string[]>();
   const membersOf = async (organizationId: string) =>
@@ -143,6 +200,16 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     if (returned instanceof Error) {
       return;
     }
+    const impersonation = ctx.request && impersonations.get(ctx.request);
+    if (impersonation) {
+      const { phase, ...people } = impersonation;
+      const organizationIds = await organizationsOf(people.userId);
+      if (phase === 'stopped') {
+        for (const tenantId of organizationIds) await revoker.after(tenantId, [people.userId]);
+      }
+      await writeAudit(impersonationAuditEntries(phase, people, organizationIds));
+      return;
+    }
     if (ctx.path === '/organization/leave') {
       const left = returned as { userId?: unknown; organizationId?: unknown } | undefined;
       if (typeof left?.userId === 'string' && typeof left.organizationId === 'string') {
@@ -164,21 +231,27 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
         await revoker.after(tenantId, userIds);
       }
     }
+    // Action faite depuis une session impersonée : l'opérateur réel va au journal (ADR 0019).
+    const impersonatorId = (session?.session as { impersonatedBy?: unknown } | undefined)
+      ?.impersonatedBy;
+    const entries = identityAuditEntries({
+      path: ctx.path,
+      sessionUserId: session?.user.id,
+      newSession: newSession
+        ? {
+            userId: newSession.user.id,
+            activeOrganizationId:
+              (newSession.session as { activeOrganizationId?: string | null })
+                .activeOrganizationId ?? null,
+          }
+        : undefined,
+      returned,
+      body: ctx.body,
+    });
     await writeAudit(
-      identityAuditEntries({
-        path: ctx.path,
-        sessionUserId: session?.user.id,
-        newSession: newSession
-          ? {
-              userId: newSession.user.id,
-              activeOrganizationId:
-                (newSession.session as { activeOrganizationId?: string | null })
-                  .activeOrganizationId ?? null,
-            }
-          : undefined,
-        returned,
-        body: ctx.body,
-      }),
+      typeof impersonatorId === 'string'
+        ? entries.map((entry) => ({ ...entry, impersonatorId }))
+        : entries,
     );
   });
 
@@ -243,6 +316,10 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       // Départ d'un membre : le plugin d'organisation n'a pas de hook pour lui (ADR 0016).
       // Exigence de 2FA et 2FA désactivée : révocations avant l'action (ADR 0017).
       before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === '/admin/impersonate-user' || ctx.path === '/admin/stop-impersonating') {
+          await beforeImpersonation(ctx);
+          return;
+        }
         if (
           ctx.path !== '/organization/leave' &&
           ctx.path !== '/organization/create' &&
@@ -321,10 +398,45 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
             };
           },
         },
+        update: {
+          // Une session impersonée ne dure jamais plus d'une heure : sans le cookie « ne pas se souvenir de
+          // moi », `/get-session` la prolongerait de 7 jours à chaque lecture (ADR 0019).
+          before: async (data, context) => {
+            const current = context?.context.session?.session as
+              | { impersonatedBy?: unknown; createdAt?: Date | string }
+              | undefined;
+            if (!(data.expiresAt instanceof Date) || typeof current?.impersonatedBy !== 'string') {
+              return;
+            }
+            const limit = new Date(current.createdAt ?? 0).getTime() + IMPERSONATION_SECONDS * 1000;
+            if (data.expiresAt.getTime() <= limit) return;
+            return { data: { ...data, expiresAt: new Date(limit) } };
+          },
+        },
       },
     },
     // Second facteur : application d'authentification (TOTP) et codes de secours, pas de code par email (ADR 0017).
-    disabledPaths: ['/two-factor/send-otp', '/two-factor/verify-otp'],
+    disabledPaths: [
+      '/two-factor/send-otp',
+      '/two-factor/verify-otp',
+      // Du plugin admin, seule l'impersonation sert : les opérateurs se nomment par la commande
+      // `operators.js`, et la recherche passe par `/operator/search` (ADR 0019).
+      ...[
+        'ban-user',
+        'create-user',
+        'get-user',
+        'has-permission',
+        'list-user-sessions',
+        'list-users',
+        'remove-user',
+        'revoke-user-session',
+        'revoke-user-sessions',
+        'set-role',
+        'set-user-password',
+        'unban-user',
+        'update-user',
+      ].map((endpoint) => `/admin/${endpoint}`),
+    ],
     plugins: [
       twoFactor({
         issuer: 'Shop',
@@ -393,10 +505,43 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
             apiClaims({
               user,
               membership: await membership(user.id, session['activeOrganizationId']),
-              session: { passkeySignIn: session['passkeySignIn'] === true },
+              session: {
+                passkeySignIn: session['passkeySignIn'] === true,
+                impersonatedBy:
+                  typeof session['impersonatedBy'] === 'string' ? session['impersonatedBy'] : null,
+              },
             }),
         },
       }),
+      // Back-office : un opérateur voit l'application comme un client, une heure au plus (ADR 0019).
+      admin({
+        adminRoles: [OPERATOR_ROLE],
+        defaultRole: 'user',
+        impersonationSessionDuration: IMPERSONATION_SECONDS,
+        allowImpersonatingAdmins: false,
+      }),
+      {
+        id: 'operator-search',
+        endpoints: {
+          operatorSearch: createAuthEndpoint(
+            '/operator/search',
+            {
+              method: 'GET',
+              query: accountSearchSchema,
+              use: [sessionMiddleware],
+            },
+            async (ctx) => {
+              if ((ctx.context.session.user as { role?: unknown }).role !== OPERATOR_ROLE) {
+                throw new APIError('FORBIDDEN', {
+                  code: 'OPERATOR_REQUIRED',
+                  message: 'Only platform operators can search accounts',
+                });
+              }
+              return ctx.json({ users: await searchAccounts(pool, ctx.query.query) });
+            },
+          ),
+        },
+      } satisfies BetterAuthPlugin,
       // En dernier : ses hooks voient le résultat de ceux des autres plugins.
       {
         id: 'audit-and-revocation',

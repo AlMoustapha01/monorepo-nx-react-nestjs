@@ -61,6 +61,10 @@ msgstr "Activez d’abord la vérification en deux étapes sur votre compte."
 msgid "Activez d’abord la vérification en deux étapes sur votre propre compte."
 msgstr "Activez d’abord la vérification en deux étapes sur votre propre compte."
 
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Activez la vérification en deux étapes sur votre compte avant de voir celui d’un client."
+msgstr "Activez la vérification en deux étapes sur votre compte avant de voir celui d’un client."
+
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
@@ -101,6 +105,10 @@ msgstr "Annuler cette commande ?"
 msgid "Annuler la commande"
 msgstr "Annuler la commande"
 
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Aucun compte ne correspond."
+msgstr "Aucun compte ne correspond."
+
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Aucun produit pour le moment"
 msgstr "Aucun produit pour le moment"
@@ -109,9 +117,18 @@ msgstr "Aucun produit pour le moment"
 msgid "Aucune action enregistrée."
 msgstr "Aucune action enregistrée."
 
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Aucune organisation"
+msgstr "Aucune organisation"
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Augmenter la quantité"
 msgstr "Augmenter la quantité"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+#: src/components/app-navigation.tsx
+msgid "Back-office"
+msgstr "Back-office"
 
 #: ../../libs/web/storefront/src/lib/components/storefront-nav.tsx
 msgid "Boutique"
@@ -153,6 +170,10 @@ msgstr "Cette invitation est destinée à une autre adresse email."
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Cette invitation n'existe pas ou a expiré."
 msgstr "Cette invitation n'existe pas ou a expiré."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Cette page est réservée aux opérateurs de la plateforme."
+msgstr "Cette page est réservée aux opérateurs de la plateforme."
 
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
@@ -204,6 +225,10 @@ msgstr "Commande annulée"
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Commande passée"
 msgstr "Commande passée"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Comptes trouvés"
+msgstr "Comptes trouvés"
 
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "Confirmer"
@@ -268,6 +293,10 @@ msgstr "Effacer les filtres"
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Email ou mot de passe incorrect."
 msgstr "Email ou mot de passe incorrect."
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Email, nom ou organisation"
+msgstr "Email, nom ou organisation"
 
 #: ../../libs/web/auth/src/lib/components/reset-password-page.tsx
 msgid "Enregistrer"
@@ -354,6 +383,14 @@ msgstr "Le journal d’audit est réservé aux administrateurs de l’organisati
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Le service est injoignable. Vérifiez votre connexion et réessayez."
 msgstr "Le service est injoignable. Vérifiez votre connexion et réessayez."
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Le support a quitté le compte"
+msgstr "Le support a quitté le compte"
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Le support est entré dans le compte"
+msgstr "Le support est entré dans le compte"
 
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "Les membres sans vérification en deux étapes perdent aussitôt l’accès, jusqu’à ce qu’ils l’activent."
@@ -487,6 +524,14 @@ msgstr "Recevoir un lien"
 msgid "Recevoir un nouveau lien"
 msgstr "Recevoir un nouveau lien"
 
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Recherche…"
+msgstr "Recherche…"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Rechercher"
+msgstr "Rechercher"
+
 #: src/routes/__root.tsx
 msgid "Réessayer"
 msgstr "Réessayer"
@@ -511,9 +556,17 @@ msgstr "Retour à l'accueil"
 msgid "Retour à la connexion"
 msgstr "Retour à la connexion"
 
+#: ../../libs/web/auth/src/lib/components/impersonation-banner.tsx
+msgid "Revenir à mon compte"
+msgstr "Revenir à mon compte"
+
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Rôle modifié"
 msgstr "Rôle modifié"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Saisissez au moins 2 caractères."
+msgstr "Saisissez au moins 2 caractères."
 
 #: ../../libs/web/auth/src/lib/components/second-factor-form.tsx
 msgid "Saisissez l’un des codes de secours obtenus à l’activation de la 2FA."
@@ -568,6 +621,7 @@ msgid "Se déconnecter"
 msgstr "Se déconnecter"
 
 #: src/components/app-navigation.tsx
+#: src/components/back-office-navigation.tsx
 msgid "Sécurité"
 msgstr "Sécurité"
 
@@ -575,9 +629,17 @@ msgstr "Sécurité"
 msgid "Sécurité du compte"
 msgstr "Sécurité du compte"
 
+#: ../../libs/web/auth/src/lib/components/impersonation-banner.tsx
+msgid "Session du support"
+msgstr "Session du support"
+
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 msgid "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
 msgstr "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
+
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "Support de la plateforme"
+msgstr "Support de la plateforme"
 
 #: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
 msgid "Supprimer"
@@ -626,6 +688,10 @@ msgstr "Un compte existe déjà avec cette adresse email."
 msgid "Un nouveau lien de confirmation a été envoyé."
 msgstr "Un nouveau lien de confirmation a été envoyé."
 
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Un opérateur ne peut pas voir le compte d’un autre opérateur."
+msgstr "Un opérateur ne peut pas voir le compte d’un autre opérateur."
+
 #: src/routes/__root.tsx
 msgid "Une erreur est survenue"
 msgstr "Une erreur est survenue"
@@ -662,6 +728,18 @@ msgstr "Vérifier"
 msgid "Vérifiez votre boîte mail"
 msgstr "Vérifiez votre boîte mail"
 
+#: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
+msgid "via le support de la plateforme"
+msgstr "via le support de la plateforme"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Voir comme <0>{email}</0>"
+msgstr "Voir comme <0>{email}</0>"
+
+#: ../../libs/web/auth/src/lib/components/back-office-page.tsx
+msgid "Voir l’application comme un client, pour l’aider : une heure au plus, inscrit dans le journal d’audit de ses organisations."
+msgstr "Voir l’application comme un client, pour l’aider : une heure au plus, inscrit dans le journal d’audit de ses organisations."
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Voir le catalogue"
 msgstr "Voir le catalogue"
@@ -695,3 +773,7 @@ msgstr "Vous êtes invité à rejoindre {organizationName} avec l'adresse {email
 #: ../../libs/web/storefront/src/lib/components/orders-page.tsx
 msgid "Vous n'avez pas encore de commande"
 msgstr "Vous n'avez pas encore de commande"
+
+#: ../../libs/web/auth/src/lib/components/impersonation-banner.tsx
+msgid "Vous voyez l’application comme {email}. Chaque action est inscrite à votre nom ; la session prend fin au bout d’une heure."
+msgstr "Vous voyez l’application comme {email}. Chaque action est inscrite à votre nom ; la session prend fin au bout d’une heure."

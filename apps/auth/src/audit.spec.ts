@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { identityAuditEntries } from './audit';
+import { identityAuditEntries, impersonationAuditEntries } from './audit';
 
 const owner = randomUUID();
 const ada = randomUUID();
@@ -175,5 +175,28 @@ describe('identityAuditEntries', () => {
       request({ path: '/organization/list-members', returned: { members: [member] } }),
     ).toEqual([]);
     expect(request({ returned: { member: { userId: ada } } })).toEqual([]);
+  });
+});
+
+describe('impersonationAuditEntries', () => {
+  it('records the operator in every organization of the client, which reads it in its log', () => {
+    const other = randomUUID();
+    expect(
+      impersonationAuditEntries('started', { operatorId: owner, userId: ada }, [tenant, other]),
+    ).toEqual([
+      {
+        tenantId: tenant,
+        actorId: owner,
+        action: 'identity.impersonation-started',
+        resource: { type: 'user', id: ada },
+        details: {},
+      },
+      expect.objectContaining({ tenantId: other, action: 'identity.impersonation-started' }),
+    ]);
+    expect(
+      impersonationAuditEntries('stopped', { operatorId: owner, userId: ada }, [tenant]),
+    ).toEqual([
+      expect.objectContaining({ action: 'identity.impersonation-stopped', actorId: owner }),
+    ]);
   });
 });

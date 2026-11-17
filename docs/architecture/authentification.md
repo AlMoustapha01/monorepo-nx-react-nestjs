@@ -58,6 +58,7 @@ Construit par `apps/auth/src/claims.ts`, à chaque émission :
 | `tenant_id`         | organisation active de la session, **seulement si l'utilisateur en est encore membre** (relu en base à chaque émission), et s'il a la 2FA, ou une session ouverte par passkey, quand l'organisation l'exige ([ADR 0017](adr/0017-verification-en-deux-etapes.md), [0018](adr/0018-passkeys.md)) |
 | `roles`             | `['staff']` si le membre est `owner` ou `admin`, sinon `[]`                                                                                                                                                                                                                                     |
 | `email`             | seulement s'il est vérifié                                                                                                                                                                                                                                                                      |
+| `act`               | `{ sub: <opérateur> }` dans une session impersonée par le support (RFC 8693) ; l'API le garde jusqu'au journal d'audit ([ADR 0019](adr/0019-back-office-et-impersonation.md))                                                                                                                   |
 | `iss`, `aud`, `exp` | `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`, émission + 15 min                                                                                                                                                                                                                                       |
 
 Rien d'autre : le token circule et se journalise facilement, il ne porte pas de donnée personnelle inutile.
@@ -73,7 +74,7 @@ Un utilisateur sans organisation obtient un token sans `tenant_id`. L'API le ref
 1. Le token est lu dans `Authorization: Bearer`.
 2. `JwtVerifier` vérifie la signature, `iss`, `aud` et `exp` (jose). Avec un JWKS, seuls EdDSA, ES256 et RS256 sont acceptés : l'en-tête du token ne choisit jamais l'algorithme.
 3. Le tenant et les rôles sont lus dans les claims configurées (`AUTH_TENANT_CLAIM`, `AUTH_ROLES_CLAIM`) : nom exact d'abord (claims préfixées par une URL), puis chemin pointé (`realm_access.roles`). `sub` et le tenant doivent être des UUID. Un rôle inconnu de l'application est ignoré, jamais interprété.
-4. Le résultat devient le `Principal` du `RequestContext` (`userId`, `tenantId`, `roles`, `email`), et le logger de la requête reçoit `tenantId` et `userId`.
+4. Le résultat devient le `Principal` du `RequestContext` (`userId`, `tenantId`, `roles`, `email`, et `impersonatorId` tiré de `act.sub`), et le logger de la requête reçoit `tenantId` et `userId`.
 
 Tout échec donne un 401 `UNAUTHENTICATED`, sans détail sur la cause.
 
@@ -87,6 +88,7 @@ Tout échec donne un 401 `UNAUTHENTICATED`, sans détail sur la cause.
 - **Un 401 de l'API** déclenche un seul nouvel essai avec un token neuf. Le rejouer est sans risque : un 401 n'a rien exécuté, et l'`Idempotency-Key` est la même.
 - **Connexion, déconnexion, organisation créée ou rejointe** : le token et tout le cache de données sont vidés, car ils appartenaient à l'ancien utilisateur ou à l'ancien tenant.
 - **Routes protégées** (`_authenticated`) : session et organisation active exigées, sinon redirection vers la connexion ou la création d'organisation.
+- **Back-office** (`/support`) : réservé aux opérateurs de la plateforme (`user.role = 'admin'`), hors des pages d'un tenant. « Voir comme » ouvre une session au nom du client, une heure au plus, sous un bandeau qui ramène au back-office ; token et cache sont vidés à l'entrée comme à la sortie ([ADR 0019](adr/0019-back-office-et-impersonation.md)).
 
 ## En dev et en test
 

@@ -24,6 +24,9 @@ export const IDENTITY_AUDIT_ACTIONS = {
   memberRemoved: 'identity.member-removed',
   memberRoleChanged: 'identity.member-role-changed',
   twoFactorRequirementChanged: 'identity.two-factor-requirement-changed',
+  /** Un opérateur de la plateforme voit l'application comme le client (back-office, ADR 0019). */
+  impersonationStarted: 'identity.impersonation-started',
+  impersonationStopped: 'identity.impersonation-stopped',
 } as const satisfies Record<string, AuditAction>;
 
 /** Ressource visée : un type stable (`order`, `member`) et son ID, quel qu'en soit le format. */
@@ -47,6 +50,8 @@ export const auditEntrySchema = z.object({
   id: auditEntryIdSchema,
   /** Null pour une action du système (aucun utilisateur à l'origine). */
   actorId: z.uuid().nullable(),
+  /** Opérateur de la plateforme qui agissait pour l'acteur (impersonation par le support). */
+  impersonatorId: z.uuid().nullish(),
   action: auditActionSchema,
   resource: auditResourceSchema.nullable(),
   details: auditDetailsSchema,

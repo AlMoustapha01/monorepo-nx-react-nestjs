@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { type APIRequestContext, type Page, expect, request } from '@playwright/test';
 import pg from 'pg';
 
@@ -117,4 +117,45 @@ export async function signIn(page: Page, email: string, password = PASSWORD): Pr
   await page.getByLabel('Adresse email').fill(email);
   await page.getByLabel('Mot de passe').fill(password);
   await page.getByRole('button', { name: 'Se connecter', exact: true }).click();
+}
+
+/** Code TOTP (RFC 6238, SHA-1, 6 chiffres, 30 s), comme une application d'authentification. */
+export function totp(secret: string, at = Date.now()): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const bits = [...secret.replace(/=+$/, '')]
+    .map((char) => alphabet.indexOf(char.toUpperCase()).toString(2).padStart(5, '0'))
+    .join('');
+  const key = Buffer.from(bits.match(/.{8}/g)?.map((byte) => parseInt(byte, 2)) ?? []);
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+  const hmac = createHmac('sha1', key).update(counter).digest();
+  const offset = (hmac.at(-1) ?? 0) & 0xf;
+  return String((hmac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0');
+}
+
+/** Active la 2FA depuis la page Sécurité ; rend la clé du TOTP. */
+export async function turnOnTwoFactor(page: Page): Promise<string> {
+  await page.getByRole('button', { name: 'Activer' }).click();
+  await page.getByLabel('Mot de passe').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  const secret = (await page.locator('code').textContent()) ?? '';
+  await page.getByLabel('Code de l’application d’authentification').fill(totp(secret));
+  await page.getByRole('button', { name: 'Confirmer' }).click();
+  await expect(
+    page.getByRole('list', { name: 'Codes de secours' }).getByRole('listitem'),
+  ).toHaveCount(10);
+  await page.getByRole('button', { name: 'J’ai noté mes codes' }).click();
+  await expect(page.getByText('Activée')).toBeVisible();
+  return secret;
+}
+
+/** Opérateur de la plateforme, comme le fait la commande `operators.js grant` (ADR 0019). */
+export async function grantOperator(email: string): Promise<void> {
+  const client = new pg.Client({ connectionString: env('E2E_DATABASE_URL') });
+  await client.connect();
+  try {
+    await client.query('update auth."user" set role = $2 where email = $1', [email, 'admin']);
+  } finally {
+    await client.end();
+  }
 }

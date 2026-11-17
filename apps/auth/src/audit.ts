@@ -18,6 +18,8 @@ const newAuditEntryId = domainIdGenerator(AUDIT_ENTRY_ID_PREFIX);
 export interface IdentityAuditEntry {
   tenantId: string;
   actorId: string;
+  /** Opérateur qui agissait pour l'acteur, depuis une session impersonée (ADR 0019). */
+  impersonatorId?: string;
   action: (typeof IDENTITY_AUDIT_ACTIONS)[keyof typeof IDENTITY_AUDIT_ACTIONS];
   resource: AuditResource;
   details: AuditDetails;
@@ -152,6 +154,28 @@ export function identityAuditEntries(request: AuditedRequest): IdentityAuditEntr
 }
 
 /**
+ * Impersonation par un opérateur (ADR 0019) : une ligne dans chaque organisation du client, qui voit ainsi dans son
+ * journal qui est entré dans son compte, et quand il en est sorti.
+ */
+export function impersonationAuditEntries(
+  phase: 'started' | 'stopped',
+  { operatorId, userId }: { operatorId: string; userId: string },
+  organizationIds: readonly string[],
+): IdentityAuditEntry[] {
+  const action =
+    phase === 'started'
+      ? IDENTITY_AUDIT_ACTIONS.impersonationStarted
+      : IDENTITY_AUDIT_ACTIONS.impersonationStopped;
+  return organizationIds.map((tenantId) => ({
+    tenantId,
+    actorId: operatorId,
+    action,
+    resource: { type: 'user', id: userId },
+    details: {},
+  }));
+}
+
+/**
  * Écrit les lignes dans `audit.entries`, après l'action : une écriture qui échoue est journalisée et signalée,
  * jamais renvoyée à l'utilisateur, dont l'action a déjà eu lieu (ADR 0015).
  */
@@ -162,12 +186,14 @@ export function createAuditWriter(pool: Pool, logger: Logger) {
       try {
         await pool.query(
           `insert into audit.entries
-             (id, tenant_id, actor_id, action, resource_type, resource_id, details, occurred_at, trace_id)
-           values ($1, $2, $3, $4, $5, $6, $7, now(), $8)`,
+             (id, tenant_id, actor_id, impersonator_id, action, resource_type, resource_id, details,
+              occurred_at, trace_id)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9)`,
           [
             newAuditEntryId(),
             entry.tenantId,
             entry.actorId,
+            entry.impersonatorId ?? null,
             entry.action,
             entry.resource.type,
             entry.resource.id,

@@ -78,6 +78,13 @@
       "when": 1794907615586,
       "tag": "0010_access_revocations",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794918139010,
+      "tag": "0011_impersonation",
+      "breakpoints": true
     }
   ]
 }

@@ -25,6 +25,8 @@ export const outbox = messaging.table(
     tenantId: uuid('tenant_id').notNull(),
     /** Utilisateur à l'origine de l'événement : le worker rejoue le traitement en son nom. */
     actorId: uuid('actor_id').notNull(),
+    /** Opérateur qui agissait pour l'auteur (impersonation, ADR 0019). */
+    impersonatorId: uuid('impersonator_id'),
     type: varchar('type', { length: 100 }).notNull(),
     payload: jsonb('payload').notNull(),
     occurredAt: timestamp('occurred_at', { withTimezone: true, precision: 3 }).notNull(),

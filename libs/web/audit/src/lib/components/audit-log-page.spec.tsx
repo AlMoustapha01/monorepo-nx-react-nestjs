@@ -89,6 +89,37 @@ describe('AuditLogPage', () => {
     expect(within(list).getByText('Système')).toBeTruthy();
   });
 
+  it('names the platform support who entered an account, and what it did there', async () => {
+    const OPERATOR = '3b241101-e2bb-4255-8caf-4136c566a962';
+    server.use(
+      members(),
+      entries([
+        entry(3, {
+          actorId: OPERATOR,
+          action: 'identity.impersonation-stopped',
+          resource: { type: 'user', id: ADA },
+          details: {},
+        }),
+        entry(2, { action: 'orders.order-placed', impersonatorId: OPERATOR, details: {} }),
+        entry(1, {
+          actorId: OPERATOR,
+          action: 'identity.impersonation-started',
+          resource: { type: 'user', id: ADA },
+          details: {},
+        }),
+      ]),
+    );
+    await render();
+
+    const [stopped, placed, started] = within(await findList()).getAllByRole('listitem');
+    expect(started?.textContent).toContain('Le support est entré dans le compte');
+    expect(started?.textContent).toContain('Support de la plateforme');
+    expect(stopped?.textContent).toContain('Le support a quitté le compte');
+    // Fait par le support au nom d'Ada : les deux sont nommés.
+    await vi.waitFor(() => expect(placed?.textContent).toContain('Ada Lovelace'));
+    expect(placed?.textContent).toContain('via le support de la plateforme');
+  });
+
   it('shows an unknown action as it is recorded', async () => {
     server.use(members(), entries([entry(1, { action: 'billing.invoice-paid' })]));
     await render();

@@ -44,6 +44,8 @@ Dans le front : `VITE_DEV_TOKEN=$(pnpm -s dev:token) pnpm nx serve web`, ou la v
    - `dev@shop.local` : membre, client.
 4. Lancer le front **sans** `VITE_DEV_TOKEN` : `pnpm nx serve web`, puis se connecter sur http://localhost:4200/connexion.
 
+Back-office du support (`/support`, [ADR 0019](../architecture/adr/0019-back-office-et-impersonation.md)) : `pnpm dev:operator grant staff@shop.local` en fait un opérateur de la plateforme, qui active la 2FA sur `/securite` avant de « voir comme » `dev@shop.local`.
+
 Dans ce mode, `pnpm -s dev:token [--staff]` renvoie le vrai token (15 min) de l'un des deux comptes, pour la doc de l'API (`/api/docs`) ou curl ; les autres options sont refusées.
 
 Les emails (vérification, mot de passe oublié, invitations) arrivent dans Mailpit : http://localhost:8025.

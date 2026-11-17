@@ -55,6 +55,7 @@ export class OutboxRelay {
               type: row.type,
               tenantId: row.tenantId,
               actorId: row.actorId,
+              ...(row.impersonatorId && { impersonatorId: row.impersonatorId }),
               occurredAt: row.occurredAt.toISOString(),
               payload: row.payload,
             },

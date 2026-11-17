@@ -6,6 +6,7 @@ import { AccountMenu, sessionQueryOptions } from '@nx-react-nestjs/web-auth';
 // example:start
 import { StorefrontNav } from '@nx-react-nestjs/web-storefront';
 // example:end
+import { OPERATOR_ROLE } from '@nx-react-nestjs/contracts';
 import { Stack } from '@nx-react-nestjs/web-ui';
 
 // option:feature-flags:start
@@ -44,6 +45,11 @@ export function AppNavigation() {
       {visible.security && (
         <Link to="/securite" className="text-sm underline-offset-4 hover:underline">
           <Trans>Sécurité</Trans>
+        </Link>
+      )}
+      {current?.user.role === OPERATOR_ROLE && !current.session.impersonatedBy && (
+        <Link to="/support" className="text-sm underline-offset-4 hover:underline">
+          <Trans>Back-office</Trans>
         </Link>
       )}
       {current && (

@@ -8,6 +8,8 @@ import {
   type Passkey,
   passkeySchema,
   type CreateOrganizationInput,
+  type FoundAccount,
+  foundAccountSchema,
   type Invitation,
   type Organization,
   type OrganizationMember,
@@ -82,6 +84,12 @@ export interface AuthClient {
   setTwoFactorRequirement(organizationId: string, required: boolean): Promise<void>;
   /** Access token de 15 min pour l'API ; `undefined` sans session. */
   getAccessToken(): Promise<string | undefined>;
+  /** Back-office (opérateurs) : comptes dont l'email, le nom ou une organisation contient `query`. */
+  searchAccounts(query: string, signal?: AbortSignal): Promise<FoundAccount[]>;
+  /** Ouvre une session au nom de l'utilisateur, une heure au plus ; exige la 2FA de l'opérateur. */
+  impersonate(userId: string): Promise<void>;
+  /** Revient à la session de l'opérateur. */
+  stopImpersonating(): Promise<void>;
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -252,6 +260,20 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
       await call('/organization/update', ignored, {
         body: { organizationId, data: { requireTwoFactor: required } },
       });
+    },
+    searchAccounts: async (query, signal) =>
+      (
+        await call(
+          `/operator/search?query=${encodeURIComponent(query)}`,
+          z.object({ users: z.array(foundAccountSchema) }),
+          { signal },
+        )
+      ).users,
+    impersonate: async (userId) => {
+      await call('/admin/impersonate-user', ignored, { body: { userId } });
+    },
+    stopImpersonating: async () => {
+      await call('/admin/stop-impersonating', ignored, { body: {} });
     },
     getAccessToken: async () => {
       try {

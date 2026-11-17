@@ -20,6 +20,8 @@ L'image de l'API porte aussi `node feature-flags.js`, une commande ponctuelle d'
 
 <!-- option:feature-flags:end -->
 
+L'image du service d'identité porte `node operators.js`, une commande ponctuelle d'exploitation : voir [Opérateurs de la plateforme](#opérateurs-de-la-plateforme).
+
 Plus le front (fichiers statiques), Postgres et Redis. L'API et le service d'identité partagent la même base Postgres, chacun dans ses schémas.
 
 ```
@@ -206,6 +208,18 @@ node feature-flags.js list                                     # toutes les surc
 Le tenant est l'ID de l'organisation (Better Auth), la claim `tenant_id` du token. La valeur s'applique dès la requête suivante, sur toutes les instances ; le front la voit au prochain chargement de la page. Couper un flag pour tout le monde, pilotes compris : `clear` de ses surcharges, puis `FEATURE_FLAGS=<flag>=false`. Un flag retiré du code laisse ses lignes, ignorées : `list` les signale, `clear` les supprime.
 
 <!-- option:feature-flags:end -->
+
+## Opérateurs de la plateforme
+
+Les comptes du support, qui voient l'application comme un client depuis le back-office `/support` ([ADR 0019](../architecture/adr/0019-back-office-et-impersonation.md)), se nomment par la commande `node operators.js` de l'image du service d'identité, lancée comme son `migrate.js`, avec le même `DATABASE_URL` :
+
+```sh
+node operators.js grant support@exemple.fr   # le compte existe déjà (inscription normale)
+node operators.js revoke support@exemple.fr
+node operators.js list
+```
+
+Un opérateur doit activer la vérification en deux étapes (page Sécurité) avant d'impersoner un client. Le rôle vaut pour toute la plateforme : le réserver à quelques personnes, et le retirer au départ de l'une d'elles. Sans opérateur, le back-office reste inaccessible.
 
 ## Avant la première mise en production
 

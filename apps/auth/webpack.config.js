@@ -14,8 +14,12 @@ module.exports = {
       target: 'node',
       compiler: 'tsc',
       main: './src/main.ts',
-      // Même image, deux commandes : node main.js (HTTP), node migrate.js (tables de Better Auth).
-      additionalEntryPoints: [{ entryName: 'migrate', entryPath: './src/migrate.ts' }],
+      // Même image, trois commandes : node main.js (HTTP), node migrate.js (tables de Better Auth),
+      // node operators.js (opérateurs de la plateforme, ADR 0019).
+      additionalEntryPoints: [
+        { entryName: 'migrate', entryPath: './src/migrate.ts' },
+        { entryName: 'operators', entryPath: './src/operators.ts' },
+      ],
       tsConfig: './tsconfig.app.json',
       optimization: false,
       outputHashing: 'none',

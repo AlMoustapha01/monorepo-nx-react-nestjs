@@ -112,5 +112,38 @@ describe('Audit log (e2e)', () => {
       expect(JSON.stringify(body)).not.toContain(customer.email);
     });
   });
+
+  it('names the operator who placed an order for the customer (impersonation, ADR 0019)', async () => {
+    const operatorId = randomUUID();
+    const product = await api()
+      .post('/api/v1/catalog/products')
+      .auth(staffToken, { type: 'bearer' })
+      .send({ sku: 'AUDIT-CAP', name: 'Casquette', price: { amountMinor: 1500, currency: 'EUR' } })
+      .expect(201);
+    await api()
+      .post(`/api/v1/catalog/products/${product.body.id}/publish`)
+      .auth(staffToken, { type: 'bearer' })
+      .expect(200);
+    const order = await api()
+      .post('/api/v1/orders')
+      .auth(await signTestToken({ ...customer, impersonatorId: operatorId }), { type: 'bearer' })
+      .set('Idempotency-Key', randomUUID())
+      .send({ lines: [{ productId: product.body.id, quantity: 1 }] })
+      .expect(201);
+
+    await eventually(async () => {
+      const { body } = await api()
+        .get('/api/v1/audit/entries?action=orders.order-placed')
+        .auth(staffToken, { type: 'bearer' })
+        .expect(200);
+      expect(body.items).toContainEqual(
+        expect.objectContaining({
+          actorId: customer.userId,
+          impersonatorId: operatorId,
+          resource: { type: 'order', id: order.body.id },
+        }),
+      );
+    });
+  });
   // example:end
 });

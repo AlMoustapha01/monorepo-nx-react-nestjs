@@ -47,6 +47,13 @@ export function useAuthErrorMessage(): (error: unknown) => string {
         return t`Mot de passe incorrect.`;
       case 'TWO_FACTOR_REQUIRED_FIRST':
         return t`Activez d’abord la vérification en deux étapes sur votre propre compte.`;
+      case 'OPERATOR_TWO_FACTOR_REQUIRED':
+        return t`Activez la vérification en deux étapes sur votre compte avant de voir celui d’un client.`;
+      case 'OPERATOR_REQUIRED':
+      case 'YOU_ARE_NOT_ALLOWED_TO_IMPERSONATE_USERS':
+        return t`Cette page est réservée aux opérateurs de la plateforme.`;
+      case 'YOU_CANNOT_IMPERSONATE_ADMINS':
+        return t`Un opérateur ne peut pas voir le compte d’un autre opérateur.`;
       case 'NETWORK_ERROR':
       case 'TIMEOUT':
         return t`Le service est injoignable. Vérifiez votre connexion et réessayez.`;

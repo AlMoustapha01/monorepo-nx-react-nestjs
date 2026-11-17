@@ -43,6 +43,22 @@ describe('audit application', () => {
     expect(entry?.id).toMatch(/^AUD-/);
   });
 
+  it('names the operator who acted for the user, from the context (ADR 0019)', async () => {
+    const operator = randomUUID();
+    await context.runAs({ tenantId, userId: bob, impersonatorId: operator }, () =>
+      trail.record({
+        actorId: bob,
+        action: 'orders.order-placed',
+        resource: null,
+        details: {},
+        occurredAt: new Date(),
+      }),
+    );
+    await recordAt(2, bob, 'orders.order-placed');
+
+    expect(log.all().map((entry) => entry.impersonatorId)).toEqual([operator, null]);
+  });
+
   it('lists the newest entries first, page by page', async () => {
     for (const minute of [1, 2, 3]) {
       await recordAt(minute, bob, 'orders.order-placed');

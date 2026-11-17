@@ -34,6 +34,7 @@ export class AuditTrail {
         ...record,
         id: newAuditEntryId(),
         tenantId: this.context.tenantId,
+        impersonatorId: this.context.impersonatorId ?? null,
         traceId: trace.getActiveSpan()?.spanContext().traceId ?? null,
       }),
     );

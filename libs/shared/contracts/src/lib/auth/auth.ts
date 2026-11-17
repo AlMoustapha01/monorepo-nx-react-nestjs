@@ -64,6 +64,8 @@ export const authUserSchema = z.object({
   email: z.string(),
   emailVerified: z.boolean(),
   twoFactorEnabled: z.boolean().nullish(),
+  /** `admin` : opérateur de la plateforme, qui a accès au back-office (ADR 0019). */
+  role: z.string().nullish(),
 });
 export type AuthUser = z.infer<typeof authUserSchema>;
 
@@ -75,10 +77,29 @@ export const authSessionSchema = z
       activeOrganizationId: z.string().nullish(),
       /** Session ouverte par passkey : elle vaut la 2FA qu'une organisation exige. */
       passkeySignIn: z.boolean().nullish(),
+      /** Opérateur qui voit l'application comme cet utilisateur (impersonation, une heure au plus). */
+      impersonatedBy: z.string().nullish(),
     }),
   })
   .nullable();
 export type AuthSession = z.infer<typeof authSessionSchema>;
+
+/**
+ * Rôle Better Auth (plugin admin) des opérateurs de la plateforme, posé par la commande `operators.js` : back-office
+ * et impersonation (ADR 0019).
+ */
+export const OPERATOR_ROLE = 'admin';
+
+/** Recherche du back-office : un email, un nom ou une organisation, 2 caractères au moins. */
+export const accountSearchSchema = z.object({ query: z.string().trim().min(2).max(100) });
+
+export const foundAccountSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  organizations: z.array(z.object({ id: z.string(), name: z.string(), role: z.string() })),
+});
+export type FoundAccount = z.infer<typeof foundAccountSchema>;
 
 export const organizationSchema = z.object({
   id: z.string(),
