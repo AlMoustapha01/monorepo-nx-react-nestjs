@@ -7,6 +7,7 @@ import { ClsModule } from 'nestjs-cls';
 import { LoggerModule } from 'nestjs-pino';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AuthGuard } from './auth/auth.guard';
+import { AccessRevocations } from './auth/access-revocations';
 import { JwtVerifier } from './auth/jwt-verifier';
 import { RolesGuard } from './auth/roles.guard';
 import { AppConfig, AppConfigModule } from './config/app-config';
@@ -78,6 +79,7 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
   providers: [
     RequestContext,
     JwtVerifier,
+    AccessRevocations,
     DatabaseHealthIndicator,
     ShutdownState,
     // option:feature-flags:start

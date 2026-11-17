@@ -36,6 +36,12 @@ function claimAt(payload: JWTPayload, path: string): unknown {
     );
 }
 
+/** Token vérifié : le principal, et sa date d'émission (claim `iat`) si le fournisseur la donne. */
+export interface VerifiedToken {
+  principal: Principal;
+  issuedAt: Date | undefined;
+}
+
 const unauthenticated = () => new CoreError('UNAUTHENTICATED', 'Invalid or expired access token');
 
 /**
@@ -70,6 +76,10 @@ export class JwtVerifier {
   }
 
   async verify(token: string): Promise<Principal> {
+    return (await this.authenticate(token)).principal;
+  }
+
+  async authenticate(token: string): Promise<VerifiedToken> {
     let payload: JWTPayload;
     try {
       ({ payload } = await jwtVerify(token, this.key, {
@@ -95,6 +105,14 @@ export class JwtVerifier {
       throw unauthenticated();
     }
     const { sub, tenantId, email, roles } = claims.data;
-    return { userId: sub, tenantId, ...(email && { email }), roles: roles.filter(isKnownRole) };
+    return {
+      principal: {
+        userId: sub,
+        tenantId,
+        ...(email && { email }),
+        roles: roles.filter(isKnownRole),
+      },
+      issuedAt: typeof payload.iat === 'number' ? new Date(payload.iat * 1000) : undefined,
+    };
   }
 }
