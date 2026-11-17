@@ -53,9 +53,13 @@ export class TenantFeatureFlags extends ConfiguredFeatureFlags {
     if (cached?.tenantId === tenantId) {
       return cached.overrides;
     }
-    const overrides = this.load(tenantId);
-    this.cls.set<CachedOverrides>(OVERRIDES_KEY, { tenantId, overrides });
-    return overrides;
+    const entry: CachedOverrides = { tenantId, overrides: this.load(tenantId) };
+    this.cls.set(OVERRIDES_KEY, entry);
+    // Une lecture en échec n'est pas gardée : le flag suivant de la requête réessaie.
+    entry.overrides.catch(() => {
+      if (this.cls.get(OVERRIDES_KEY) === entry) this.cls.set(OVERRIDES_KEY, undefined);
+    });
+    return entry.overrides;
   }
 
   private async load(tenantId: string): Promise<Overrides> {

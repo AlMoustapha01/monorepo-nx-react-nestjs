@@ -36,7 +36,7 @@ describe('TenantFeatureFlags (real Postgres)', () => {
   let database: TestDatabase;
 
   const newTenant = () => ({ userId: randomUUID(), tenantId: randomUUID() });
-  const flagsWith = (FEATURE_FLAGS?: string) =>
+  const flagsWith = (FEATURE_FLAGS?: string, session = database.session(context)) =>
     new TenantFeatureFlags(
       new AppConfig(
         validateEnv({
@@ -48,7 +48,7 @@ describe('TenantFeatureFlags (real Postgres)', () => {
           FEATURE_FLAGS,
         }),
       ),
-      database.session(context),
+      session,
       context,
       cls,
     );
@@ -101,6 +101,24 @@ describe('TenantFeatureFlags (real Postgres)', () => {
       expect(await flags.isEnabled(OFF)).toBe(false);
     });
     await context.runAs(tenant, async () => {
+      expect(await flags.isEnabled(OFF)).toBe(true);
+    });
+  });
+
+  it('reads the overrides again after a failed read in the same request', async () => {
+    const tenant = newTenant();
+    await command('set', 'test.off', tenant.tenantId, 'on');
+    let failures = 1;
+    const failingOnce = new Proxy(database.session(context), {
+      get: (target, key, receiver) => {
+        if (key === 'db' && failures-- > 0) throw new Error('connection lost');
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const flags = flagsWith(undefined, failingOnce);
+
+    await context.runAs(tenant, async () => {
+      await expect(flags.isEnabled(OFF)).rejects.toThrow('connection lost');
       expect(await flags.isEnabled(OFF)).toBe(true);
     });
   });

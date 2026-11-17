@@ -15,6 +15,7 @@
 /libs/api/core/src/migrations.ts              @AlMoustapha01
 /tools/docker/                                @AlMoustapha01
 /libs/api/*/src/lib/infra/*.schema.ts         @AlMoustapha01
+/libs/api/core/src/lib/**/*.schema.ts         @AlMoustapha01
 
 # Migrations : générées, rétrocompatibles, irréversibles une fois déployées
 /apps/api/migrations/                         @AlMoustapha01
