@@ -85,6 +85,14 @@ Source : `libs/api/core/src/lib/errors/app-error.ts`
 | `INVALID_IDEMPOTENCY_KEY`     | 400    | `VALIDATION`          | `Idempotency-Key` n'est pas un UUID.                                                                                                      |
 | `IDEMPOTENCY_KEY_REUSED`      | 422    | `BUSINESS_RULE`       | Même `Idempotency-Key` pour une requête différente. 422, comme le recommande le brouillon IETF « The Idempotency-Key HTTP Header Field ». |
 
+### `audit`
+
+Source : `libs/api/audit/src/lib/domain/audit.errors.ts`
+
+| Code                  | Statut | Catégorie    | Signification                                                                            |
+| --------------------- | ------ | ------------ | ---------------------------------------------------------------------------------------- |
+| `INVALID_AUDIT_ENTRY` | 400    | `VALIDATION` | Action mal nommée ou détails qui ne sont pas des valeurs simples : un bug de l'appelant. |
+
 <!-- example:start -->
 
 ### `catalog`

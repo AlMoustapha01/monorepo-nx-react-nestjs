@@ -64,6 +64,13 @@
       "when": 1794876590892,
       "tag": "0008_tenant_feature_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794906009260,
+      "tag": "0009_audit_log",
+      "breakpoints": true
     }
   ]
 }

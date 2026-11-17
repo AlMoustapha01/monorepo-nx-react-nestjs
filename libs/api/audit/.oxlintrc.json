@@ -1,0 +1,22 @@
+{
+  "extends": ["../../../.oxlintrc.json"],
+  "plugins": ["vitest"],
+  "overrides": [
+    {
+      "files": ["src/lib/domain/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@nestjs/*", "drizzle-orm", "drizzle-orm/*", "pg", "nestjs-*"],
+                "message": "domain/ reste du TypeScript pur : pas de framework ni de persistance."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
