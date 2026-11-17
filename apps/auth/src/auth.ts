@@ -1,3 +1,4 @@
+import { passkey } from '@better-auth/passkey';
 import { type BetterAuthPlugin, betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { jwt, organization, twoFactor } from 'better-auth/plugins';
@@ -5,7 +6,7 @@ import { Pool } from 'pg';
 import type { Logger } from 'pino';
 import { createAccessRevoker } from './access-revocation';
 import { createAuditWriter, identityAuditEntries } from './audit';
-import { apiClaims } from './claims';
+import { apiClaims, PASSKEY_SIGN_IN_PATH } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
 // option:sentry:start
@@ -261,10 +262,12 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
           ctx.path === '/organization/create'
             ? body?.requireTwoFactor === true
             : ctx.path === '/organization/update' && body?.data?.requireTwoFactor === true;
-        // Sans 2FA lui-même, celui qui l'exige perdrait aussitôt l'accès à son organisation.
+        // Sans 2FA lui-même (ni session ouverte par passkey), celui qui l'exige perdrait aussitôt
+        // l'accès à son organisation.
         if (
           requiring &&
-          !(session.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled
+          !(session.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled &&
+          (session.session as { passkeySignIn?: boolean | null }).passkeySignIn !== true
         ) {
           throw new APIError('FORBIDDEN', {
             code: 'TWO_FACTOR_REQUIRED_FIRST',
@@ -280,20 +283,36 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
         }
       }),
     },
+    session: {
+      additionalFields: {
+        // Posé par le serveur seul, à la création de la session (hook ci-dessous).
+        passkeySignIn: { type: 'boolean', required: false, defaultValue: false, input: false },
+      },
+    },
     databaseHooks: {
       session: {
         create: {
           // Une nouvelle session ouvre la première organisation de l'utilisateur : le token porte
           // un tenant dès la connexion. Une session qui en remplace une autre (2FA confirmée) garde
-          // son organisation active, si l'utilisateur en est encore membre.
-          before: async (session) => {
+          // son organisation active, si l'utilisateur en est encore membre. Elle retient aussi si
+          // elle a été ouverte par passkey : cela vaut la 2FA qu'une organisation exige (ADR 0018).
+          before: async (session, context) => {
             const current = (session as { activeOrganizationId?: unknown }).activeOrganizationId;
             const { rows } = await pool.query<{ organizationId: string }>(
               `select "organizationId" from member where "userId" = $1
                order by ("organizationId" = $2) desc, "createdAt" limit 1`,
               [session.userId, typeof current === 'string' ? current : null],
             );
-            return { data: { ...session, activeOrganizationId: rows[0]?.organizationId ?? null } };
+            const passkeySignIn =
+              context?.path === PASSKEY_SIGN_IN_PATH ||
+              (session as { passkeySignIn?: unknown }).passkeySignIn === true;
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: rows[0]?.organizationId ?? null,
+                passkeySignIn,
+              },
+            };
           },
         },
       },
@@ -304,6 +323,13 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
       twoFactor({
         issuer: 'Shop',
         backupCodeOptions: { storeBackupCodes: 'encrypted' },
+      }),
+      // Passkeys (WebAuthn) : la cérémonie a lieu sur la page du front, dont l'origine et le
+      // domaine font foi (ADR 0018).
+      passkey({
+        rpID: new URL(env.AUTH_APP_URL).hostname,
+        rpName: 'Shop',
+        origin: new URL(env.AUTH_APP_URL).origin,
       }),
       organization({
         schema: {
@@ -358,6 +384,7 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
             apiClaims({
               user,
               membership: await membership(user.id, session['activeOrganizationId']),
+              session: { passkeySignIn: session['passkeySignIn'] === true },
             }),
         },
       }),

@@ -59,6 +59,7 @@ const SIGN_IN_PATHS = [
   '/verify-email',
   '/callback/',
   '/oauth2/callback/',
+  '/passkey/verify-authentication',
 ];
 /** Second facteur : une connexion seulement sans session ouverte ; avec, l'utilisateur confirme sa 2FA. */
 const SECOND_FACTOR_PATHS = ['/two-factor/verify-totp', '/two-factor/verify-backup-code'];

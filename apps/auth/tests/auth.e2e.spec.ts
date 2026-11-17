@@ -535,6 +535,33 @@ describe('Authentication service', () => {
       expect((await accessToken(afterSetup))['tenant_id']).toBe(second);
     });
 
+    it('lets a session opened with a passkey into an organization that requires 2FA', async () => {
+      const ownerCookie = await verifiedSignUp('2fa-passkey-owner@shop.test');
+      const tenantId = await organizationOf(ownerCookie, '2fa-passkey');
+      await enableTwoFactor(ownerCookie).then(({ cookie }) =>
+        call('/api/auth/organization/update', {
+          body: { organizationId: tenantId, data: { requireTwoFactor: true } },
+          cookie,
+        }),
+      );
+      const memberCookie = await verifiedSignUp('2fa-passkey-member@shop.test');
+      const memberId = (await accessToken(memberCookie)).sub ?? '';
+      await auth.api.addMember({
+        body: { userId: memberId, role: 'member', organizationId: tenantId },
+      });
+      await call('/api/auth/organization/set-active', {
+        body: { organizationId: tenantId },
+        cookie: memberCookie,
+      });
+      expect(await accessToken(memberCookie)).not.toHaveProperty('tenant_id');
+
+      // Ce que pose la connexion par passkey (la cérémonie WebAuthn est couverte par web-e2e).
+      await pool.query('update auth.session set "passkeySignIn" = true where "userId" = $1', [
+        memberId,
+      ]);
+      expect((await accessToken(memberCookie))['tenant_id']).toBe(tenantId);
+    });
+
     const revokedAt = async (tenantId: string, userId: string) =>
       (
         await pool.query<{ revoked_at: Date }>(
@@ -542,6 +569,17 @@ describe('Authentication service', () => {
           [tenantId, userId],
         )
       ).rows[0]?.revoked_at;
+  });
+
+  describe('passkeys', () => {
+    it('offers WebAuthn options for the domain of the front', async () => {
+      const { response, body } = await call('/api/auth/passkey/generate-authenticate-options');
+      expect(response.status).toBe(200);
+      expect(body).toMatchObject({
+        rpId: new URL(APP_URL).hostname,
+        challenge: expect.any(String),
+      });
+    });
   });
 
   describe('access revocation', () => {

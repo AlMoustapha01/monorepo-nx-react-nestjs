@@ -34,6 +34,16 @@ describe('apiClaims', () => {
     });
   });
 
+  it('accepts a session opened with a passkey instead of 2FA', () => {
+    const membership = { organizationId, role: 'member', requireTwoFactor: true };
+    expect(apiClaims({ user, membership, session: { passkeySignIn: true } })).toMatchObject({
+      tenant_id: organizationId,
+    });
+    expect(apiClaims({ user, membership, session: { passkeySignIn: false } })).not.toHaveProperty(
+      'tenant_id',
+    );
+  });
+
   it('omits the tenant without an active organization', () => {
     expect(apiClaims({ user })).not.toHaveProperty('tenant_id');
   });

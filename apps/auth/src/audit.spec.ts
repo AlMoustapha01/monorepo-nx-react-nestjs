@@ -34,6 +34,21 @@ describe('identityAuditEntries', () => {
     ]);
   });
 
+  it('records a sign-in with a passkey', () => {
+    expect(
+      request({
+        path: '/passkey/verify-authentication',
+        sessionUserId: undefined,
+        newSession: { userId: ada, activeOrganizationId: tenant },
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        action: 'identity.signed-in',
+        details: { method: 'passkey/verify-authentication' },
+      }),
+    ]);
+  });
+
   it('records a sign-in by the link of the verification email, not a rewritten session cookie', () => {
     const opened = { userId: ada, activeOrganizationId: tenant };
     expect(request({ path: '/verify-email', newSession: opened })).toHaveLength(1);
