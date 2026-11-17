@@ -12,6 +12,7 @@ import {
   PROJECT_OPTIONS,
   prunePaths,
   removeDependencies,
+  removeScripts,
   stripBlocks,
   type OptionId,
   type Regeneration,
@@ -98,6 +99,7 @@ export interface RemovalReport {
   blocks: { path: string; blocks: number }[];
   aliases: string[];
   dependencies: string[];
+  scripts: string[];
 }
 
 /** Supprime les fichiers et les blocs des options, les alias sans cible et leurs paquets. */
@@ -129,8 +131,18 @@ export function removeOptions(ids: readonly OptionId[]): RemovalReport {
     readFileSync('package.json', 'utf8'),
     options.flatMap((option) => option.dependencies),
   );
-  writeFileSync('package.json', packageJson.text);
-  return { paths, blocks, aliases: tsconfig.removed, dependencies: packageJson.removed };
+  const scripts = removeScripts(
+    packageJson.text,
+    options.flatMap((option) => option.scripts ?? []),
+  );
+  writeFileSync('package.json', scripts.text);
+  return {
+    paths,
+    blocks,
+    aliases: tsconfig.removed,
+    dependencies: packageJson.removed,
+    scripts: scripts.removed,
+  };
 }
 
 /** Lockfile, fichiers générés, format et cache de Nx, dans cet ordre et seulement si besoin. */
@@ -162,6 +174,7 @@ export function printReport(report: RemovalReport): void {
   );
   console.log(`Alias retirés : ${report.aliases.join(', ') || 'aucun'}`);
   console.log(`Paquets retirés : ${report.dependencies.join(', ') || 'aucun'}`);
+  console.log(`Scripts retirés : ${report.scripts.join(', ') || 'aucun'}`);
 }
 
 /** Règles illustrées par l'option, données de test : à relire, pas à supprimer à l'aveugle. */

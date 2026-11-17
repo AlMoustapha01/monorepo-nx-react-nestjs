@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { configureApp } from '@nx-react-nestjs/api-core';
+import { configureApp, runFeatureFlagsCommand } from '@nx-react-nestjs/api-core';
 import {
   signTestToken,
   startTestDatabase,
@@ -49,6 +49,33 @@ describe('API feature flags (e2e)', () => {
         .map(([flag, definition]) => [flag, definition.default]),
     );
     expect(body).toEqual({ flags: expected });
+  });
+
+  // Sans flag client dans le catalogue du projet, il n'y a rien à surcharger.
+  const clientFlag = (Object.entries(FEATURE_FLAGS) as [string, FeatureFlagDefinition][]).find(
+    ([, definition]) => definition.client,
+  );
+
+  it("applies a tenant's override to this tenant only", async ({ skip }) => {
+    if (!clientFlag) return skip('no client flag in the catalog');
+    const [flag, definition] = clientFlag;
+    const pilot = randomUUID();
+    const overridden = !definition.default;
+    await runFeatureFlagsCommand(database.adminDb, ['set', flag, pilot, overridden ? 'on' : 'off']);
+
+    const valueFor = async (tenantId: string) => {
+      const token = await signTestToken({ userId: randomUUID(), tenantId });
+      const { body } = await request(app.getHttpServer())
+        .get('/api/v1/feature-flags')
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      return (body as { flags: Record<string, boolean> }).flags[flag];
+    };
+    expect(await valueFor(pilot)).toBe(overridden);
+    expect(await valueFor(randomUUID())).toBe(definition.default);
+
+    await runFeatureFlagsCommand(database.adminDb, ['clear', flag, pilot]);
+    expect(await valueFor(pilot)).toBe(definition.default);
   });
 
   it('requires a token', async () => {

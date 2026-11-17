@@ -15,9 +15,10 @@ import { DatabaseModule } from './database/database.module';
 import { MessagingModule } from './events/messaging.module';
 import { ProblemDetailsFilter } from './errors/problem-details.filter';
 // option:feature-flags:start
-import { ConfiguredFeatureFlags, FeatureFlags } from './feature-flags/feature-flags';
+import { FeatureFlags } from './feature-flags/feature-flags';
 import { FeatureFlagsController } from './feature-flags/feature-flags.controller';
 import { FeatureFlagsGuard } from './feature-flags/feature-flags.guard';
+import { TenantFeatureFlags } from './feature-flags/tenant-feature-flags';
 // option:feature-flags:end
 import { DatabaseHealthIndicator, HealthController } from './health/health.controller';
 import { ShutdownState } from './lifecycle/graceful-shutdown';
@@ -80,7 +81,7 @@ const UNLOGGED_PATHS = new Set(['/health', '/ready']);
     DatabaseHealthIndicator,
     ShutdownState,
     // option:feature-flags:start
-    { provide: FeatureFlags, useClass: ConfiguredFeatureFlags },
+    { provide: FeatureFlags, useClass: TenantFeatureFlags },
     // option:feature-flags:end
     mailerProvider,
     // L'ordre compte : authentification, rate limiting (par utilisateur), puis rôles.

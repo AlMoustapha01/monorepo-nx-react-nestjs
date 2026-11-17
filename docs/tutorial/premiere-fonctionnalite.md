@@ -219,7 +219,8 @@ Ensuite, même cycle pour US2 (`/speckit-implement`, `/speckit-converge`) : la d
 
 <!-- option:feature-flags:start -->
 
-- **Activer** : `FEATURE_FLAGS=announcements=true` dans l'environnement voulu, puis redémarrer l'API : aucun code à redéployer.
+- **Piloter** : `node feature-flags.js set announcements <tenantId> on` (`pnpm dev:flag …` en local) l'active pour un tenant, dès la requête suivante, sans redémarrage.
+- **Activer pour tous** : `FEATURE_FLAGS=announcements=true` dans l'environnement voulu, puis redémarrer l'API : aucun code à redéployer.
 - **Livrer** : une fois la fonctionnalité active partout, une PR supprime le flag et ses branches mortes, et passe la spec en `Shipped` (relire la spec à ce moment).
 
 <!-- option:feature-flags:end -->

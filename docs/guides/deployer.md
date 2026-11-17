@@ -14,6 +14,12 @@ Deux images, construites par le même `Dockerfile` :
 | Identité (`docker build --build-arg APP=auth .`) | `node main.js`    | Better Auth, port 3100                             | selon le trafic           |
 |                                                  | `node migrate.js` | tables de Better Auth (schéma `auth`), puis sortie | une, à chaque déploiement |
 
+<!-- option:feature-flags:start -->
+
+L'image de l'API porte aussi `node feature-flags.js`, une commande ponctuelle d'exploitation : voir [Feature flags par tenant](#feature-flags-par-tenant).
+
+<!-- option:feature-flags:end -->
+
 Plus le front (fichiers statiques), Postgres et Redis. L'API et le service d'identité partagent la même base Postgres, chacun dans ses schémas.
 
 ```
@@ -75,25 +81,25 @@ Chaque process valide son environnement au démarrage et refuse de démarrer si 
 
 ### API et worker
 
-| Variable                                   | En production                                                                                |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                                 | `production` (posé par l'image)                                                              |
-| `DATABASE_URL`, `REDIS_URL`                | obligatoires                                                                                 |
-| `AUTH_JWKS_URL`                            | obligatoire : `http://<service auth>/api/auth/jwks`, par le réseau interne                   |
-| `AUTH_JWT_SECRET`                          | **interdit** : le process refuse de démarrer                                                 |
-| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`     | mêmes valeurs que le service d'identité                                                      |
-| `SMTP_URL`                                 | obligatoire (le worker envoie les emails)                                                    |
-| `MAIL_FROM`                                | l'expéditeur de votre domaine                                                                |
-| `CORS_ORIGINS`                             | l'URL du front, sans slash final                                                             |
-| `JOBS_ENABLED`                             | `false` pour `main.js` ; `worker.js` le force à `true`                                       |
-| `SHUTDOWN_DRAIN_MS`, `SHUTDOWN_TIMEOUT_MS` | voir [Arrêt](#arrêt-et-redémarrage)                                                          |
-| `TRUST_PROXY_HOPS`                         | nombre de proxys devant l'API ; voir [Derrière un load balancer](#derrière-un-load-balancer) |
-| `RATE_LIMIT_MAX`, `RATE_LIMIT_TTL_MS`      | 100 requêtes par minute par défaut                                                           |
-| `DATABASE_POOL_MAX`                        | 10 par process par défaut ; voir [Postgres](#postgres)                                       |
-| `DATABASE_STATEMENT_TIMEOUT_MS`            | 30 s par défaut ; voir [Postgres](#postgres)                                                 |
-| `NODE_OPTIONS`                             | `--enable-source-maps` (posé par l'image) ; voir [Mémoire](#mémoire)                         |
-| `FEATURE_FLAGS`                            | surcharges, ex. `announcements=true` ; un nom inconnu bloque le démarrage                    |
-| `OTEL_*`, `SENTRY_*`                       | optionnelles ; `OTEL_SERVICE_NAME=api` pour l'API, `api-worker` pour le worker               |
+| Variable                                   | En production                                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`                                 | `production` (posé par l'image)                                                                                                                  |
+| `DATABASE_URL`, `REDIS_URL`                | obligatoires                                                                                                                                     |
+| `AUTH_JWKS_URL`                            | obligatoire : `http://<service auth>/api/auth/jwks`, par le réseau interne                                                                       |
+| `AUTH_JWT_SECRET`                          | **interdit** : le process refuse de démarrer                                                                                                     |
+| `AUTH_JWT_ISSUER`, `AUTH_JWT_AUDIENCE`     | mêmes valeurs que le service d'identité                                                                                                          |
+| `SMTP_URL`                                 | obligatoire (le worker envoie les emails)                                                                                                        |
+| `MAIL_FROM`                                | l'expéditeur de votre domaine                                                                                                                    |
+| `CORS_ORIGINS`                             | l'URL du front, sans slash final                                                                                                                 |
+| `JOBS_ENABLED`                             | `false` pour `main.js` ; `worker.js` le force à `true`                                                                                           |
+| `SHUTDOWN_DRAIN_MS`, `SHUTDOWN_TIMEOUT_MS` | voir [Arrêt](#arrêt-et-redémarrage)                                                                                                              |
+| `TRUST_PROXY_HOPS`                         | nombre de proxys devant l'API ; voir [Derrière un load balancer](#derrière-un-load-balancer)                                                     |
+| `RATE_LIMIT_MAX`, `RATE_LIMIT_TTL_MS`      | 100 requêtes par minute par défaut                                                                                                               |
+| `DATABASE_POOL_MAX`                        | 10 par process par défaut ; voir [Postgres](#postgres)                                                                                           |
+| `DATABASE_STATEMENT_TIMEOUT_MS`            | 30 s par défaut ; voir [Postgres](#postgres)                                                                                                     |
+| `NODE_OPTIONS`                             | `--enable-source-maps` (posé par l'image) ; voir [Mémoire](#mémoire)                                                                             |
+| `FEATURE_FLAGS`                            | surcharges pour tous, ex. `announcements=true` ; un nom inconnu bloque le démarrage ; voir [Feature flags par tenant](#feature-flags-par-tenant) |
+| `OTEL_*`, `SENTRY_*`                       | optionnelles ; `OTEL_SERVICE_NAME=api` pour l'API, `api-worker` pour le worker                                                                   |
 
 ### Service d'identité
 
@@ -183,6 +189,23 @@ Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer,
 - **Mise à jour de Graphile Worker** : lire son changelog. Une migration marquée « breaking » empêche les anciens workers de tourner sur la base migrée : arrêter les workers, migrer, puis redéployer.
 - **Rétention** : le worker purge chaque jour l'outbox (7 jours), les marques d'idempotence (30 jours) et les jobs abandonnés (7 jours). Un job réussi est supprimé tout de suite.
 - **File de jobs** : le schéma `graphile_worker` reçoit une insertion et une suppression par job. Surveiller l'autovacuum de ses tables au-delà de quelques centaines de jobs par seconde.
+
+<!-- option:feature-flags:start -->
+
+## Feature flags par tenant
+
+Ouvrir une fonctionnalité à un client pilote, ou la retirer à un seul client, sans redémarrer ([ADR 0014](../architecture/adr/0014-feature-flags-par-tenant.md)) : la commande `node feature-flags.js` de l'image de l'API, lancée comme `migrate.js` (job ponctuel, `docker compose run --rm migrate node feature-flags.js …`), avec le même `DATABASE_URL`.
+
+```sh
+node feature-flags.js set storefront 0b9c…-uuid-du-tenant on   # pilote, même si le flag est coupé pour tous
+node feature-flags.js set storefront 7f21…-uuid-du-tenant off  # exclusion, même s'il est activé pour tous
+node feature-flags.js clear storefront 0b9c…-uuid-du-tenant    # retour à FEATURE_FLAGS, puis à la valeur par défaut
+node feature-flags.js list                                     # toutes les surcharges
+```
+
+Le tenant est l'ID de l'organisation (Better Auth), la claim `tenant_id` du token. La valeur s'applique dès la requête suivante, sur toutes les instances ; le front la voit au prochain chargement de la page. Couper un flag pour tout le monde, pilotes compris : `clear` de ses surcharges, puis `FEATURE_FLAGS=<flag>=false`. Un flag retiré du code laisse ses lignes, ignorées : `list` les signale, `clear` les supprime.
+
+<!-- option:feature-flags:end -->
 
 ## Avant la première mise en production
 

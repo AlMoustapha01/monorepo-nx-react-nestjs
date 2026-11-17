@@ -57,6 +57,13 @@
       "when": 1794874700138,
       "tag": "0007_tenant_row_level_security",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794876590892,
+      "tag": "0008_tenant_feature_flags",
+      "breakpoints": true
     }
   ]
 }
