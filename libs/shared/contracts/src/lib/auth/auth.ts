@@ -42,6 +42,16 @@ export const twoFactorSetupSchema = z.object({
 });
 export type TwoFactorSetup = z.infer<typeof twoFactorSetupSchema>;
 
+/** Passkey enregistrée (sans sa clé publique, que le front n'a pas à connaître). */
+export const passkeySchema = z.object({
+  id: z.string(),
+  name: z.string().nullish(),
+  createdAt: z.string(),
+});
+export type Passkey = z.infer<typeof passkeySchema>;
+
+export const passkeyNameSchema = z.object({ name: z.string().trim().max(64) });
+
 /** Mot de passe redemandé avant une action sensible (activer, désactiver la 2FA, nouveaux codes). */
 export const confirmPasswordSchema = z.object({ password: z.string().min(1) });
 
@@ -61,7 +71,11 @@ export type AuthUser = z.infer<typeof authUserSchema>;
 export const authSessionSchema = z
   .object({
     user: authUserSchema,
-    session: z.object({ activeOrganizationId: z.string().nullish() }),
+    session: z.object({
+      activeOrganizationId: z.string().nullish(),
+      /** Session ouverte par passkey : elle vaut la 2FA qu'une organisation exige. */
+      passkeySignIn: z.boolean().nullish(),
+    }),
   })
   .nullable();
 export type AuthSession = z.infer<typeof authSessionSchema>;
