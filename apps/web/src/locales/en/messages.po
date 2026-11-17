@@ -25,6 +25,10 @@ msgstr "✓ {inCart} in cart"
 msgid "404 : page introuvable"
 msgstr "404: page not found"
 
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "64 caractères au plus."
+msgstr "64 characters at most."
+
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "À la connexion, un code de votre application d’authentification est demandé après le mot de passe."
 msgstr "When you sign in, a code from your authenticator app is asked after the password."
@@ -63,9 +67,18 @@ msgstr "Turn on two-step verification on your own account first."
 msgid "Adresse email"
 msgstr "Email address"
 
+#. placeholder {0}: i18n.date(passkey.createdAt, { dateStyle: 'long' })
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Ajoutée le {0}"
+msgstr "Added on {0}"
+
 #: ../../libs/web/storefront/src/lib/components/catalog-page.tsx
 msgid "Ajouter au panier"
 msgstr "Add to cart"
+
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Ajouter une passkey"
+msgstr "Add a passkey"
 
 #. placeholder {0}: entry.actorId.slice(0, 8)
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
@@ -113,6 +126,10 @@ msgstr "Catalog"
 msgid "Ce lien n'est plus valide. Demandez-en un nouveau."
 msgstr "This link is no longer valid. Request a new one."
 
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Ce navigateur ne sait pas utiliser les passkeys."
+msgstr "This browser cannot use passkeys."
+
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Ce produit n'est plus disponible"
 msgstr "This product is no longer available"
@@ -140,6 +157,14 @@ msgstr "This invitation does not exist or has expired."
 #: src/routes/__root.tsx
 msgid "Cette page n'existe pas."
 msgstr "This page does not exist."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Cette passkey est déjà enregistrée."
+msgstr "This passkey is already registered."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Cette passkey n’a pas pu être utilisée. Réessayez, ou connectez-vous avec votre mot de passe."
+msgstr "This passkey could not be used. Try again, or sign in with your password."
 
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 #: ../../libs/web/auth/src/lib/components/accept-invitation-page.tsx
@@ -187,6 +212,10 @@ msgstr "Confirm"
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "Confirmez d'abord votre adresse email : nous vous avons envoyé un lien."
 msgstr "Confirm your email address first: we sent you a link."
+
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Connectez-vous sans mot de passe, avec l’empreinte, le visage ou le code de votre appareil. Une passkey vaut aussi la vérification en deux étapes."
+msgstr "Sign in without a password, with the fingerprint, face or PIN of your device. A passkey also counts as two-step verification."
 
 #: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
 msgid "Connexion"
@@ -307,6 +336,10 @@ msgid "La commande a changé entre-temps, elle a été rechargée."
 msgstr "The order changed in the meantime and has been reloaded."
 
 #: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "La passkey n’a pas pu être enregistrée. Réessayez."
+msgstr "The passkey could not be registered. Try again."
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
 msgid "La vérification a expiré. Saisissez à nouveau votre mot de passe."
 msgstr "The verification expired. Enter your password again."
 
@@ -373,6 +406,10 @@ msgstr "Name"
 msgid "Nom de l'organisation"
 msgstr "Organization name"
 
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Nom de la passkey (facultatif)"
+msgstr "Passkey name (optional)"
+
 #: ../../libs/web/auth/src/lib/components/sign-up-page.tsx
 msgid "Nous avons envoyé un lien de confirmation à {sentTo}. Ouvrez-le pour activer votre compte."
 msgstr "We sent a confirmation link to {sentTo}. Open it to activate your account."
@@ -421,6 +458,18 @@ msgstr "Placed"
 #: ../../libs/web/storefront/src/lib/components/cart-page.tsx
 msgid "Passer la commande"
 msgstr "Place order"
+
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Passkey sans nom"
+msgstr "Unnamed passkey"
+
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Passkeys"
+msgstr "Passkeys"
+
+#: ../../libs/web/auth/src/lib/hooks/use-auth-error-message.ts
+msgid "Pour ajouter une passkey, reconnectez-vous d’abord."
+msgstr "To add a passkey, sign in again first."
 
 #: ../../libs/web/auth/src/lib/components/security-page.tsx
 msgid "QR code à scanner"
@@ -510,6 +559,10 @@ msgstr "Scan this QR code with your authenticator app, then enter the code it sh
 msgid "Se connecter"
 msgstr "Sign in"
 
+#: ../../libs/web/auth/src/lib/components/sign-in-page.tsx
+msgid "Se connecter avec une passkey"
+msgstr "Sign in with a passkey"
+
 #: ../../libs/web/auth/src/lib/components/account-menu.tsx
 msgid "Se déconnecter"
 msgstr "Sign out"
@@ -525,6 +578,14 @@ msgstr "Account security"
 #: ../../libs/web/auth/src/lib/components/forgot-password-page.tsx
 msgid "Si un compte existe pour cette adresse, vous allez recevoir un lien pour choisir un nouveau mot de passe."
 msgstr "If an account exists for this address, you will receive a link to choose a new password."
+
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Supprimer"
+msgstr "Delete"
+
+#: ../../libs/web/auth/src/lib/components/passkeys-card.tsx
+msgid "Supprimer la passkey {name}"
+msgstr "Delete the passkey {name}"
 
 #: ../../libs/web/audit/src/lib/components/audit-log-page.tsx
 msgid "Système"

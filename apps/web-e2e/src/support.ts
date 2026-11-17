@@ -116,5 +116,5 @@ export async function invite(account: Account, organizationId: string, email: st
 export async function signIn(page: Page, email: string, password = PASSWORD): Promise<void> {
   await page.getByLabel('Adresse email').fill(email);
   await page.getByLabel('Mot de passe').fill(password);
-  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByRole('button', { name: 'Se connecter', exact: true }).click();
 }

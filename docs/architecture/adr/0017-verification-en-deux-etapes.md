@@ -5,7 +5,7 @@
 
 ## Contexte
 
-Un compte ne tient qu'à son mot de passe. Les clients B2B demandent un second facteur, et le pouvoir de l'imposer à tous les membres de leur organisation. Les passkeys suivront dans une décision à part (montée de Better Auth et dépendance WebAuthn).
+Un compte ne tient qu'à son mot de passe. Les clients B2B demandent un second facteur, et le pouvoir de l'imposer à tous les membres de leur organisation. Les passkeys font l'objet de l'ADR 0018 : une session ouverte par passkey vaut aussi la 2FA exigée.
 
 ## Décision
 

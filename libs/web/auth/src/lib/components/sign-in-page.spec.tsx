@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { AUTH, auth, betterAuthError, server } from '../../test-server';
+import { AUTH, auth, betterAuthError, fakeWebAuthn, server } from '../../test-server';
 import { renderWithProviders } from '../../test-utils';
 import { SignInPage } from './sign-in-page';
 
@@ -199,5 +199,94 @@ describe('SignInPage with two-factor authentication', () => {
       await screen.findByText('Trop de codes incorrects. Saisissez à nouveau votre mot de passe.'),
     ).toBeTruthy();
     expect(screen.getByLabelText('Mot de passe')).toBeTruthy();
+  });
+});
+
+describe('SignInPage with a passkey', () => {
+  const passkeyServer = () => {
+    const verified: unknown[] = [];
+    server.use(
+      http.get(`${AUTH}/passkey/generate-authenticate-options`, () =>
+        HttpResponse.json({ challenge: 'c1' }),
+      ),
+      http.post(`${AUTH}/passkey/verify-authentication`, async ({ request }) => {
+        verified.push(await request.json());
+        return HttpResponse.json({ session: {} });
+      }),
+    );
+    return verified;
+  };
+
+  async function render(client: typeof auth) {
+    const onSignedIn = vi.fn<() => void>();
+    await renderWithProviders(
+      <SignInPage auth={client} verificationCallbackUrl={callback} onSignedIn={onSignedIn} />,
+    );
+    return onSignedIn;
+  }
+
+  it('signs in with a passkey, without email nor password', async () => {
+    const verified = passkeyServer();
+    const browser = fakeWebAuthn();
+    const onSignedIn = await render(browser.auth);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Se connecter avec une passkey' }));
+    await vi.waitFor(() => expect(onSignedIn).toHaveBeenCalledOnce());
+    expect(browser.ceremonies).toEqual([{ kind: 'authenticate' }]);
+    expect(verified).toEqual([{ response: { id: 'credential' } }]);
+  });
+
+  it('offers the passkeys among the suggestions of the email field', async () => {
+    passkeyServer();
+    const browser = fakeWebAuthn({ autofill: true });
+    const onSignedIn = await render(browser.auth);
+
+    expect(screen.getByLabelText('Adresse email').getAttribute('autocomplete')).toBe(
+      'username webauthn',
+    );
+    await vi.waitFor(() =>
+      expect(browser.ceremonies).toEqual([{ kind: 'authenticate', autofill: true }]),
+    );
+    browser.choosePasskey();
+    await vi.waitFor(() => expect(onSignedIn).toHaveBeenCalledOnce());
+  });
+
+  it('says nothing when the user closes the passkey dialog', async () => {
+    passkeyServer();
+    const onSignedIn = await render(fakeWebAuthn({ outcome: 'cancelled' }).auth);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Se connecter avec une passkey' }));
+    await vi.waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Se connecter avec une passkey' })).toHaveProperty(
+        'disabled',
+        false,
+      ),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onSignedIn).not.toHaveBeenCalled();
+  });
+
+  it('says when the passkey is unknown to the service', async () => {
+    server.use(
+      http.get(`${AUTH}/passkey/generate-authenticate-options`, () =>
+        HttpResponse.json({ challenge: 'c1' }),
+      ),
+      http.post(`${AUTH}/passkey/verify-authentication`, () =>
+        betterAuthError(400, 'PASSKEY_NOT_FOUND'),
+      ),
+    );
+    await render(fakeWebAuthn().auth);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Se connecter avec une passkey' }));
+    expect(
+      await screen.findByText(
+        'Cette passkey n’a pas pu être utilisée. Réessayez, ou connectez-vous avec votre mot de passe.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('shows no passkey button in a browser without WebAuthn', async () => {
+    await render(auth);
+    expect(screen.queryByRole('button', { name: 'Se connecter avec une passkey' })).toBeNull();
   });
 });

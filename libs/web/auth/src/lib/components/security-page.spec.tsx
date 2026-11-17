@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { AUTH, auth, betterAuthError, server, session } from '../../test-server';
+import { AUTH, auth, betterAuthError, fakeWebAuthn, server, session } from '../../test-server';
 import { renderWithProviders } from '../../test-utils';
 import { SecurityPage } from './security-page';
 
@@ -13,12 +13,18 @@ function account({
   twoFactorEnabled = false,
   requireTwoFactor = false,
   role = 'member',
-}: { twoFactorEnabled?: boolean; requireTwoFactor?: boolean; role?: string } = {}) {
+  passkeySignIn = false,
+}: {
+  twoFactorEnabled?: boolean;
+  requireTwoFactor?: boolean;
+  role?: string;
+  passkeySignIn?: boolean;
+} = {}) {
   const state = { twoFactorEnabled, requireTwoFactor };
   server.use(
     http.get(`${AUTH}/get-session`, () =>
       HttpResponse.json({
-        ...session,
+        session: { ...session.session, passkeySignIn },
         user: { ...session.user, twoFactorEnabled: state.twoFactorEnabled },
       }),
     ),
@@ -183,5 +189,83 @@ describe('SecurityPage', () => {
     await render();
     expect(await screen.findByText('Activée')).toBeTruthy();
     expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+});
+
+describe('SecurityPage passkeys', () => {
+  it('adds a named passkey, lists it, then deletes it', async () => {
+    account();
+    const browser = fakeWebAuthn();
+    let passkeys = [{ id: 'p1', name: 'iPhone', createdAt: '2026-11-01T10:00:00.000Z' }];
+    const registered: unknown[] = [];
+    server.use(
+      http.get(`${AUTH}/passkey/list-user-passkeys`, () => HttpResponse.json(passkeys)),
+      http.get(`${AUTH}/passkey/generate-register-options`, () =>
+        HttpResponse.json({ challenge: 'r1' }),
+      ),
+      http.post(`${AUTH}/passkey/verify-registration`, async ({ request }) => {
+        const body = (await request.json()) as { name: string };
+        registered.push(body);
+        passkeys = [
+          ...passkeys,
+          { id: 'p2', name: body.name, createdAt: '2026-11-17T10:00:00.000Z' },
+        ];
+        return HttpResponse.json({ id: 'p2' });
+      }),
+      http.post(`${AUTH}/passkey/delete-passkey`, async ({ request }) => {
+        const { id } = (await request.json()) as { id: string };
+        passkeys = passkeys.filter((passkey) => passkey.id !== id);
+        return HttpResponse.json({ status: true });
+      }),
+    );
+    await renderWithProviders(
+      <SecurityPage auth={browser.auth} passkeys onAccessChanged={vi.fn<() => void>()} />,
+    );
+    const user = userEvent.setup();
+
+    const list = await screen.findByRole('list', { name: 'Passkeys' });
+    expect(within(list).getByText('iPhone')).toBeTruthy();
+    await user.type(screen.getByLabelText('Nom de la passkey (facultatif)'), 'MacBook');
+    await user.click(screen.getByRole('button', { name: 'Ajouter une passkey' }));
+    expect(await within(list).findByText('MacBook')).toBeTruthy();
+    expect(registered).toEqual([{ response: { id: 'credential' }, name: 'MacBook' }]);
+
+    await user.click(screen.getByRole('button', { name: 'Supprimer la passkey iPhone' }));
+    await vi.waitFor(() => expect(within(list).queryByText('iPhone')).toBeNull());
+  });
+
+  it('says when the browser cannot use passkeys', async () => {
+    account();
+    server.use(http.get(`${AUTH}/passkey/list-user-passkeys`, () => HttpResponse.json([])));
+    await renderWithProviders(
+      <SecurityPage auth={auth} passkeys onAccessChanged={vi.fn<() => void>()} />,
+    );
+    expect(
+      await screen.findByText('Ce navigateur ne sait pas utiliser les passkeys.'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ajouter une passkey' })).toBeNull();
+  });
+
+  it('has no passkeys section unless the app turns it on', async () => {
+    account();
+    await render();
+    expect(await screen.findByText('Désactivée')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Passkeys' })).toBeNull();
+  });
+
+  it('lets in a member signed in with a passkey, and an owner require 2FA', async () => {
+    account({ requireTwoFactor: false, role: 'owner', passkeySignIn: true });
+    await render();
+    const required = await screen.findByRole('checkbox', {
+      name: 'Exiger la vérification en deux étapes de tous les membres',
+    });
+    expect((required as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it('does not ask a member signed in with a passkey to turn 2FA on', async () => {
+    account({ requireTwoFactor: true, passkeySignIn: true });
+    await render();
+    expect(await screen.findByText('Désactivée')).toBeTruthy();
+    expect(screen.queryByText(/Activez-la pour retrouver l’accès/)).toBeNull();
   });
 });

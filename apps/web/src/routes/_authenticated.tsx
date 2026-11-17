@@ -27,7 +27,12 @@ export const Route = createFileRoute('/_authenticated')({
         organizationsQueryOptions(context.session.auth),
       );
       const active = organizations.find((organization) => organization.id === activeId);
-      if (active?.requireTwoFactor && !current.user.twoFactorEnabled) {
+      // Une session ouverte par passkey vaut la 2FA (ADR 0018).
+      if (
+        active?.requireTwoFactor &&
+        !current.user.twoFactorEnabled &&
+        !current.session.passkeySignIn
+      ) {
         if (location.pathname !== SECURITY_PATH) {
           throw redirect({ to: SECURITY_PATH });
         }

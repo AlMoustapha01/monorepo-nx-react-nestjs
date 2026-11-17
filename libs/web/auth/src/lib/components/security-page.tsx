@@ -31,9 +31,12 @@ import {
   secretOf,
 } from '../data/two-factor';
 import { useAuthErrorMessage } from '../hooks/use-auth-error-message';
+import { PasskeysCard } from './passkeys-card';
 
 interface SecurityPageProps {
   auth: AuthClient;
+  /** Section des passkeys (flag `account.passkeys` de l'app). */
+  passkeys?: boolean;
   /** La 2FA ou l'exigence de l'organisation a changé : les accès du token aussi (ADR 0017). */
   onAccessChanged: () => Promise<void> | void;
 }
@@ -148,7 +151,7 @@ function BackupCodes({ codes, onDone }: { codes: string[]; onDone: () => void })
  * Sécurité du compte : vérification en deux étapes (application d'authentification, codes de secours) et, pour
  * qui gère l'organisation active, son exigence pour tous les membres.
  */
-export function SecurityPage({ auth, onAccessChanged }: SecurityPageProps) {
+export function SecurityPage({ auth, passkeys = false, onAccessChanged }: SecurityPageProps) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
   const errorMessage = useAuthErrorMessage();
@@ -171,6 +174,8 @@ export function SecurityPage({ auth, onAccessChanged }: SecurityPageProps) {
   const activeId = session.data?.session.activeOrganizationId;
   const active = organizations.data?.find((organization) => organization.id === activeId);
   const required = active?.requireTwoFactor === true;
+  // Une session ouverte par passkey vaut la 2FA qu'une organisation exige (ADR 0018).
+  const secondFactor = enabled || session.data?.session.passkeySignIn === true;
   const manager = isManagerRole(role.data);
 
   const refresh = () =>
@@ -229,7 +234,7 @@ export function SecurityPage({ auth, onAccessChanged }: SecurityPageProps) {
       <Heading level={1}>
         <Trans>Sécurité du compte</Trans>
       </Heading>
-      {required && !enabled && active && (
+      {required && !secondFactor && active && (
         <Text tone="destructive">
           <Trans>
             {active.name} exige la vérification en deux étapes. Activez-la pour retrouver l’accès.
@@ -241,7 +246,9 @@ export function SecurityPage({ auth, onAccessChanged }: SecurityPageProps) {
         <CardHeader>
           <Stack direction="row" gap={3} align="center" justify="between" wrap>
             <CardTitle>
-              <Trans>Vérification en deux étapes</Trans>
+              <Heading level={2} className="text-base">
+                <Trans>Vérification en deux étapes</Trans>
+              </Heading>
             </CardTitle>
             {enabled ? (
               <Badge>
@@ -309,11 +316,15 @@ export function SecurityPage({ auth, onAccessChanged }: SecurityPageProps) {
         </CardContent>
       </Card>
 
+      {passkeys && <PasskeysCard auth={auth} />}
+
       {manager && active && (
         <Card>
           <CardHeader>
             <CardTitle>
-              <Trans>Organisation : {active.name}</Trans>
+              <Heading level={2} className="text-base">
+                <Trans>Organisation : {active.name}</Trans>
+              </Heading>
             </CardTitle>
             <CardDescription>
               <Trans>
@@ -330,14 +341,14 @@ export function SecurityPage({ auth, onAccessChanged }: SecurityPageProps) {
                   type="checkbox"
                   className="size-4 accent-primary"
                   checked={required}
-                  disabled={(!enabled && !required) || savingRequirement}
+                  disabled={(!secondFactor && !required) || savingRequirement}
                   onChange={(event) => void toggleRequirement(event.target.checked)}
                 />
                 <Label htmlFor={requirementId}>
                   <Trans>Exiger la vérification en deux étapes de tous les membres</Trans>
                 </Label>
               </Stack>
-              {!enabled && !required && (
+              {!secondFactor && !required && (
                 <Text size="sm" tone="muted">
                   <Trans>Activez d’abord la vérification en deux étapes sur votre compte.</Trans>
                 </Text>

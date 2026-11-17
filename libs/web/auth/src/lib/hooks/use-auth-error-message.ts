@@ -27,6 +27,16 @@ export function useAuthErrorMessage(): (error: unknown) => string {
       case 'INVALID_CODE':
       case 'INVALID_BACKUP_CODE':
         return t`Code incorrect. Réessayez.`;
+      case 'PASSKEY_NOT_FOUND':
+      case 'AUTHENTICATION_FAILED':
+      case 'PASSKEY_FAILED':
+        return t`Cette passkey n’a pas pu être utilisée. Réessayez, ou connectez-vous avec votre mot de passe.`;
+      case 'PREVIOUSLY_REGISTERED':
+        return t`Cette passkey est déjà enregistrée.`;
+      case 'FAILED_TO_VERIFY_REGISTRATION':
+        return t`La passkey n’a pas pu être enregistrée. Réessayez.`;
+      case 'SESSION_NOT_FRESH':
+        return t`Pour ajouter une passkey, reconnectez-vous d’abord.`;
       case 'INVALID_TWO_FACTOR_COOKIE':
         return t`La vérification a expiré. Saisissez à nouveau votre mot de passe.`;
       case 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE':

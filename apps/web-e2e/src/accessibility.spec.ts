@@ -17,7 +17,7 @@ for (const path of ['/connexion', '/inscription', '/mot-de-passe-oublie']) {
 
 test('a form in error stays accessible', async ({ page }) => {
   await page.goto('/connexion');
-  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByRole('button', { name: 'Se connecter', exact: true }).click();
   await expect(page.getByLabel('Adresse email')).toHaveAttribute('aria-invalid', 'true');
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(violations).toEqual([]);

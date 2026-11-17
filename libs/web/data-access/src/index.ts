@@ -5,6 +5,7 @@ export { createApiClient } from './lib/api-client';
 export type { ApiClient, ApiClientOptions, ApiRequest, GetToken } from './lib/api-client';
 export { createAuthClient } from './lib/auth-client';
 export type { AuthClient, AuthClientOptions } from './lib/auth-client';
+export type { WebAuthn } from './lib/web-authn';
 // option:feature-flags:start
 export { featureFlagsQueryOptions, isFeatureEnabled } from './lib/feature-flags';
 // option:feature-flags:end

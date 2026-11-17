@@ -19,3 +19,6 @@ export type PasswordAction = (typeof PASSWORD_ACTIONS)[keyof typeof PASSWORD_ACT
 
 /** Clé de cache du rôle dans l'organisation active. */
 export const activeMemberRoleKey = ['auth', 'active-member-role'] as const;
+
+/** Clé de cache des passkeys du compte. */
+export const passkeysKey = ['auth', 'passkeys'] as const;

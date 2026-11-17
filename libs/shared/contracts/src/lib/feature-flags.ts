@@ -13,6 +13,12 @@ export interface FeatureFlagDefinition {
  * fonctionnalité déployée partout, on supprime le flag et les branches mortes.
  */
 export const FEATURE_FLAGS = {
+  'account.passkeys': {
+    description:
+      'Section Passkeys de la page Sécurité du compte (avec account.two-factor) : ajout et suppression. La connexion par passkey ne dépend pas du flag (ADR 0018).',
+    default: false,
+    client: true,
+  },
   'account.two-factor': {
     description:
       'Page Sécurité du compte : vérification en deux étapes et son exigence par l’organisation. La connexion en deux étapes d’un compte qui l’a activée ne dépend pas du flag.',

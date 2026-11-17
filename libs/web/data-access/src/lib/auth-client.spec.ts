@@ -170,3 +170,88 @@ describe('createAuthClient', () => {
     await expect(auth.getSession()).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
   });
 });
+
+describe('passkeys', () => {
+  /** Navigateur simulé : rend une réponse WebAuthn fixe, ou l'erreur d'un utilisateur qui annule. */
+  function webAuthn(outcome: 'ok' | 'cancelled' = 'ok') {
+    const ceremonies: unknown[] = [];
+    const answer = async (options: unknown, autofill?: boolean) => {
+      ceremonies.push({ options, autofill });
+      if (outcome === 'cancelled') throw new DOMException('The user cancelled', 'NotAllowedError');
+      return { id: 'credential' };
+    };
+    return {
+      ceremonies,
+      port: {
+        supported: () => true,
+        autofillSupported: async () => true,
+        register: (options: unknown) => answer(options),
+        authenticate: answer,
+        cancel: () => undefined,
+      },
+    };
+  }
+
+  it('signs in with a passkey: options from the server, the browser ceremony, then the verification', async () => {
+    const browser = webAuthn();
+    const client = createAuthClient({ baseUrl: BASE, webAuthn: browser.port });
+    let verified: unknown;
+    server.use(
+      http.get(`${AUTH}/passkey/generate-authenticate-options`, () =>
+        HttpResponse.json({ challenge: 'c1', rpId: 'localhost' }),
+      ),
+      http.post(`${AUTH}/passkey/verify-authentication`, async ({ request }) => {
+        verified = await request.json();
+        return HttpResponse.json({ session: {} });
+      }),
+    );
+
+    await client.signInWithPasskey({ autofill: true });
+    expect(browser.ceremonies).toEqual([
+      { options: { challenge: 'c1', rpId: 'localhost' }, autofill: true },
+    ]);
+    expect(verified).toEqual({ response: { id: 'credential' } });
+  });
+
+  it('reports a ceremony the user cancelled, without calling the server', async () => {
+    const client = createAuthClient({ baseUrl: BASE, webAuthn: webAuthn('cancelled').port });
+    server.use(
+      http.get(`${AUTH}/passkey/generate-authenticate-options`, () =>
+        HttpResponse.json({ challenge: 'c1' }),
+      ),
+    );
+    await expect(client.signInWithPasskey()).rejects.toMatchObject({ code: 'PASSKEY_CANCELLED' });
+  });
+
+  it('registers, lists and deletes the passkeys of the user', async () => {
+    const browser = webAuthn();
+    const client = createAuthClient({ baseUrl: BASE, webAuthn: browser.port });
+    const posted: unknown[] = [];
+    server.use(
+      http.get(`${AUTH}/passkey/generate-register-options`, () =>
+        HttpResponse.json({ challenge: 'r1' }),
+      ),
+      http.post(`${AUTH}/passkey/verify-registration`, async ({ request }) => {
+        posted.push(await request.json());
+        return HttpResponse.json({ id: 'p1' });
+      }),
+      http.get(`${AUTH}/passkey/list-user-passkeys`, () =>
+        HttpResponse.json([
+          { id: 'p1', name: 'MacBook', createdAt: '2026-11-17T10:00:00.000Z', publicKey: 'x' },
+        ]),
+      ),
+      http.post(`${AUTH}/passkey/delete-passkey`, async ({ request }) => {
+        posted.push(await request.json());
+        return HttpResponse.json({ status: true });
+      }),
+    );
+
+    await client.registerPasskey('MacBook');
+    await expect(client.listPasskeys()).resolves.toEqual([
+      { id: 'p1', name: 'MacBook', createdAt: '2026-11-17T10:00:00.000Z' },
+    ]);
+    await client.deletePasskey('p1');
+    expect(browser.ceremonies).toEqual([{ options: { challenge: 'r1' }, autofill: undefined }]);
+    expect(posted).toEqual([{ response: { id: 'credential' }, name: 'MacBook' }, { id: 'p1' }]);
+  });
+});
