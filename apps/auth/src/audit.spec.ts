@@ -49,6 +49,46 @@ describe('identityAuditEntries', () => {
     }
   });
 
+  it('records a sign-in completed by the second factor, not the confirmation of a new 2FA', () => {
+    const opened = { userId: ada, activeOrganizationId: tenant };
+    for (const path of ['/two-factor/verify-totp', '/two-factor/verify-backup-code']) {
+      expect(request({ path, sessionUserId: undefined, newSession: opened })).toEqual([
+        expect.objectContaining({
+          action: 'identity.signed-in',
+          details: { method: path.slice(1) },
+        }),
+      ]);
+      // Avec une session : l'utilisateur confirme sa 2FA, il était déjà connecté.
+      expect(request({ path, sessionUserId: ada, newSession: opened })).toEqual([]);
+    }
+  });
+
+  it('records a change of the 2FA requirement of the organization, not its other updates', () => {
+    const organization = { id: tenant, name: 'Atelier', requireTwoFactor: true };
+    expect(
+      request({
+        path: '/organization/update',
+        body: { data: { requireTwoFactor: true } },
+        returned: organization,
+      }),
+    ).toEqual([
+      {
+        tenantId: tenant,
+        actorId: owner,
+        action: 'identity.two-factor-requirement-changed',
+        resource: { type: 'organization', id: tenant },
+        details: { required: true },
+      },
+    ]);
+    expect(
+      request({
+        path: '/organization/update',
+        body: { data: { name: 'X' } },
+        returned: organization,
+      }),
+    ).toEqual([]);
+  });
+
   it('records nothing for a sign-in without organization: there is no tenant to write to', () => {
     expect(
       request({ path: '/sign-in/email', newSession: { userId: ada, activeOrganizationId: null } }),

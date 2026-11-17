@@ -2,17 +2,19 @@
 const STAFF_MEMBER_ROLES = new Set(['owner', 'admin']);
 
 export interface ClaimsInput {
-  user: { email: string; emailVerified: boolean };
+  user: { email: string; emailVerified: boolean; twoFactorEnabled?: boolean | null };
   /** Organisation active de la session, si l'utilisateur en est toujours membre. */
-  membership?: { organizationId: string; role: string };
+  membership?: { organizationId: string; role: string; requireTwoFactor?: boolean | null };
 }
 
 /**
  * Contenu de l'access token, au format attendu par l'API (JwtVerifier) : `tenant_id` est
  * l'organisation active, `roles` vient du rôle de membre. `sub` (l'ID utilisateur) est ajouté
- * par le plugin jwt. Rien d'autre : le token circule, il ne porte pas de donnée personnelle inutile.
+ * par le plugin jwt. Une organisation qui exige la 2FA n'est pas donnée à un membre qui ne l'a pas. Rien d'autre : le token circule, il ne porte pas de donnée personnelle inutile.
  */
-export function apiClaims({ user, membership }: ClaimsInput): Record<string, unknown> {
+export function apiClaims({ user, membership: active }: ClaimsInput): Record<string, unknown> {
+  // Organisation qui exige la 2FA, membre sans 2FA : aucun accès à ce tenant tant qu'il ne l'a pas activée.
+  const membership = active?.requireTwoFactor && !user.twoFactorEnabled ? undefined : active;
   // Better Auth stocke plusieurs rôles séparés par des virgules.
   const memberRoles = membership?.role.split(',').map((role) => role.trim()) ?? [];
   return {
