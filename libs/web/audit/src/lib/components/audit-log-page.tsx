@@ -18,6 +18,9 @@ export type { AuditFilters };
 const SUPPORT_ACTIONS: readonly string[] = [
   IDENTITY_AUDIT_ACTIONS.impersonationStarted,
   IDENTITY_AUDIT_ACTIONS.impersonationStopped,
+  // option:feature-flags:start
+  IDENTITY_AUDIT_ACTIONS.featureFlagChanged,
+  // option:feature-flags:end
 ];
 
 /** Libellés des actions connues ; une autre s'affiche telle qu'enregistrée. */
@@ -32,6 +35,9 @@ function useActionLabels(): Record<string, string> {
     'identity.two-factor-requirement-changed': t`Exigence de la 2FA modifiée`,
     'identity.impersonation-started': t`Le support est entré dans le compte`,
     'identity.impersonation-stopped': t`Le support a quitté le compte`,
+    // option:feature-flags:start
+    'identity.feature-flag-changed': t`Flag modifié par le support`,
+    // option:feature-flags:end
     // example:start
     'orders.order-placed': t`Commande passée`,
     'orders.order-cancelled': t`Commande annulée`,

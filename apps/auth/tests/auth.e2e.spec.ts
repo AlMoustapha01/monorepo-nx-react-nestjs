@@ -19,6 +19,9 @@ import { validateEnv } from '../src/env';
 import type { AuthEmail } from '../src/mailer';
 import { migrateAuthDatabase } from '../src/migrations';
 import { runOperatorsCommand } from '../src/operators-command';
+// option:feature-flags:start
+import { FEATURE_FLAGS } from '@nx-react-nestjs/contracts';
+// option:feature-flags:end
 import { createRequestListener } from '../src/server';
 
 const APP_URL = 'http://localhost:4200';
@@ -53,7 +56,13 @@ function withCookies(current: string, received: string): string {
 }
 
 /** Schémas de l'API où le service d'identité écrit. */
-const API_SCHEMAS = ['audit', 'access'];
+const API_SCHEMAS = [
+  'audit',
+  'access',
+  // option:feature-flags:start
+  'feature_flags',
+  // option:feature-flags:end
+];
 
 describe('Authentication service', () => {
   let container: StartedPostgreSqlContainer;
@@ -761,6 +770,92 @@ describe('Authentication service', () => {
       });
       expect(refused.response.status).toBe(403);
     });
+
+    // option:feature-flags:start
+    // Le mécanisme, pas les flags du projet : le premier du catalogue, quel qu'il soit.
+    const [flag] = Object.keys(FEATURE_FLAGS);
+    describe.skipIf(!flag)('feature flags of a tenant', () => {
+      const flags = (organizationId: string, cookie: string) =>
+        call(`/api/auth/operator/feature-flags?organizationId=${organizationId}`, { cookie });
+      const setFlag = (organizationId: string, value: string, cookie: string, name = flag) =>
+        call('/api/auth/operator/feature-flags', {
+          body: { organizationId, flag: name, value },
+          cookie,
+        });
+      const overrides = async (tenantId: string) =>
+        (
+          await pool.query<{ flag: string; enabled: boolean }>(
+            'select flag, enabled from feature_flags.tenant_overrides where tenant_id = $1',
+            [tenantId],
+          )
+        ).rows;
+
+      it('lets an operator with 2FA turn a flag on, off and back to default, in the audit log', async () => {
+        const tenantId = await organizationOf(
+          await verifiedSignUp('flags-client@shop.test'),
+          'flags-shop',
+        );
+        const ops = await operator('ops-flags@shop.test');
+
+        const listed = await flags(tenantId, ops.cookie);
+        expect(listed.response.status).toBe(200);
+        expect(listed.body).toMatchObject({ organization: { id: tenantId, name: 'flags-shop' } });
+        const entry = (listed.body as { flags: { flag: string }[] }).flags.find(
+          (f) => f.flag === flag,
+        );
+        expect(entry).toEqual({
+          flag,
+          description: expect.any(String),
+          catalogDefault: expect.any(Boolean),
+          override: null,
+        });
+
+        expect((await setFlag(tenantId, 'on', ops.cookie)).response.status).toBe(200);
+        expect(await overrides(tenantId)).toEqual([{ flag, enabled: true }]);
+        const off = await setFlag(tenantId, 'off', ops.cookie);
+        expect(
+          (off.body as { flags: { flag: string; override: boolean | null }[] }).flags.find(
+            (f) => f.flag === flag,
+          )?.override,
+        ).toBe(false);
+        await setFlag(tenantId, 'default', ops.cookie);
+        expect(await overrides(tenantId)).toEqual([]);
+
+        const { rows } = await pool.query<{ actor_id: string; details: unknown }>(
+          `select actor_id, details from audit.entries
+            where tenant_id = $1 and action = 'identity.feature-flag-changed' order by occurred_at, id`,
+          [tenantId],
+        );
+        expect(rows).toEqual(
+          ['on', 'off', 'default'].map((value) => ({
+            actor_id: ops.id,
+            details: { flag, value },
+          })),
+        );
+      });
+
+      it('refuses a non-operator, an operator without 2FA, an unknown flag or organization', async () => {
+        const clientCookie = await verifiedSignUp('flags-refused@shop.test');
+        const tenantId = await organizationOf(clientCookie, 'flags-refused-shop');
+        const ops = await operator('ops-flags-refused@shop.test');
+        const without2fa = await operator('ops-flags-no2fa@shop.test', { twoFactor: false });
+
+        expect((await flags(tenantId, clientCookie)).response.status).toBe(403);
+        expect((await setFlag(tenantId, 'on', clientCookie)).response.status).toBe(403);
+        const no2fa = await setFlag(tenantId, 'on', without2fa.cookie);
+        expect(no2fa.response.status).toBe(403);
+        expect(no2fa.body).toMatchObject({ code: 'OPERATOR_TWO_FACTOR_REQUIRED' });
+        expect((await setFlag(tenantId, 'on', ops.cookie, 'no.such-flag')).response.status).toBe(
+          400,
+        );
+        expect((await setFlag(tenantId, 'maybe', ops.cookie)).response.status).toBe(400);
+        const unknown = '00000000-0000-4000-8000-000000000000';
+        expect((await flags(unknown, ops.cookie)).response.status).toBe(404);
+        expect((await setFlag(unknown, 'on', ops.cookie)).response.status).toBe(404);
+        expect(await overrides(tenantId)).toEqual([]);
+      });
+    });
+    // option:feature-flags:end
   });
 
   describe('passkeys', () => {

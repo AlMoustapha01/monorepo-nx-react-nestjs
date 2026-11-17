@@ -27,6 +27,10 @@ export const IDENTITY_AUDIT_ACTIONS = {
   /** Un opérateur de la plateforme voit l'application comme le client (back-office, ADR 0019). */
   impersonationStarted: 'identity.impersonation-started',
   impersonationStopped: 'identity.impersonation-stopped',
+  // option:feature-flags:start
+  /** Un opérateur change la valeur d'un flag pour le tenant (back-office, ADR 0020). */
+  featureFlagChanged: 'identity.feature-flag-changed',
+  // option:feature-flags:end
 } as const satisfies Record<string, AuditAction>;
 
 /** Ressource visée : un type stable (`order`, `member`) et son ID, quel qu'en soit le format. */

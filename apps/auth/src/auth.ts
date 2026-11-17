@@ -16,7 +16,11 @@ import { createAuditWriter, identityAuditEntries, impersonationAuditEntries } fr
 import { apiClaims, PASSKEY_SIGN_IN_PATH } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
+import { requireOperator } from './operator-access';
 import { searchAccounts } from './operator-search';
+// option:feature-flags:start
+import { tenantFeatureFlagsEndpoints } from './tenant-feature-flags';
+// option:feature-flags:end
 // option:sentry:start
 import { reportError } from './report-error';
 // option:sentry:end
@@ -531,15 +535,13 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
               use: [sessionMiddleware],
             },
             async (ctx) => {
-              if ((ctx.context.session.user as { role?: unknown }).role !== OPERATOR_ROLE) {
-                throw new APIError('FORBIDDEN', {
-                  code: 'OPERATOR_REQUIRED',
-                  message: 'Only platform operators can search accounts',
-                });
-              }
+              requireOperator(ctx.context.session);
               return ctx.json({ users: await searchAccounts(pool, ctx.query.query) });
             },
           ),
+          // option:feature-flags:start
+          ...tenantFeatureFlagsEndpoints(pool, writeAudit),
+          // option:feature-flags:end
         },
       } satisfies BetterAuthPlugin,
       // En dernier : ses hooks voient le résultat de ceux des autres plugins.

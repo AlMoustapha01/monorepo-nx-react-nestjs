@@ -120,6 +120,29 @@ describe('AuditLogPage', () => {
     expect(placed?.textContent).toContain('via le support de la plateforme');
   });
 
+  // option:feature-flags:start
+  it('names the platform support who changed a flag for the tenant', async () => {
+    const OPERATOR = '3b241101-e2bb-4255-8caf-4136c566a962';
+    server.use(
+      members(),
+      entries([
+        entry(1, {
+          actorId: OPERATOR,
+          action: 'identity.feature-flag-changed',
+          resource: { type: 'organization', id: 'o1' },
+          details: { flag: 'x.beta', value: 'on' },
+        }),
+      ]),
+    );
+    await render();
+
+    const [changed] = within(await findList()).getAllByRole('listitem');
+    expect(changed?.textContent).toContain('Flag modifié par le support');
+    expect(changed?.textContent).toContain('flag : x.beta');
+    expect(changed?.textContent).toContain('Support de la plateforme');
+  });
+  // option:feature-flags:end
+
   it('shows an unknown action as it is recorded', async () => {
     server.use(members(), entries([entry(1, { action: 'billing.invoice-paid' })]));
     await render();

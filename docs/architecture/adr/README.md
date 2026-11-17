@@ -2,27 +2,28 @@
 
 Une décision structurante par fichier : le contexte, ce qui a été décidé, ce que ça coûte. Un ADR explique pourquoi le code est ainsi ; [`AGENTS.md`](../../../AGENTS.md) dit comment s'y conformer.
 
-| N°                                           | Décision                                                                                    | Statut             |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------ |
-| [0001](0001-monolithe-modulaire.md)          | Une API en monolithe modulaire, un domaine par lib Nx                                       | Acceptée           |
-| [0002](0002-schema-postgres-par-domaine.md)  | Un schéma Postgres par domaine, sans clé étrangère entre domaines                           | Acceptée           |
-| [0003](0003-multi-tenant-base-partagee.md)   | Multi-tenant en base partagée, filtré par `tenant_id` dans les repositories                 | Acceptée           |
-| [0004](0004-identifiants-metier-prefixes.md) | Identifiants métier préfixés et triables par date                                           | Acceptée           |
-| [0005](0005-outbox-et-bullmq.md)             | Événements d'intégration par outbox transactionnelle et BullMQ                              | Remplacée par 0012 |
-| [0006](0006-service-d-identite-separe.md)    | Identité dans un service à part, l'API vérifie des JWT                                      | Acceptée           |
-| [0007](0007-une-image-trois-commandes.md)    | Une image, trois commandes ; migrations en étape de déploiement                             | Acceptée           |
-| [0008](0008-feature-flags-dans-le-code.md)   | Feature flags déclarés dans le code, surchargés par l'environnement                         | Complétée par 0014 |
-| [0009](0009-erreurs-rfc-9457.md)             | Erreurs métier typées, converties en RFC 9457 en un seul endroit                            | Acceptée           |
-| [0010](0010-stack-du-front.md)               | Stack du front                                                                              | Acceptée           |
-| [0011](0011-developpement-par-specs.md)      | Développement par specs (Spec Kit), en TDD, avec traçabilité                                | Acceptée           |
-| [0012](0012-file-de-jobs-graphile-worker.md) | File de jobs dans Postgres avec Graphile Worker                                             | Acceptée           |
-| [0013](0013-row-level-security.md)           | Row Level Security de Postgres en seconde barrière d'isolation des tenants                  | Acceptée           |
-| [0014](0014-feature-flags-par-tenant.md)     | Feature flags par tenant, en base, pilotés par une commande d'exploitation                  | Acceptée           |
-| [0015](0015-journal-d-audit.md)              | Journal d'audit par tenant, écrit par les événements et par les hooks du service d'identité | Acceptée           |
-| [0016](0016-revocation-des-acces.md)         | Révocation des accès en quelques secondes, par une liste en Postgres consultée par l'API    | Acceptée           |
-| [0017](0017-verification-en-deux-etapes.md)  | Vérification en deux étapes par application d'authentification, exigible par organisation   | Acceptée           |
-| [0018](0018-passkeys.md)                     | Passkeys : connexion sans mot de passe, valant la 2FA qu'une organisation exige             | Acceptée           |
-| [0019](0019-back-office-et-impersonation.md) | Back-office et impersonation : le support voit ce que voit le client, avec trace            | Acceptée           |
+| N°                                              | Décision                                                                                    | Statut                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------- |
+| [0001](0001-monolithe-modulaire.md)             | Une API en monolithe modulaire, un domaine par lib Nx                                       | Acceptée                   |
+| [0002](0002-schema-postgres-par-domaine.md)     | Un schéma Postgres par domaine, sans clé étrangère entre domaines                           | Acceptée                   |
+| [0003](0003-multi-tenant-base-partagee.md)      | Multi-tenant en base partagée, filtré par `tenant_id` dans les repositories                 | Acceptée                   |
+| [0004](0004-identifiants-metier-prefixes.md)    | Identifiants métier préfixés et triables par date                                           | Acceptée                   |
+| [0005](0005-outbox-et-bullmq.md)                | Événements d'intégration par outbox transactionnelle et BullMQ                              | Remplacée par 0012         |
+| [0006](0006-service-d-identite-separe.md)       | Identité dans un service à part, l'API vérifie des JWT                                      | Acceptée                   |
+| [0007](0007-une-image-trois-commandes.md)       | Une image, trois commandes ; migrations en étape de déploiement                             | Acceptée                   |
+| [0008](0008-feature-flags-dans-le-code.md)      | Feature flags déclarés dans le code, surchargés par l'environnement                         | Complétée par 0014         |
+| [0009](0009-erreurs-rfc-9457.md)                | Erreurs métier typées, converties en RFC 9457 en un seul endroit                            | Acceptée                   |
+| [0010](0010-stack-du-front.md)                  | Stack du front                                                                              | Acceptée                   |
+| [0011](0011-developpement-par-specs.md)         | Développement par specs (Spec Kit), en TDD, avec traçabilité                                | Acceptée                   |
+| [0012](0012-file-de-jobs-graphile-worker.md)    | File de jobs dans Postgres avec Graphile Worker                                             | Acceptée                   |
+| [0013](0013-row-level-security.md)              | Row Level Security de Postgres en seconde barrière d'isolation des tenants                  | Acceptée                   |
+| [0014](0014-feature-flags-par-tenant.md)        | Feature flags par tenant, en base, pilotés par une commande d'exploitation                  | Pilotage remplacé par 0020 |
+| [0015](0015-journal-d-audit.md)                 | Journal d'audit par tenant, écrit par les événements et par les hooks du service d'identité | Acceptée                   |
+| [0016](0016-revocation-des-acces.md)            | Révocation des accès en quelques secondes, par une liste en Postgres consultée par l'API    | Acceptée                   |
+| [0017](0017-verification-en-deux-etapes.md)     | Vérification en deux étapes par application d'authentification, exigible par organisation   | Acceptée                   |
+| [0018](0018-passkeys.md)                        | Passkeys : connexion sans mot de passe, valant la 2FA qu'une organisation exige             | Acceptée                   |
+| [0020](0020-flags-par-tenant-au-back-office.md) | Flags par tenant pilotés depuis le back-office, avec trace                                  | Acceptée                   |
+| [0019](0019-back-office-et-impersonation.md)    | Back-office et impersonation : le support voit ce que voit le client, avec trace            | Acceptée                   |
 
 Les ADR 0001 à 0011 ont été écrits après coup, en octobre 2026, à partir du code, des messages de commit et des documents de conception de l'époque. La date de chacun est celle du commit qui a introduit la décision. Quand les alternatives écartées n'étaient écrites nulle part, l'ADR le dit.
 

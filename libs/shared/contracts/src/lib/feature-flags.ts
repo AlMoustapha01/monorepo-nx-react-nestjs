@@ -74,3 +74,31 @@ export const featureFlagsResponseSchema = z.object({
   flags: z.record(z.string(), z.boolean()),
 });
 export type FeatureFlagsResponse = z.infer<typeof featureFlagsResponseSchema>;
+
+/**
+ * Surcharge d'un flag pour un tenant, choisie au back-office (ADR 0020) : `on`, `off`, ou `default` pour la retirer
+ * (retour à `FEATURE_FLAGS`, puis à la valeur du catalogue).
+ */
+export const tenantFlagValueSchema = z.enum(['on', 'off', 'default']);
+export type TenantFlagValue = z.infer<typeof tenantFlagValueSchema>;
+
+export const setTenantFeatureFlagSchema = z.object({
+  organizationId: z.uuid(),
+  flag: featureFlagSchema,
+  value: tenantFlagValueSchema,
+});
+export type SetTenantFeatureFlagInput = z.infer<typeof setTenantFeatureFlagSchema>;
+
+/** Flags du catalogue pour un tenant : valeur du catalogue et surcharge du tenant (`null` : aucune). */
+export const tenantFeatureFlagsSchema = z.object({
+  organization: z.object({ id: z.string(), name: z.string() }),
+  flags: z.array(
+    z.object({
+      flag: z.string(),
+      description: z.string(),
+      catalogDefault: z.boolean(),
+      override: z.boolean().nullable(),
+    }),
+  ),
+});
+export type TenantFeatureFlags = z.infer<typeof tenantFeatureFlagsSchema>;

@@ -1,6 +1,6 @@
 # 0014. Feature flags par tenant, en base, pilotés par une commande d'exploitation
 
-- **Statut** : Acceptée
+- **Statut** : Acceptée ; pilotage par commande remplacé par [0020](0020-flags-par-tenant-au-back-office.md) (back-office)
 - **Date** : 2026-11-17
 - **Complète** : [0008](0008-feature-flags-dans-le-code.md), dont le catalogue et la surcharge par l'environnement ne changent pas
 

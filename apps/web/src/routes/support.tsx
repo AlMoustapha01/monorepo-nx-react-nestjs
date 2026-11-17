@@ -12,6 +12,9 @@ function BackOffice() {
     <ErrorZone>
       <BackOfficePage
         auth={context.session.auth}
+        // option:feature-flags:start
+        featureFlags
+        // option:feature-flags:end
         onImpersonated={async () => {
           // Session du client : token et données de l'opérateur oubliés.
           resetSession(context);

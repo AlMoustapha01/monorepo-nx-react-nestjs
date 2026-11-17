@@ -14,12 +14,6 @@ Deux images, construites par le même `Dockerfile` :
 | Identité (`docker build --build-arg APP=auth .`) | `node main.js`    | Better Auth, port 3100                             | selon le trafic           |
 |                                                  | `node migrate.js` | tables de Better Auth (schéma `auth`), puis sortie | une, à chaque déploiement |
 
-<!-- option:feature-flags:start -->
-
-L'image de l'API porte aussi `node feature-flags.js`, une commande ponctuelle d'exploitation : voir [Feature flags par tenant](#feature-flags-par-tenant).
-
-<!-- option:feature-flags:end -->
-
 L'image du service d'identité porte `node operators.js`, une commande ponctuelle d'exploitation : voir [Opérateurs de la plateforme](#opérateurs-de-la-plateforme).
 
 Plus le front (fichiers statiques), Postgres et Redis. L'API et le service d'identité partagent la même base Postgres, chacun dans ses schémas.
@@ -46,7 +40,7 @@ Le fichier sert aussi de modèle : variables de chaque service, ordre de démarr
 ## Ordre d'un déploiement
 
 1. **Construire** les deux images, une fois, depuis le commit déployé. La base Node est épinglée par digest dans le `Dockerfile`.
-2. **Migrer** : lancer `node migrate.js` de chaque image (API et identité) comme une tâche qui se termine (Job Kubernetes, tâche ECS, `docker run --rm`), celui de l'API d'abord : le service d'identité écrit dans ses tables `audit.entries` et `access.revocations` (ADR 0015 et 0016). Le déploiement s'arrête si elle sort en erreur.
+2. **Migrer** : lancer `node migrate.js` de chaque image (API et identité) comme une tâche qui se termine (Job Kubernetes, tâche ECS, `docker run --rm`), celui de l'API d'abord : le service d'identité écrit dans des tables de l'API : journal d'audit, révocations et, avec les feature flags, surcharges par tenant (ADR 0015, 0016 et 0020). Le déploiement s'arrête si elle sort en erreur.
 3. **Démarrer** les nouvelles instances (`auth`, `api`, `worker`), en remplacement progressif des anciennes.
 
 Les migrations ne tournent jamais au démarrage de l'API : avec plusieurs instances, elles se feraient concurrence, et un échec ferait boucler les redémarrages. Chaque `migrate.js` prend un verrou consultatif Postgres : deux déploiements simultanés se sérialisent au lieu de s'écraser.
@@ -196,16 +190,9 @@ Quand Redis tombe : l'API continue de répondre (le rate limiting laisse passer,
 
 ## Feature flags par tenant
 
-Ouvrir une fonctionnalité à un client pilote, ou la retirer à un seul client, sans redémarrer ([ADR 0014](../architecture/adr/0014-feature-flags-par-tenant.md)) : la commande `node feature-flags.js` de l'image de l'API, lancée comme `migrate.js` (job ponctuel, `docker compose run --rm migrate node feature-flags.js …`), avec le même `DATABASE_URL`.
+Ouvrir une fonctionnalité à un client pilote, ou la retirer à un seul client, sans redémarrer ([ADR 0014](../architecture/adr/0014-feature-flags-par-tenant.md), [0020](../architecture/adr/0020-flags-par-tenant-au-back-office.md)) : au back-office `/support`, un [opérateur](#opérateurs-de-la-plateforme) avec 2FA cherche un compte du client, ouvre « Flags de <organisation> » et choisit, pour chaque flag, « Comme tous », « Activé » ou « Désactivé pour cette organisation ». Chaque changement va au journal d'audit du client.
 
-```sh
-node feature-flags.js set storefront 0b9c…-uuid-du-tenant on   # pilote, même si le flag est coupé pour tous
-node feature-flags.js set storefront 7f21…-uuid-du-tenant off  # exclusion, même s'il est activé pour tous
-node feature-flags.js clear storefront 0b9c…-uuid-du-tenant    # retour à FEATURE_FLAGS, puis à la valeur par défaut
-node feature-flags.js list                                     # toutes les surcharges
-```
-
-Le tenant est l'ID de l'organisation (Better Auth), la claim `tenant_id` du token. La valeur s'applique dès la requête suivante, sur toutes les instances ; le front la voit au prochain chargement de la page. Couper un flag pour tout le monde, pilotes compris : `clear` de ses surcharges, puis `FEATURE_FLAGS=<flag>=false`. Un flag retiré du code laisse ses lignes, ignorées : `list` les signale, `clear` les supprime.
+La valeur s'applique dès la requête suivante, sur toutes les instances ; le front la voit au prochain chargement de la page. « Comme tous » suit `FEATURE_FLAGS` de l'API, sinon la valeur du catalogue (la seule que le back-office affiche). Couper un flag pour tout le monde, pilotes compris : remettre ses surcharges à « Comme tous », puis `FEATURE_FLAGS=<flag>=false`. Un flag retiré du code laisse ses lignes dans `feature_flags.tenant_overrides`, ignorées par l'API : les supprimer en SQL au besoin.
 
 <!-- option:feature-flags:end -->
 

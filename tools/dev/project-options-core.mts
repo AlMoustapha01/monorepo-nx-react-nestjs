@@ -84,12 +84,16 @@ export const PROJECT_OPTIONS: readonly ProjectOption[] = [
       'apps/web/src/feature-flags.ts',
       'apps/web/src/feature-flags.spec.tsx',
       'apps/api/tests/feature-flags.e2e.spec.ts',
-      'apps/api/src/feature-flags.ts',
+      'apps/auth/src/tenant-feature-flags.ts',
+      'libs/web/auth/src/lib/components/tenant-flags-panel.tsx',
+      'libs/web/auth/src/lib/components/tenant-flags-panel.spec.tsx',
+      'apps/web-e2e/src/back-office-flags.spec.ts',
     ],
     dependencies: [],
-    scripts: ['dev:flag'],
-    // La table des surcharges par tenant disparaît avec son schéma.
-    regenerate: ['errors', 'migrations'],
+    scripts: [],
+    // La table des surcharges par tenant disparaît avec son schéma, les textes du back-office des flags avec leurs
+    // composants.
+    regenerate: ['errors', 'migrations', 'i18n'],
     requires: { options: ['examples'], reason: "le code d'exemple utilise les feature flags" },
     leftovers: 'feature.?flag|requireFeature|FEATURE_DISABLED',
     afterRemoval:

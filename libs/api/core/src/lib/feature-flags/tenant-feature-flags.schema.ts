@@ -17,7 +17,7 @@ const tenantRows = () =>
 export const featureFlagsSchema = pgSchema('feature_flags');
 
 /**
- * Valeur d'un flag pour un tenant (pilote, exclusion), écrite par `node feature-flags.js` : l'emporte sur
+ * Valeur d'un flag pour un tenant (pilote, exclusion), écrite au back-office (service d'identité, ADR 0020) : l'emporte sur
  * `FEATURE_FLAGS` et sur la valeur par défaut du catalogue (ADR 0014). Une ligne d'un flag retiré du code est ignorée.
  */
 export const tenantFeatureFlags = featureFlagsSchema.table(
