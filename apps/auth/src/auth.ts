@@ -1,8 +1,9 @@
 import { betterAuth } from 'better-auth';
-import { APIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { jwt, organization } from 'better-auth/plugins';
 import { Pool } from 'pg';
 import type { Logger } from 'pino';
+import { createAuditWriter, identityAuditEntries } from './audit';
 import { apiClaims } from './claims';
 import type { AuthEnv } from './env';
 import type { AuthEmail, SendEmail } from './mailer';
@@ -66,6 +67,8 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
     return rows[0] && { organizationId, role: rows[0].role };
   };
 
+  const writeAudit = createAuditWriter(pool, logger);
+
   return betterAuth({
     appName: 'Shop',
     baseURL: env.BETTER_AUTH_URL,
@@ -118,6 +121,35 @@ export function createAuth({ env, pool, sendEmail, logger }: AuthDependencies) {
           subject: 'Confirmez votre adresse email',
           text: `Pour confirmer votre adresse : ${url}`,
         }),
+    },
+    hooks: {
+      // Journal d'audit (ADR 0015) : après l'action, jamais à sa place ; une erreur n'est pas auditée.
+      after: createAuthMiddleware(async (ctx) => {
+        const { returned, newSession } = ctx.context;
+        if (returned instanceof Error) {
+          return;
+        }
+        // Le contexte d'un hook `after` ne porte pas la session de l'appelant : relue depuis ses cookies.
+        const session =
+          !newSession && ctx.path.startsWith('/organization/')
+            ? await getSessionFromCtx(ctx).catch(() => null)
+            : null;
+        await writeAudit(
+          identityAuditEntries({
+            path: ctx.path,
+            sessionUserId: session?.user.id,
+            newSession: newSession
+              ? {
+                  userId: newSession.user.id,
+                  activeOrganizationId:
+                    (newSession.session as { activeOrganizationId?: string | null })
+                      .activeOrganizationId ?? null,
+                }
+              : undefined,
+            returned,
+          }),
+        );
+      }),
     },
     databaseHooks: {
       session: {

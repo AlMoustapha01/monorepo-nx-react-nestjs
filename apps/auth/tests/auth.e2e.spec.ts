@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { NodeSDK, tracing } from '@opentelemetry/sdk-node';
@@ -10,7 +11,7 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { APIError } from 'better-auth/api';
 // option:sentry:end
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import type { Pool } from 'pg';
+import { Client, type Pool } from 'pg';
 import { pino } from 'pino';
 import { type Auth, createAuth, createPool } from '../src/auth';
 import { validateEnv } from '../src/env';
@@ -52,6 +53,7 @@ describe('Authentication service', () => {
     });
     // option:sentry:end
     container = await new PostgreSqlContainer('postgres:17-alpine').start();
+    await createAuditTable(container.getConnectionUri());
     server = createServer();
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -196,7 +198,7 @@ describe('Authentication service', () => {
   it('creates its tables in the auth schema, with UUIDs', async () => {
     const { rows } = await pool.query<{ table_schema: string; table_name: string }>(
       `select table_schema, table_name from information_schema.tables
-       where table_schema not in ('pg_catalog', 'information_schema') order by table_name`,
+       where table_schema not in ('pg_catalog', 'information_schema', 'audit') order by table_name`,
     );
     expect(rows.every((row) => row.table_schema === 'auth')).toBe(true);
     expect(rows.map((row) => row.table_name)).toEqual(
@@ -241,8 +243,107 @@ describe('Authentication service', () => {
   });
   // option:sentry:end
 
+  describe('audit log', () => {
+    const entries = async (tenantId: string) =>
+      (
+        await pool.query<{
+          actor_id: string;
+          action: string;
+          resource_type: string;
+          resource_id: string;
+          details: unknown;
+          trace_id: string | null;
+        }>(
+          'select actor_id, action, resource_type, resource_id, details, trace_id from audit.entries where tenant_id = $1 order by occurred_at, id',
+          [tenantId],
+        )
+      ).rows;
+
+    it('records a sign-in and the removal of a member, by whom, without email', async () => {
+      const ownerCookie = await verifiedSignUp('audit-owner@shop.test');
+      const organization = await call('/api/auth/organization/create', {
+        body: { name: 'Audit', slug: 'audit' },
+        cookie: ownerCookie,
+      });
+      const tenantId = (organization.body as { id: string }).id;
+      const ownerId = (await accessToken(ownerCookie)).sub;
+      await verifiedSignUp('audit-member@shop.test');
+      const { rows } = await pool.query<{ id: string }>('select id from "user" where email = $1', [
+        'audit-member@shop.test',
+      ]);
+      const memberId = rows[0]?.id ?? '';
+      await auth.api.addMember({
+        body: { userId: memberId, role: 'admin', organizationId: tenantId },
+      });
+
+      const signIn = await call('/api/auth/sign-in/email', {
+        body: { email: 'audit-owner@shop.test', password: 'correct-horse-battery' },
+      });
+      expect(signIn.response.status).toBe(200);
+      const removed = await call('/api/auth/organization/remove-member', {
+        body: { memberIdOrEmail: 'audit-member@shop.test', organizationId: tenantId },
+        cookie: signIn.cookie,
+      });
+      expect(removed.response.status).toBe(200);
+
+      const recorded = await entries(tenantId);
+      expect(recorded).toEqual([
+        expect.objectContaining({
+          actor_id: ownerId,
+          action: 'identity.signed-in',
+          resource_id: ownerId,
+        }),
+        expect.objectContaining({
+          actor_id: ownerId,
+          action: 'identity.member-removed',
+          resource_type: 'member',
+          resource_id: memberId,
+          details: { role: 'admin' },
+        }),
+      ]);
+      expect(JSON.stringify(recorded)).not.toContain('@shop.test');
+    });
+
+    it('signs in even when the audit entry cannot be written', async () => {
+      await pool.query('alter table audit.entries rename to entries_unavailable');
+      try {
+        const signIn = await call('/api/auth/sign-in/email', {
+          body: { email: 'audit-owner@shop.test', password: 'correct-horse-battery' },
+        });
+        expect(signIn.response.status).toBe(200);
+        // option:sentry:start
+        await vi.waitFor(() =>
+          expect(reported.some((event) => event.tags?.['operation'] === 'audit')).toBe(true),
+        );
+        // option:sentry:end
+      } finally {
+        await pool.query('alter table audit.entries_unavailable rename to entries');
+      }
+    });
+  });
+
   it('answers the probes', async () => {
     expect((await call('/health')).response.status).toBe(200);
     expect((await call('/ready')).response.status).toBe(200);
   });
 });
+
+/** La table du journal appartient à l'API (ses migrations) ; le service d'identité y écrit (ADR 0015). */
+async function createAuditTable(connectionString: string): Promise<void> {
+  const folder = new URL('../../api/migrations/', import.meta.url);
+  const migration = readdirSync(folder)
+    .filter((file) => file.endsWith('.sql'))
+    .map((file) => readFileSync(new URL(file, folder), 'utf8'))
+    .find((sql) => sql.includes('CREATE SCHEMA "audit"'));
+  if (!migration) throw new Error('No API migration creates the audit schema');
+  const client = new Client({ connectionString });
+  await client.connect();
+  try {
+    // Seulement le schéma audit : un projet neuf (create:project) n'a qu'une migration, avec tous les schémas.
+    for (const statement of migration.split('--> statement-breakpoint')) {
+      if (statement.includes('"audit"')) await client.query(statement);
+    }
+  } finally {
+    await client.end();
+  }
+}
