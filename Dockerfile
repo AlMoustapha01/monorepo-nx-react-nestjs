@@ -6,7 +6,7 @@
 #   node migrate.js  migrations, en étape de déploiement avant les nouvelles instances
 # auth (docker build --build-arg APP=auth) : node main.js (service d'identité), node migrate.js.
 # Base épinglée par digest (node 24.22.0) : un tag peut changer, un digest non.
-ARG NODE_IMAGE=node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f
+ARG NODE_IMAGE=node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
 ARG APP=api
 
 FROM ${NODE_IMAGE} AS build
